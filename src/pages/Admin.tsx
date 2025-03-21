@@ -23,7 +23,7 @@ import { useAuth } from '@/context/AuthContext';
 import { 
   Music, Lock, Upload, FileText, BarChart3, 
   MessageSquare, Plus, Trash2, Calendar, Eye, Edit,
-  ListMusic, Users, Save
+  ListMusic, Users, Save, Mail
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Navigate } from 'react-router-dom';
