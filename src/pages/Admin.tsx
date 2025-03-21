@@ -23,7 +23,7 @@ import { useAuth } from '@/context/AuthContext';
 import { 
   Music, Lock, Upload, FileText, BarChart3, 
   MessageSquare, Plus, Trash2, Calendar, Eye, Edit,
-  ListMusic, Users, Save, Mail
+  ListMusic, Users, Save, Mail, Download
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Navigate } from 'react-router-dom';
@@ -858,7 +858,24 @@ const AdminDashboard: React.FC = () => {
                                   <td className="p-4">{song.artist}</td>
                                   <td className="p-4 hidden md:table-cell">{song.genre || '-'}</td>
                                   <td className="p-4 hidden md:table-cell">{song.year || '-'}</td>
-                                  <td className="p-4 text-right">
+                                  <td className="p-4 text-right flex justify-end items-center space-x-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => {
+                                        if (song.audio_url) {
+                                          const link = document.createElement('a');
+                                          link.href = song.audio_url;
+                                          link.download = `${song.title} - ${song.artist}.mp3`;
+                                          document.body.appendChild(link);
+                                          link.click();
+                                          document.body.removeChild(link);
+                                        }
+                                      }}
+                                      disabled={!song.audio_url}
+                                    >
+                                      <Download className="h-4 w-4 text-primary" />
+                                    </Button>
                                     <Button
                                       variant="ghost"
                                       size="icon"
