@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,13 +28,17 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface SongType {
   id: string;
   title: string;
   artist: string;
-  genre: string;
-  year: string;
+  genre: string | null;
+  year: string | null;
+  audio_url?: string;
+  cover_url?: string | null;
 }
 
 interface BlogType {
@@ -64,97 +68,6 @@ interface MessageType {
   date: string;
   read: boolean;
 }
-
-// Mock data
-const initialSongs: SongType[] = [
-  { id: '1', title: 'Malaika', artist: 'Fadhili William', genre: 'Classic', year: '1960' },
-  { id: '2', title: 'Jambo Bwana', artist: 'Them Mushrooms', genre: 'Benga', year: '1982' },
-  { id: '3', title: 'Dunia Ina Mambo', artist: 'Remmy Ongala', genre: 'Soukous', year: '1988' },
-];
-
-const initialBlogs: BlogType[] = [
-  { 
-    id: '1', 
-    title: 'The Evolution of Bongo Flava', 
-    content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...', 
-    date: '2023-05-15', 
-    status: 'published' 
-  },
-  { 
-    id: '2', 
-    title: 'Forgotten Pioneers of Kenyan Benga', 
-    content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...', 
-    date: '2023-04-22', 
-    status: 'published' 
-  },
-  { 
-    id: '3', 
-    title: 'The Future of East African Music', 
-    content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...', 
-    date: '2023-06-01', 
-    status: 'draft' 
-  },
-];
-
-const initialPolls: PollType[] = [
-  {
-    id: '1',
-    title: 'Greatest Kenyan Artist of All Time',
-    description: 'Vote for who you think is the most influential Kenyan musician in history.',
-    options: ['Fadhili William', 'Ayub Ogada', 'Daudi Kabaka', 'Fundi Konde'],
-    startDate: '2023-06-01',
-    endDate: '2023-06-30',
-    status: 'active'
-  },
-  {
-    id: '2',
-    title: 'Favorite Bongo Era',
-    description: 'Which period of Bongo music do you enjoy the most?',
-    options: ['1960s-1970s', '1980s-1990s', '2000s-2010s'],
-    startDate: '2023-05-15',
-    endDate: '2023-06-15',
-    status: 'active'
-  },
-  {
-    id: '3',
-    title: 'Most Anticipated Feature',
-    description: 'What feature would you like to see added to the platform next?',
-    options: ['Artist Profiles', 'Music Reviews', 'Playlists', 'Live Events'],
-    startDate: '2023-06-10',
-    endDate: '2023-07-10',
-    status: 'scheduled'
-  },
-];
-
-const initialMessages: MessageType[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    subject: 'Collaboration Opportunity',
-    message: 'Hello, I am interested in collaborating with your platform to promote traditional Kenyan music...',
-    date: '2023-05-28',
-    read: false
-  },
-  {
-    id: '2',
-    name: 'Sarah Johnson',
-    email: 'sarah@example.com',
-    subject: 'Technical Issue',
-    message: 'I am having trouble streaming music on your platform. The player seems to be stuck loading...',
-    date: '2023-05-26',
-    read: true
-  },
-  {
-    id: '3',
-    name: 'Michael Wanjala',
-    email: 'michael@example.com',
-    subject: 'Song Request',
-    message: 'I would like to request that you add songs from the artist Samba Mapangala to your collection...',
-    date: '2023-05-22',
-    read: false
-  },
-];
 
 // Admin Login Component
 const AdminLogin: React.FC = () => {
@@ -239,10 +152,7 @@ const AdminLogin: React.FC = () => {
 // Admin Dashboard Component
 const AdminDashboard: React.FC = () => {
   const { logout } = useAuth();
-  const [songs, setSongs] = useState<SongType[]>(initialSongs);
-  const [blogs, setBlogs] = useState<BlogType[]>(initialBlogs);
-  const [polls, setPolls] = useState<PollType[]>(initialPolls);
-  const [messages, setMessages] = useState<MessageType[]>(initialMessages);
+  const queryClient = useQueryClient();
   
   // New item states
   const [newSong, setNewSong] = useState<Partial<SongType>>({ title: '', artist: '', genre: '', year: '' });
@@ -260,74 +170,330 @@ const AdminDashboard: React.FC = () => {
   const [selectedMessage, setSelectedMessage] = useState<MessageType | null>(null);
   
   // File upload state
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  
+  // Fetch songs from Supabase
+  const { data: songs = [], isLoading: loadingSongs, refetch: refetchSongs } = useQuery({
+    queryKey: ['admin-songs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('songs')
+        .select('*');
+      
+      if (error) {
+        console.error('Error fetching songs:', error);
+        toast.error('Failed to load songs');
+        throw error;
+      }
+      
+      return data as SongType[];
+    }
+  });
+  
+  // Fetch blogs from Supabase
+  const { data: blogs = [], isLoading: loadingBlogs, refetch: refetchBlogs } = useQuery({
+    queryKey: ['admin-blogs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('blogs')
+        .select('*');
+      
+      if (error) {
+        console.error('Error fetching blogs:', error);
+        toast.error('Failed to load blogs');
+        throw error;
+      }
+      
+      return data as BlogType[];
+    }
+  });
+  
+  // Fetch polls from Supabase
+  const { data: polls = [], isLoading: loadingPolls, refetch: refetchPolls } = useQuery({
+    queryKey: ['admin-polls'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('polls')
+        .select('*');
+      
+      if (error) {
+        console.error('Error fetching polls:', error);
+        toast.error('Failed to load polls');
+        throw error;
+      }
+      
+      const formattedPolls = await Promise.all(data.map(async (poll) => {
+        const { data: options } = await supabase
+          .from('poll_options')
+          .select('text')
+          .eq('poll_id', poll.id);
+          
+        return {
+          ...poll,
+          options: options?.map(opt => opt.text) || [],
+          startDate: poll.start_date,
+          endDate: poll.end_date,
+          status: poll.status,
+        };
+      }));
+      
+      return formattedPolls as unknown as PollType[];
+    }
+  });
+  
+  // Fetch messages from Supabase
+  const { data: messages = [], isLoading: loadingMessages, refetch: refetchMessages } = useQuery({
+    queryKey: ['admin-messages'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*');
+      
+      if (error) {
+        console.error('Error fetching messages:', error);
+        toast.error('Failed to load messages');
+        throw error;
+      }
+      
+      return data as MessageType[];
+    }
+  });
+  
+  // Delete song mutation
+  const deleteSongMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('songs')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-songs'] });
+      toast.success('Song deleted successfully');
+    },
+    onError: (error) => {
+      console.error('Error deleting song:', error);
+      toast.error('Failed to delete song');
+    }
+  });
+  
+  // Delete blog mutation
+  const deleteBlogMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('blogs')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
+      toast.success('Blog deleted successfully');
+    },
+    onError: (error) => {
+      console.error('Error deleting blog:', error);
+      toast.error('Failed to delete blog');
+    }
+  });
+  
+  // Publish blog mutation
+  const publishBlogMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('blogs')
+        .update({ status: 'published' })
+        .eq('id', id);
+        
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
+      toast.success('Blog published successfully');
+    },
+    onError: (error) => {
+      console.error('Error publishing blog:', error);
+      toast.error('Failed to publish blog');
+    }
+  });
+  
+  // Delete poll mutation
+  const deletePollMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('polls')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-polls'] });
+      toast.success('Poll deleted successfully');
+    },
+    onError: (error) => {
+      console.error('Error deleting poll:', error);
+      toast.error('Failed to delete poll');
+    }
+  });
+  
+  // Mark message as read mutation
+  const markMessageAsReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('messages')
+        .update({ read: true })
+        .eq('id', id);
+        
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-messages'] });
+    },
+    onError: (error) => {
+      console.error('Error marking message as read:', error);
+    }
+  });
+  
+  // Delete message mutation
+  const deleteMessageMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-messages'] });
+      setSelectedMessage(null);
+      toast.success('Message deleted successfully');
+    },
+    onError: (error) => {
+      console.error('Error deleting message:', error);
+      toast.error('Failed to delete message');
+    }
+  });
   
   // Handle song upload
-  const handleSongUpload = () => {
+  const handleSongUpload = async () => {
     if (!newSong.title || !newSong.artist) {
       toast.error('Please provide at least a title and artist');
       return;
     }
     
-    if (!selectedFile) {
+    if (!audioFile) {
       toast.error('Please select an audio file');
       return;
     }
     
-    const newSongObj: SongType = {
-      id: Date.now().toString(),
-      title: newSong.title || '',
-      artist: newSong.artist || '',
-      genre: newSong.genre || '',
-      year: newSong.year || '',
-    };
-    
-    setSongs([...songs, newSongObj]);
-    setNewSong({ title: '', artist: '', genre: '', year: '' });
-    setSelectedFile(null);
-    
-    toast.success('Song uploaded successfully');
-  };
-  
-  // Handle song delete
-  const handleDeleteSong = (id: string) => {
-    setSongs(songs.filter(song => song.id !== id));
-    toast.success('Song deleted successfully');
+    try {
+      setUploading(true);
+      
+      // Upload audio file to Supabase Storage
+      const audioFileName = `${Date.now()}-${audioFile.name}`;
+      const { data: audioData, error: audioError } = await supabase
+        .storage
+        .from('music')
+        .upload(audioFileName, audioFile);
+        
+      if (audioError) {
+        throw audioError;
+      }
+      
+      // Get public URL for audio
+      const { data: audioUrl } = supabase
+        .storage
+        .from('music')
+        .getPublicUrl(audioFileName);
+        
+      // Upload cover image if provided
+      let coverUrl = null;
+      if (coverFile) {
+        const coverFileName = `${Date.now()}-${coverFile.name}`;
+        const { data: coverData, error: coverError } = await supabase
+          .storage
+          .from('covers')
+          .upload(coverFileName, coverFile);
+          
+        if (coverError) {
+          console.error('Error uploading cover image:', coverError);
+        } else {
+          const { data: coverUrlData } = supabase
+            .storage
+            .from('covers')
+            .getPublicUrl(coverFileName);
+            
+          coverUrl = coverUrlData.publicUrl;
+        }
+      }
+      
+      // Save song data to Supabase
+      const { data, error } = await supabase
+        .from('songs')
+        .insert({
+          title: newSong.title,
+          artist: newSong.artist,
+          genre: newSong.genre || null,
+          year: newSong.year || null,
+          cover_url: coverUrl,
+          audio_url: audioUrl.publicUrl,
+          duration: '00:00' // This would ideally be calculated from the audio file
+        });
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Reset form
+      setNewSong({ title: '', artist: '', genre: '', year: '' });
+      setAudioFile(null);
+      setCoverFile(null);
+      refetchSongs();
+      
+      toast.success('Song uploaded successfully');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload song');
+    } finally {
+      setUploading(false);
+    }
   };
   
   // Handle blog create/publish
-  const handleSaveBlog = (status: 'draft' | 'published') => {
+  const handleSaveBlog = async (status: 'draft' | 'published') => {
     if (!newBlog.title || !newBlog.content) {
       toast.error('Please provide a title and content');
       return;
     }
     
-    const newBlogObj: BlogType = {
-      id: Date.now().toString(),
-      title: newBlog.title || '',
-      content: newBlog.content || '',
-      date: new Date().toISOString().split('T')[0],
-      status: status,
-    };
-    
-    setBlogs([...blogs, newBlogObj]);
-    setNewBlog({ title: '', content: '', status: 'draft' });
-    
-    toast.success(`Blog ${status === 'published' ? 'published' : 'saved as draft'} successfully`);
-  };
-  
-  // Handle blog delete
-  const handleDeleteBlog = (id: string) => {
-    setBlogs(blogs.filter(blog => blog.id !== id));
-    toast.success('Blog deleted successfully');
-  };
-  
-  // Handle blog publish
-  const handlePublishBlog = (id: string) => {
-    setBlogs(blogs.map(blog => 
-      blog.id === id ? { ...blog, status: 'published' } : blog
-    ));
-    toast.success('Blog published successfully');
+    try {
+      const { data, error } = await supabase
+        .from('blogs')
+        .insert({
+          title: newBlog.title,
+          content: newBlog.content,
+          date: new Date().toISOString().split('T')[0],
+          status: status
+        });
+        
+      if (error) {
+        throw error;
+      }
+      
+      setNewBlog({ title: '', content: '', status: 'draft' });
+      refetchBlogs();
+      
+      toast.success(`Blog ${status === 'published' ? 'published' : 'saved as draft'} successfully`);
+    } catch (error) {
+      console.error('Blog save error:', error);
+      toast.error(`Failed to ${status === 'published' ? 'publish' : 'save'} blog`);
+    }
   };
   
   // Handle poll option change
@@ -361,7 +527,7 @@ const AdminDashboard: React.FC = () => {
   };
   
   // Handle poll create
-  const handleCreatePoll = (status: 'draft' | 'scheduled') => {
+  const handleCreatePoll = async (status: 'draft' | 'scheduled') => {
     if (!newPoll.title || !newPoll.description || !newPoll.startDate || !newPoll.endDate) {
       toast.error('Please fill in all required fields');
       return;
@@ -372,53 +538,79 @@ const AdminDashboard: React.FC = () => {
       return;
     }
     
-    const newPollObj: PollType = {
-      id: Date.now().toString(),
-      title: newPoll.title || '',
-      description: newPoll.description || '',
-      options: (newPoll.options || []).filter(o => o.trim() !== ''),
-      startDate: newPoll.startDate || '',
-      endDate: newPoll.endDate || '',
-      status: status,
-    };
-    
-    setPolls([...polls, newPollObj]);
-    setNewPoll({
-      title: '',
-      description: '',
-      options: ['', ''],
-      startDate: '',
-      endDate: '',
-      status: 'draft'
-    });
-    
-    toast.success(`Poll ${status === 'scheduled' ? 'scheduled' : 'saved as draft'} successfully`);
+    try {
+      // Insert poll
+      const { data: pollData, error: pollError } = await supabase
+        .from('polls')
+        .insert({
+          title: newPoll.title,
+          description: newPoll.description,
+          start_date: newPoll.startDate,
+          end_date: newPoll.endDate,
+          status: status
+        })
+        .select();
+        
+      if (pollError) {
+        throw pollError;
+      }
+      
+      if (pollData && pollData.length > 0) {
+        const pollId = pollData[0].id;
+        
+        // Insert poll options
+        const options = (newPoll.options || []).filter(opt => opt.trim() !== '');
+        const optionsToInsert = options.map(text => ({
+          poll_id: pollId,
+          text: text
+        }));
+        
+        const { error: optionsError } = await supabase
+          .from('poll_options')
+          .insert(optionsToInsert);
+          
+        if (optionsError) {
+          throw optionsError;
+        }
+      }
+      
+      // Reset form
+      setNewPoll({
+        title: '',
+        description: '',
+        options: ['', ''],
+        startDate: '',
+        endDate: '',
+        status: 'draft'
+      });
+      
+      refetchPolls();
+      
+      toast.success(`Poll ${status === 'scheduled' ? 'scheduled' : 'saved as draft'} successfully`);
+    } catch (error) {
+      console.error('Poll create error:', error);
+      toast.error(`Failed to ${status === 'scheduled' ? 'schedule' : 'save'} poll`);
+    }
   };
   
-  // Handle poll delete
-  const handleDeletePoll = (id: string) => {
-    setPolls(polls.filter(poll => poll.id !== id));
-    toast.success('Poll deleted successfully');
-  };
-  
-  // Handle message mark as read
-  const handleMarkMessageAsRead = (id: string) => {
-    setMessages(messages.map(message => 
-      message.id === id ? { ...message, read: true } : message
-    ));
-  };
-  
-  // Handle message delete
-  const handleDeleteMessage = (id: string) => {
-    setMessages(messages.filter(message => message.id !== id));
-    setSelectedMessage(null);
-    toast.success('Message deleted successfully');
-  };
-  
-  // File input change handler
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // File input change handlers
+  const handleAudioFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+      setAudioFile(e.target.files[0]);
+    }
+  };
+  
+  const handleCoverFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setCoverFile(e.target.files[0]);
+    }
+  };
+  
+  // Handle message click
+  const handleMessageClick = (message: MessageType) => {
+    setSelectedMessage(message);
+    if (!message.read) {
+      markMessageAsReadMutation.mutate(message.id);
     }
   };
   
@@ -530,7 +722,7 @@ const AdminDashboard: React.FC = () => {
                         <Input
                           id="song-genre"
                           placeholder="Genre"
-                          value={newSong.genre}
+                          value={newSong.genre || ''}
                           onChange={(e) => setNewSong({ ...newSong, genre: e.target.value })}
                         />
                       </div>
@@ -540,16 +732,16 @@ const AdminDashboard: React.FC = () => {
                         <Input
                           id="song-year"
                           placeholder="Year"
-                          value={newSong.year}
+                          value={newSong.year || ''}
                           onChange={(e) => setNewSong({ ...newSong, year: e.target.value })}
                         />
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="song-file">Audio File *</Label>
+                        <Label htmlFor="audio-file">Audio File *</Label>
                         <div className="flex items-center justify-center w-full">
                           <label
-                            htmlFor="song-file"
+                            htmlFor="audio-file"
                             className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/50 hover:bg-secondary border-border"
                           >
                             <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -562,26 +754,71 @@ const AdminDashboard: React.FC = () => {
                               </p>
                             </div>
                             <Input
-                              id="song-file"
+                              id="audio-file"
                               type="file"
                               accept="audio/*"
                               className="hidden"
-                              onChange={handleFileChange}
+                              onChange={handleAudioFileChange}
                             />
                           </label>
                         </div>
-                        {selectedFile && (
+                        {audioFile && (
                           <p className="text-xs text-muted-foreground mt-2">
-                            Selected file: {selectedFile.name}
+                            Selected file: {audioFile.name}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="cover-file">Cover Image (Optional)</Label>
+                        <div className="flex items-center justify-center w-full">
+                          <label
+                            htmlFor="cover-file"
+                            className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/50 hover:bg-secondary border-border"
+                          >
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
+                              <p className="mb-2 text-sm text-muted-foreground">
+                                <span className="font-semibold">Click to upload</span> or drag and drop
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                JPG, PNG, or WEBP (MAX. 2MB)
+                              </p>
+                            </div>
+                            <Input
+                              id="cover-file"
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleCoverFileChange}
+                            />
+                          </label>
+                        </div>
+                        {coverFile && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Selected file: {coverFile.name}
                           </p>
                         )}
                       </div>
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button className="w-full" onClick={handleSongUpload}>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload Song
+                    <Button 
+                      className="w-full" 
+                      onClick={handleSongUpload} 
+                      disabled={uploading || !audioFile}
+                    >
+                      {uploading ? (
+                        <>
+                          <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Song
+                        </>
+                      )}
                     </Button>
                   </CardFooter>
                 </Card>
@@ -596,46 +833,54 @@ const AdminDashboard: React.FC = () => {
                     <CardDescription>View and manage the song collection</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="rounded-md border">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b bg-secondary">
-                            <th className="h-10 px-4 text-left font-medium">Title</th>
-                            <th className="h-10 px-4 text-left font-medium">Artist</th>
-                            <th className="h-10 px-4 text-left font-medium hidden md:table-cell">Genre</th>
-                            <th className="h-10 px-4 text-left font-medium hidden md:table-cell">Year</th>
-                            <th className="h-10 px-4 text-right font-medium">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {songs.length > 0 ? (
-                            songs.map(song => (
-                              <tr key={song.id} className="border-b hover:bg-secondary/50">
-                                <td className="p-4">{song.title}</td>
-                                <td className="p-4">{song.artist}</td>
-                                <td className="p-4 hidden md:table-cell">{song.genre || '-'}</td>
-                                <td className="p-4 hidden md:table-cell">{song.year || '-'}</td>
-                                <td className="p-4 text-right">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDeleteSong(song.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
+                    {loadingSongs ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="animate-spin h-6 w-6 border-2 border-current border-t-transparent rounded-full mr-2" />
+                        <span>Loading songs...</span>
+                      </div>
+                    ) : (
+                      <div className="rounded-md border">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b bg-secondary">
+                              <th className="h-10 px-4 text-left font-medium">Title</th>
+                              <th className="h-10 px-4 text-left font-medium">Artist</th>
+                              <th className="h-10 px-4 text-left font-medium hidden md:table-cell">Genre</th>
+                              <th className="h-10 px-4 text-left font-medium hidden md:table-cell">Year</th>
+                              <th className="h-10 px-4 text-right font-medium">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {songs.length > 0 ? (
+                              songs.map(song => (
+                                <tr key={song.id} className="border-b hover:bg-secondary/50">
+                                  <td className="p-4">{song.title}</td>
+                                  <td className="p-4">{song.artist}</td>
+                                  <td className="p-4 hidden md:table-cell">{song.genre || '-'}</td>
+                                  <td className="p-4 hidden md:table-cell">{song.year || '-'}</td>
+                                  <td className="p-4 text-right">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => deleteSongMutation.mutate(song.id)}
+                                      disabled={deleteSongMutation.isPending}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={5} className="p-4 text-center text-muted-foreground">
+                                  No songs available
                                 </td>
                               </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan={5} className="p-4 text-center text-muted-foreground">
-                                No songs available
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -704,61 +949,70 @@ const AdminDashboard: React.FC = () => {
                     <CardDescription>View and manage all blog posts</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="rounded-md border">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b bg-secondary">
-                            <th className="h-10 px-4 text-left font-medium">Title</th>
-                            <th className="h-10 px-4 text-left font-medium hidden md:table-cell">Date</th>
-                            <th className="h-10 px-4 text-left font-medium">Status</th>
-                            <th className="h-10 px-4 text-right font-medium">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {blogs.length > 0 ? (
-                            blogs.map(blog => (
-                              <tr key={blog.id} className="border-b hover:bg-secondary/50">
-                                <td className="p-4">{blog.title}</td>
-                                <td className="p-4 hidden md:table-cell">{blog.date}</td>
-                                <td className="p-4">
-                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                    blog.status === 'published' 
-                                      ? 'bg-green-100 text-green-800' 
-                                      : 'bg-yellow-100 text-yellow-800'
-                                  }`}>
-                                    {blog.status === 'published' ? 'Published' : 'Draft'}
-                                  </span>
-                                </td>
-                                <td className="p-4 text-right space-x-1">
-                                  {blog.status === 'draft' && (
+                    {loadingBlogs ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="animate-spin h-6 w-6 border-2 border-current border-t-transparent rounded-full mr-2" />
+                        <span>Loading blogs...</span>
+                      </div>
+                    ) : (
+                      <div className="rounded-md border">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b bg-secondary">
+                              <th className="h-10 px-4 text-left font-medium">Title</th>
+                              <th className="h-10 px-4 text-left font-medium hidden md:table-cell">Date</th>
+                              <th className="h-10 px-4 text-left font-medium">Status</th>
+                              <th className="h-10 px-4 text-right font-medium">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {blogs.length > 0 ? (
+                              blogs.map(blog => (
+                                <tr key={blog.id} className="border-b hover:bg-secondary/50">
+                                  <td className="p-4">{blog.title}</td>
+                                  <td className="p-4 hidden md:table-cell">{blog.date}</td>
+                                  <td className="p-4">
+                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                      blog.status === 'published' 
+                                        ? 'bg-green-100 text-green-800' 
+                                        : 'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                                      {blog.status.charAt(0).toUpperCase() + blog.status.slice(1)}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 text-right space-x-1">
+                                    {blog.status === 'draft' && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => publishBlogMutation.mutate(blog.id)}
+                                        disabled={publishBlogMutation.isPending}
+                                      >
+                                        <Eye className="h-4 w-4 text-primary" />
+                                      </Button>
+                                    )}
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      onClick={() => handlePublishBlog(blog.id)}
+                                      onClick={() => deleteBlogMutation.mutate(blog.id)}
+                                      disabled={deleteBlogMutation.isPending}
                                     >
-                                      <Eye className="h-4 w-4 text-primary" />
+                                      <Trash2 className="h-4 w-4 text-destructive" />
                                     </Button>
-                                  )}
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDeleteBlog(blog.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                                  No blogs available
                                 </td>
                               </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan={4} className="p-4 text-center text-muted-foreground">
-                                No blogs available
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -886,58 +1140,66 @@ const AdminDashboard: React.FC = () => {
                     <CardDescription>View and manage all polls</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="rounded-md border">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b bg-secondary">
-                            <th className="h-10 px-4 text-left font-medium">Title</th>
-                            <th className="h-10 px-4 text-left font-medium hidden md:table-cell">Date Range</th>
-                            <th className="h-10 px-4 text-left font-medium">Status</th>
-                            <th className="h-10 px-4 text-right font-medium">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {polls.length > 0 ? (
-                            polls.map(poll => (
-                              <tr key={poll.id} className="border-b hover:bg-secondary/50">
-                                <td className="p-4">{poll.title}</td>
-                                <td className="p-4 hidden md:table-cell text-sm">
-                                  {poll.startDate} to {poll.endDate}
-                                </td>
-                                <td className="p-4">
-                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                    poll.status === 'active' 
-                                      ? 'bg-green-100 text-green-800' 
-                                      : poll.status === 'scheduled'
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : poll.status === 'ended'
-                                      ? 'bg-gray-100 text-gray-800'
-                                      : 'bg-yellow-100 text-yellow-800'
-                                  }`}>
-                                    {poll.status.charAt(0).toUpperCase() + poll.status.slice(1)}
-                                  </span>
-                                </td>
-                                <td className="p-4 text-right">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDeletePoll(poll.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
+                    {loadingPolls ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="animate-spin h-6 w-6 border-2 border-current border-t-transparent rounded-full mr-2" />
+                        <span>Loading polls...</span>
+                      </div>
+                    ) : (
+                      <div className="rounded-md border">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b bg-secondary">
+                              <th className="h-10 px-4 text-left font-medium">Title</th>
+                              <th className="h-10 px-4 text-left font-medium hidden md:table-cell">Date Range</th>
+                              <th className="h-10 px-4 text-left font-medium">Status</th>
+                              <th className="h-10 px-4 text-right font-medium">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {polls.length > 0 ? (
+                              polls.map(poll => (
+                                <tr key={poll.id} className="border-b hover:bg-secondary/50">
+                                  <td className="p-4">{poll.title}</td>
+                                  <td className="p-4 hidden md:table-cell text-sm">
+                                    {poll.startDate} to {poll.endDate}
+                                  </td>
+                                  <td className="p-4">
+                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                      poll.status === 'active' 
+                                        ? 'bg-green-100 text-green-800' 
+                                        : poll.status === 'scheduled'
+                                        ? 'bg-blue-100 text-blue-800'
+                                        : poll.status === 'ended'
+                                        ? 'bg-gray-100 text-gray-800'
+                                        : 'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                                      {poll.status.charAt(0).toUpperCase() + poll.status.slice(1)}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 text-right">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => deletePollMutation.mutate(poll.id)}
+                                      disabled={deletePollMutation.isPending}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                                  No polls available
                                 </td>
                               </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan={4} className="p-4 text-center text-muted-foreground">
-                                No polls available
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -956,40 +1218,42 @@ const AdminDashboard: React.FC = () => {
                     <CardDescription>View contact form submissions</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2">
-                      {messages.length > 0 ? (
-                        messages.map(message => (
-                          <div
-                            key={message.id}
-                            className={`p-3 rounded-lg cursor-pointer hover:bg-secondary/50 border ${
-                              selectedMessage?.id === message.id ? 'bg-secondary' : ''
-                            } ${!message.read ? 'border-primary' : 'border-border'}`}
-                            onClick={() => {
-                              setSelectedMessage(message);
-                              if (!message.read) {
-                                handleMarkMessageAsRead(message.id);
-                              }
-                            }}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <h3 className="font-medium text-sm">{message.name}</h3>
-                              <span className="text-xs text-muted-foreground">{message.date}</span>
-                            </div>
-                            <p className="text-xs line-clamp-1">{message.subject}</p>
-                            {!message.read && (
-                              <div className="mt-2 flex items-center">
-                                <div className="h-2 w-2 rounded-full bg-primary mr-1"></div>
-                                <span className="text-xs text-primary">New message</span>
+                    {loadingMessages ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="animate-spin h-6 w-6 border-2 border-current border-t-transparent rounded-full mr-2" />
+                        <span>Loading messages...</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {messages.length > 0 ? (
+                          messages.map(message => (
+                            <div
+                              key={message.id}
+                              className={`p-3 rounded-lg cursor-pointer hover:bg-secondary/50 border ${
+                                selectedMessage?.id === message.id ? 'bg-secondary' : ''
+                              } ${!message.read ? 'border-primary' : 'border-border'}`}
+                              onClick={() => handleMessageClick(message)}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <h3 className="font-medium text-sm">{message.name}</h3>
+                                <span className="text-xs text-muted-foreground">{message.date}</span>
                               </div>
-                            )}
+                              <p className="text-xs line-clamp-1">{message.subject}</p>
+                              {!message.read && (
+                                <div className="mt-2 flex items-center">
+                                  <div className="h-2 w-2 rounded-full bg-primary mr-1"></div>
+                                  <span className="text-xs text-primary">New message</span>
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-6 text-muted-foreground">
+                            No messages available
                           </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-6 text-muted-foreground">
-                          No messages available
-                        </div>
-                      )}
-                    </div>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
                 
@@ -1031,7 +1295,8 @@ const AdminDashboard: React.FC = () => {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => handleDeleteMessage(selectedMessage.id)}
+                            onClick={() => deleteMessageMutation.mutate(selectedMessage.id)}
+                            disabled={deleteMessageMutation.isPending}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete Message
