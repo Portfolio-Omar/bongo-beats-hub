@@ -9,13 +9,188 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      blogs: {
+        Row: {
+          content: string
+          created_at: string
+          date: string
+          id: string
+          status: string
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          date: string
+          id?: string
+          status: string
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          date?: string
+          id?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          created_at: string
+          date: string
+          email: string
+          id: string
+          message: string
+          name: string
+          read: boolean | null
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          read?: boolean | null
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          read?: boolean | null
+          subject?: string
+        }
+        Relationships: []
+      }
+      poll_options: {
+        Row: {
+          created_at: string
+          id: string
+          poll_id: string | null
+          text: string
+          votes: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          poll_id?: string | null
+          text: string
+          votes?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          poll_id?: string | null
+          text?: string
+          votes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_options_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      polls: {
+        Row: {
+          created_at: string
+          description: string
+          end_date: string
+          id: string
+          participants: number | null
+          start_date: string
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          end_date: string
+          id?: string
+          participants?: number | null
+          start_date: string
+          status: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          end_date?: string
+          id?: string
+          participants?: number | null
+          start_date?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      songs: {
+        Row: {
+          artist: string
+          audio_url: string
+          cover_url: string | null
+          created_at: string
+          duration: string | null
+          genre: string | null
+          id: string
+          title: string
+          year: string | null
+        }
+        Insert: {
+          artist: string
+          audio_url: string
+          cover_url?: string | null
+          created_at?: string
+          duration?: string | null
+          genre?: string | null
+          id?: string
+          title: string
+          year?: string | null
+        }
+        Update: {
+          artist?: string
+          audio_url?: string
+          cover_url?: string | null
+          created_at?: string
+          duration?: string | null
+          genre?: string | null
+          id?: string
+          title?: string
+          year?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_login: {
+        Args: {
+          pin: string
+        }
+        Returns: boolean
+      }
+      check_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_admin: {
+        Args: {
+          pin: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

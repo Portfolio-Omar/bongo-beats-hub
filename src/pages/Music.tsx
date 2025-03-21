@@ -1,12 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import MusicPlayer from '@/components/ui-custom/MusicPlayer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
   Search, Music2, PlayCircle, Clock,
-  ChevronDown, Filter
+  ChevronDown, Filter, Loader2
 } from 'lucide-react';
 import {
   Select,
@@ -16,82 +16,78 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
-// Mock data for songs
-const songs = [
-  {
-    id: '1',
-    title: 'Malaika',
-    artist: 'Fadhili William',
-    genre: 'Classic',
-    duration: '4:32',
-    year: '1960',
-    coverUrl: 'https://images.unsplash.com/photo-1598387833924-90299d6a5d8a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80',
-    audioUrl: 'https://cdn.freesound.org/previews/617/617306_5674468-lq.mp3',
-  },
-  {
-    id: '2',
-    title: 'Jambo Bwana',
-    artist: 'Them Mushrooms',
-    genre: 'Benga',
-    duration: '3:45',
-    year: '1982',
-    coverUrl: 'https://images.unsplash.com/photo-1481886756534-97af88ccb438?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80',
-    audioUrl: 'https://cdn.freesound.org/previews/612/612092_5674468-lq.mp3',
-  },
-  {
-    id: '3',
-    title: 'Dunia Ina Mambo',
-    artist: 'Remmy Ongala',
-    genre: 'Soukous',
-    duration: '5:18',
-    year: '1988',
-    coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80',
-    audioUrl: 'https://cdn.freesound.org/previews/617/617655_11861866-lq.mp3',
-  },
-  {
-    id: '4',
-    title: 'Shauri Yako',
-    artist: 'Nguashi Ntimbo',
-    genre: 'Rhumba',
-    duration: '6:02',
-    year: '1975',
-    coverUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80',
-    audioUrl: 'https://cdn.freesound.org/previews/612/612095_5674468-lq.mp3',
-  },
-  {
-    id: '5',
-    title: 'Sina Makosa',
-    artist: 'Les Wanyika',
-    genre: 'Benga',
-    duration: '4:15',
-    year: '1979',
-    coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80',
-    audioUrl: 'https://cdn.freesound.org/previews/612/612093_5674468-lq.mp3',
-  },
-];
+// Define Song type for TypeScript
+interface Song {
+  id: string;
+  title: string;
+  artist: string;
+  genre: string | null;
+  duration: string | null;
+  year: string | null;
+  cover_url: string | null;
+  audio_url: string;
+}
 
 const Music: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSong, setSelectedSong] = useState(songs[0]);
+  const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [sortBy, setSortBy] = useState('title');
   const [filterGenre, setFilterGenre] = useState('all');
   
-  const filteredSongs = songs.filter(song => {
-    const matchesSearch = song.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         song.artist.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesGenre = filterGenre === 'all' || song.genre === filterGenre;
-    return matchesSearch && matchesGenre;
+  // Fetch songs from Supabase
+  const { data: songs, isLoading, error } = useQuery({
+    queryKey: ['songs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('songs')
+        .select('*');
+      
+      if (error) {
+        console.error('Error fetching songs:', error);
+        toast.error('Failed to load songs');
+        throw error;
+      }
+      
+      return data as Song[];
+    }
   });
   
+  // Set first song as selected when data loads
+  useEffect(() => {
+    if (songs && songs.length > 0 && !selectedSong) {
+      setSelectedSong(songs[0]);
+    }
+  }, [songs, selectedSong]);
+  
+  // Extract unique genres for the filter
+  const genres = songs 
+    ? ['all', ...new Set(songs.filter(song => song.genre).map(song => song.genre as string))]
+    : ['all'];
+  
+  // Filter songs based on search query and genre
+  const filteredSongs = songs ? songs.filter(song => {
+    const matchesSearch = 
+      song.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      song.artist.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesGenre = filterGenre === 'all' || song.genre === filterGenre;
+    return matchesSearch && matchesGenre;
+  }) : [];
+  
+  // Sort songs based on selected sort option
   const sortedSongs = [...filteredSongs].sort((a, b) => {
     if (sortBy === 'title') return a.title.localeCompare(b.title);
     if (sortBy === 'artist') return a.artist.localeCompare(b.artist);
-    if (sortBy === 'year') return a.year.localeCompare(b.year);
+    if (sortBy === 'year' && a.year && b.year) return a.year.localeCompare(b.year);
     return 0;
   });
   
-  const genres = ['all', ...new Set(songs.map(song => song.genre))];
+  if (error) {
+    console.error('Error in rendering:', error);
+  }
   
   return (
     <Layout>
@@ -123,7 +119,15 @@ const Music: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <MusicPlayer song={selectedSong} />
+          {selectedSong ? (
+            <MusicPlayer song={selectedSong} />
+          ) : (
+            <div className="bg-card p-8 rounded-xl text-center">
+              <Music2 className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
+              <h3 className="text-lg font-medium mb-2">No song selected</h3>
+              <p className="text-muted-foreground">Select a song from the list below to play</p>
+            </div>
+          )}
         </motion.div>
         
         {/* Search and Filters */}
@@ -191,11 +195,16 @@ const Music: React.FC = () => {
             <div className="col-span-1 text-right">Duration</div>
           </div>
           
-          {sortedSongs.length > 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2 text-muted-foreground">Loading music...</span>
+            </div>
+          ) : sortedSongs.length > 0 ? (
             sortedSongs.map((song, index) => (
               <motion.div 
                 key={song.id}
-                className={`grid grid-cols-1 md:grid-cols-12 items-center py-3 px-4 rounded-lg transition-all duration-200 hover:bg-secondary/50 cursor-pointer ${selectedSong.id === song.id ? 'bg-secondary' : ''}`}
+                className={`grid grid-cols-1 md:grid-cols-12 items-center py-3 px-4 rounded-lg transition-all duration-200 hover:bg-secondary/50 cursor-pointer ${selectedSong?.id === song.id ? 'bg-secondary' : ''}`}
                 onClick={() => setSelectedSong(song)}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -206,11 +215,15 @@ const Music: React.FC = () => {
                 <div className="flex items-center gap-3 col-span-1 md:col-span-5">
                   <div className="relative h-12 w-12 rounded-md overflow-hidden flex-shrink-0">
                     <img 
-                      src={song.coverUrl} 
+                      src={song.cover_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80'} 
                       alt={song.title} 
                       className="h-full w-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80';
+                      }}
                     />
-                    {selectedSong.id === song.id && (
+                    {selectedSong?.id === song.id && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                         <PlayCircle className="h-6 w-6 text-white" />
                       </div>
@@ -223,11 +236,11 @@ const Music: React.FC = () => {
                 </div>
                 
                 <div className="hidden md:block col-span-3 text-muted-foreground">{song.artist}</div>
-                <div className="hidden md:block col-span-2 text-muted-foreground">{song.genre}</div>
+                <div className="hidden md:block col-span-2 text-muted-foreground">{song.genre || '-'}</div>
                 
                 <div className="hidden md:flex col-span-1 justify-end items-center text-muted-foreground">
                   <Clock className="h-3 w-3 mr-1" />
-                  <span>{song.duration}</span>
+                  <span>{song.duration || '--:--'}</span>
                 </div>
               </motion.div>
             ))
