@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
   Search, Music2, PlayCircle, Clock,
-  ChevronDown, Filter, Loader2
+  ChevronDown, Filter, Loader2, Download
 } from 'lucide-react';
 import {
   Select,
@@ -84,6 +84,24 @@ const Music: React.FC = () => {
     if (sortBy === 'year' && a.year && b.year) return a.year.localeCompare(b.year);
     return 0;
   });
+
+  // Handle download
+  const handleDownload = (song: Song) => {
+    try {
+      // Create an anchor element and set the href to the audio file
+      const link = document.createElement('a');
+      link.href = song.audio_url;
+      link.download = `${song.title} - ${song.artist}.mp3`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success(`Downloading ${song.title}`);
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download song');
+    }
+  };
   
   if (error) {
     console.error('Error in rendering:', error);
@@ -120,7 +138,13 @@ const Music: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           {selectedSong ? (
-            <MusicPlayer song={selectedSong} />
+            <MusicPlayer song={{
+              id: selectedSong.id,
+              title: selectedSong.title,
+              artist: selectedSong.artist,
+              coverUrl: selectedSong.cover_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80',
+              audioUrl: selectedSong.audio_url
+            }} />
           ) : (
             <div className="bg-card p-8 rounded-xl text-center">
               <Music2 className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
@@ -190,9 +214,10 @@ const Music: React.FC = () => {
           <div className="hidden md:grid grid-cols-12 py-3 px-4 text-sm font-medium text-muted-foreground bg-secondary rounded-lg">
             <div className="col-span-1">#</div>
             <div className="col-span-5">Title</div>
-            <div className="col-span-3">Artist</div>
+            <div className="col-span-2">Artist</div>
             <div className="col-span-2">Genre</div>
-            <div className="col-span-1 text-right">Duration</div>
+            <div className="col-span-1">Duration</div>
+            <div className="col-span-1 text-right">Action</div>
           </div>
           
           {isLoading ? (
@@ -235,12 +260,22 @@ const Music: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="hidden md:block col-span-3 text-muted-foreground">{song.artist}</div>
+                <div className="hidden md:block col-span-2 text-muted-foreground">{song.artist}</div>
                 <div className="hidden md:block col-span-2 text-muted-foreground">{song.genre || '-'}</div>
+                <div className="hidden md:block col-span-1 text-muted-foreground">{song.duration || '--:--'}</div>
                 
-                <div className="hidden md:flex col-span-1 justify-end items-center text-muted-foreground">
-                  <Clock className="h-3 w-3 mr-1" />
-                  <span>{song.duration || '--:--'}</span>
+                <div className="hidden md:flex col-span-1 justify-end">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownload(song);
+                    }}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
                 </div>
               </motion.div>
             ))

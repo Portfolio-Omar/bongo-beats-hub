@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -31,14 +32,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const authenticateAdmin = async (pin: string): Promise<boolean> => {
     try {
-      // In a real implementation, this would be a call to Supabase
-      // For now, we'll use the hardcoded PIN "1352"
-      if (pin === '1352') {
+      // Use Supabase function to check admin PIN
+      const { data, error } = await supabase.rpc('admin_login', { pin });
+      
+      if (error) {
+        console.error('Authentication error:', error);
+        toast.error('Authentication failed');
+        return false;
+      }
+      
+      if (data) {
         setIsAuthenticated(true);
         localStorage.setItem('isAuthenticated', 'true');
         toast.success('Successfully logged in');
         return true;
       }
+      
       toast.error('Invalid PIN');
       return false;
     } catch (error) {
