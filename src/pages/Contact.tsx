@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Send, Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -37,9 +38,27 @@ const Contact: React.FC = () => {
     
     setIsSubmitting(true);
     
-    // Mock API call - in real implementation, this would send data to Supabase
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      // Get current date in a readable format
+      const date = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      // Insert message into database
+      const { error } = await supabase.from('messages').insert({
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject || 'General Inquiry',
+        message: formData.message,
+        date: date,
+        read: false
+      });
+      
+      if (error) {
+        throw error;
+      }
       
       toast.success('Message sent successfully! We will get back to you soon.');
       
@@ -62,24 +81,22 @@ const Contact: React.FC = () => {
     <Layout>
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
-        <div className="text-center mb-12">
-          <motion.h1 
-            className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            Contact Us
-          </motion.h1>
-          <motion.p 
-            className="text-muted-foreground max-w-2xl mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            Get in touch with us for any inquiries, feedback, or collaboration opportunities.
-          </motion.p>
-        </div>
+        <motion.h1 
+          className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          Contact Us
+        </motion.h1>
+        <motion.p 
+          className="text-muted-foreground max-w-2xl mx-auto text-center mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          Get in touch with us for any inquiries, feedback, or collaboration opportunities.
+        </motion.p>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Contact Form */}
@@ -181,8 +198,7 @@ const Contact: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="font-medium mb-1">Email</h3>
-                      <p className="text-muted-foreground">hello@bongobeat.com</p>
-                      <p className="text-muted-foreground">support@bongobeat.com</p>
+                      <p className="text-muted-foreground">omaryw003@gmail.com</p>
                     </div>
                   </div>
                   
@@ -192,8 +208,7 @@ const Contact: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="font-medium mb-1">Phone</h3>
-                      <p className="text-muted-foreground">+254 700 000 000</p>
-                      <p className="text-muted-foreground">+254 733 000 000</p>
+                      <p className="text-muted-foreground">+254745087870</p>
                     </div>
                   </div>
                   
@@ -204,7 +219,7 @@ const Contact: React.FC = () => {
                     <div>
                       <h3 className="font-medium mb-1">Location</h3>
                       <p className="text-muted-foreground">
-                        Nairobi, Kenya
+                        Mombasa, Kenya
                       </p>
                     </div>
                   </div>
