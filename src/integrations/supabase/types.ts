@@ -36,6 +36,33 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback: {
+        Row: {
+          date: string
+          email: string
+          feedback: string
+          id: string
+          name: string
+          read: boolean | null
+        }
+        Insert: {
+          date: string
+          email: string
+          feedback: string
+          id?: string
+          name: string
+          read?: boolean | null
+        }
+        Update: {
+          date?: string
+          email?: string
+          feedback?: string
+          id?: string
+          name?: string
+          read?: boolean | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string
@@ -143,6 +170,7 @@ export type Database = {
           duration: string | null
           genre: string | null
           id: string
+          published: boolean | null
           title: string
           year: string | null
         }
@@ -154,6 +182,7 @@ export type Database = {
           duration?: string | null
           genre?: string | null
           id?: string
+          published?: boolean | null
           title: string
           year?: string | null
         }
@@ -165,6 +194,7 @@ export type Database = {
           duration?: string | null
           genre?: string | null
           id?: string
+          published?: boolean | null
           title?: string
           year?: string | null
         }

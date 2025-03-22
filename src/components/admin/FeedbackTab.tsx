@@ -25,7 +25,7 @@ const FeedbackTab: React.FC = () => {
     queryKey: ['admin-feedback'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('feedback')
+        .from('feedback' as any)
         .select('*')
         .order('date', { ascending: false });
       
@@ -35,7 +35,7 @@ const FeedbackTab: React.FC = () => {
         throw error;
       }
       
-      return data as FeedbackType[];
+      return data as unknown as FeedbackType[];
     }
   });
   
@@ -43,7 +43,7 @@ const FeedbackTab: React.FC = () => {
   const markFeedbackAsReadMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('feedback')
+        .from('feedback' as any)
         .update({ read: true })
         .eq('id', id);
         
@@ -61,7 +61,7 @@ const FeedbackTab: React.FC = () => {
   const deleteFeedbackMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('feedback')
+        .from('feedback' as any)
         .delete()
         .eq('id', id);
         

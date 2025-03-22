@@ -50,7 +50,7 @@ const FeedbackForm: React.FC = () => {
         day: 'numeric',
       });
       
-      // Insert feedback into Supabase
+      // Insert feedback into Supabase with type assertion to allow the feedback table columns
       const { error } = await supabase
         .from('feedback')
         .insert({
@@ -59,7 +59,7 @@ const FeedbackForm: React.FC = () => {
           feedback: data.feedback,
           date: formattedDate,
           read: false,
-        });
+        } as any);
       
       if (error) {
         throw error;
