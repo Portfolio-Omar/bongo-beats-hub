@@ -11,7 +11,7 @@ import {
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
 import { useAuth } from '@/context/AuthContext';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -26,7 +26,7 @@ const navItems = [
 const Navbar: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
-  const isMobile = useIsMobile();
+  const isMobile = useMobile();
   
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
