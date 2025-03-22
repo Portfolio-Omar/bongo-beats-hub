@@ -1,49 +1,49 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Trash2, Eye, Mail, User, Calendar, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
-import { MessageSquare, Trash2, Mail, Calendar, Users } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-interface FeedbackType {
+interface FeedbackItem {
   id: string;
   name: string;
   email: string;
   feedback: string;
   date: string;
-  read: boolean;
+  read: boolean | null;
 }
 
 const FeedbackTab: React.FC = () => {
-  const [selectedFeedback, setSelectedFeedback] = useState<FeedbackType | null>(null);
   const queryClient = useQueryClient();
+  const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(null);
   
-  // Fetch feedback from Supabase
-  const { data: feedbacks = [], isLoading: loadingFeedback } = useQuery({
+  // Fetch feedback data
+  const { data: feedbackList = [], isLoading } = useQuery({
     queryKey: ['admin-feedback'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('feedback' as any)
+        .from('feedback')
         .select('*')
         .order('date', { ascending: false });
-      
+        
       if (error) {
         console.error('Error fetching feedback:', error);
         toast.error('Failed to load feedback');
         throw error;
       }
       
-      return data as unknown as FeedbackType[];
+      return data as FeedbackItem[];
     }
   });
   
   // Mark feedback as read mutation
-  const markFeedbackAsReadMutation = useMutation({
+  const markAsReadMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('feedback' as any)
+        .from('feedback')
         .update({ read: true })
         .eq('id', id);
         
@@ -61,7 +61,7 @@ const FeedbackTab: React.FC = () => {
   const deleteFeedbackMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('feedback' as any)
+        .from('feedback')
         .delete()
         .eq('id', id);
         
@@ -79,10 +79,10 @@ const FeedbackTab: React.FC = () => {
   });
   
   // Handle feedback click
-  const handleFeedbackClick = (feedback: FeedbackType) => {
+  const handleFeedbackClick = (feedback: FeedbackItem) => {
     setSelectedFeedback(feedback);
     if (!feedback.read) {
-      markFeedbackAsReadMutation.mutate(feedback.id);
+      markAsReadMutation.mutate(feedback.id);
     }
   };
   
@@ -95,18 +95,18 @@ const FeedbackTab: React.FC = () => {
             <MessageSquare className="h-5 w-5" />
             Feedback
           </CardTitle>
-          <CardDescription>View user feedback and suggestions</CardDescription>
+          <CardDescription>View user feedback submissions</CardDescription>
         </CardHeader>
         <CardContent>
-          {loadingFeedback ? (
+          {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin h-6 w-6 border-2 border-current border-t-transparent rounded-full mr-2" />
               <span>Loading feedback...</span>
             </div>
           ) : (
             <div className="space-y-2">
-              {feedbacks.length > 0 ? (
-                feedbacks.map(feedback => (
+              {feedbackList.length > 0 ? (
+                feedbackList.map(feedback => (
                   <div
                     key={feedback.id}
                     className={`p-3 rounded-lg cursor-pointer hover:bg-secondary/50 border ${
@@ -118,7 +118,7 @@ const FeedbackTab: React.FC = () => {
                       <h3 className="font-medium text-sm">{feedback.name}</h3>
                       <span className="text-xs text-muted-foreground">{feedback.date}</span>
                     </div>
-                    <p className="text-xs line-clamp-1">{feedback.feedback.substring(0, 50)}...</p>
+                    <p className="text-xs text-muted-foreground line-clamp-1">{feedback.email}</p>
                     {!feedback.read && (
                       <div className="mt-2 flex items-center">
                         <div className="h-2 w-2 rounded-full bg-primary mr-1"></div>
@@ -144,26 +144,23 @@ const FeedbackTab: React.FC = () => {
             <MessageSquare className="h-5 w-5" />
             Feedback Details
           </CardTitle>
-          <CardDescription>View the complete feedback</CardDescription>
+          <CardDescription>Read the complete feedback</CardDescription>
         </CardHeader>
         <CardContent>
           {selectedFeedback ? (
             <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-medium">Feedback from {selectedFeedback.name}</h3>
-                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Users className="h-3.5 w-3.5" />
-                    <span>{selectedFeedback.name}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Mail className="h-3.5 w-3.5" />
-                    <span>{selectedFeedback.email}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5" />
-                    <span>{selectedFeedback.date}</span>
-                  </div>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-1 text-sm">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">{selectedFeedback.name}</span>
+                </div>
+                <div className="flex items-center gap-1 text-sm">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">{selectedFeedback.email}</span>
+                </div>
+                <div className="flex items-center gap-1 text-sm">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">{selectedFeedback.date}</span>
                 </div>
               </div>
               
@@ -188,7 +185,7 @@ const FeedbackTab: React.FC = () => {
               <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No feedback selected</h3>
               <p className="text-muted-foreground">
-                Select a feedback from the list to view its contents
+                Select a feedback item from the list to view its contents
               </p>
             </div>
           )}

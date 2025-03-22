@@ -461,6 +461,7 @@ const AdminDashboard: React.FC = () => {
         });
       }, 300);
       
+      console.log('Uploading audio file:', audioFile.name);
       // Upload audio file to Supabase Storage
       const audioFileName = `${Date.now()}-${audioFile.name}`;
       const { data: audioData, error: audioError } = await supabase
@@ -472,8 +473,11 @@ const AdminDashboard: React.FC = () => {
         });
         
       if (audioError) {
+        console.error('Audio upload error:', audioError);
         throw audioError;
       }
+      
+      console.log('Audio uploaded successfully:', audioData);
       
       // Get public URL for audio
       const { data: audioUrl } = supabase
@@ -481,9 +485,12 @@ const AdminDashboard: React.FC = () => {
         .from('music')
         .getPublicUrl(audioFileName);
         
+      console.log('Audio URL:', audioUrl);
+      
       // Upload cover image if provided
       let coverUrl = null;
       if (coverFile) {
+        console.log('Uploading cover file:', coverFile.name);
         const coverFileName = `${Date.now()}-${coverFile.name}`;
         const { data: coverData, error: coverError } = await supabase
           .storage
@@ -496,15 +503,18 @@ const AdminDashboard: React.FC = () => {
         if (coverError) {
           console.error('Error uploading cover image:', coverError);
         } else {
+          console.log('Cover uploaded successfully:', coverData);
           const { data: coverUrlData } = supabase
             .storage
             .from('covers')
             .getPublicUrl(coverFileName);
             
           coverUrl = coverUrlData.publicUrl;
+          console.log('Cover URL:', coverUrl);
         }
       }
       
+      console.log('Saving song data to database');
       // Save song data to Supabase
       const { data, error } = await supabase
         .from('songs')
@@ -520,8 +530,11 @@ const AdminDashboard: React.FC = () => {
         });
         
       if (error) {
+        console.error('Database insert error:', error);
         throw error;
       }
+      
+      console.log('Song saved successfully:', data);
       
       // Set progress to 100% and clear interval
       clearInterval(progressInterval);

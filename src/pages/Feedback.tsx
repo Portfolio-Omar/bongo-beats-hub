@@ -2,31 +2,20 @@
 import React from 'react';
 import Layout from '@/components/layout/Layout';
 import FeedbackForm from '@/components/layout/FeedbackForm';
-import { motion } from 'framer-motion';
 
 const Feedback: React.FC = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-3xl mx-auto text-center mb-12"
-        >
-          <h1 className="text-4xl font-display font-bold mb-4">Feedback</h1>
-          <p className="text-muted-foreground">
-            We value your feedback and suggestions. Please share your thoughts with us to help improve our services.
+        <div className="max-w-4xl mx-auto mb-8 text-center">
+          <h1 className="text-3xl font-display font-bold mb-4">Share Your Feedback</h1>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            We value your input and are committed to improving our platform. 
+            Please share your thoughts, suggestions, or experiences with us.
           </p>
-        </motion.div>
+        </div>
         
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <FeedbackForm />
-        </motion.div>
+        <FeedbackForm />
       </div>
     </Layout>
   );
