@@ -1,119 +1,153 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 
+const feedbackSchema = z.object({
+  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
+  feedback: z.string().min(10, { message: 'Feedback must be at least 10 characters.' }),
+});
+
+type FeedbackFormValues = z.infer<typeof feedbackSchema>;
+
 const FeedbackForm: React.FC = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!name || !email || !feedback) {
-      toast.error('Please fill in all fields');
-      return;
-    }
+  const form = useForm<FeedbackFormValues>({
+    resolver: zodResolver(feedbackSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      feedback: '',
+    },
+  });
+
+  const onSubmit = async (data: FeedbackFormValues) => {
+    setIsSubmitting(true);
     
     try {
-      setIsSubmitting(true);
+      // Get current date in a nice format
+      const today = new Date();
+      const formattedDate = today.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
       
-      const { data, error } = await supabase
+      // Insert feedback into Supabase
+      const { error } = await supabase
         .from('feedback')
         .insert({
-          name,
-          email,
-          feedback,
-          date: new Date().toISOString().split('T')[0],
-          read: false
+          name: data.name,
+          email: data.email,
+          feedback: data.feedback,
+          date: formattedDate,
+          read: false,
         });
-        
+      
       if (error) {
         throw error;
       }
       
-      toast.success('Feedback submitted successfully!');
-      
-      // Reset form
-      setName('');
-      setEmail('');
-      setFeedback('');
+      // Reset form and show success message
+      form.reset();
+      toast.success('Feedback submitted successfully! Thank you for your input.');
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      toast.error('Failed to submit feedback. Please try again.');
+      toast.error('Failed to submit feedback. Please try again later.');
     } finally {
       setIsSubmitting(false);
     }
   };
-  
+
   return (
-    <Card className="w-full max-w-lg mx-auto">
+    <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-xl font-bold">Share Your Feedback</CardTitle>
+        <CardTitle>Share Your Feedback</CardTitle>
+        <CardDescription>
+          We value your input to help improve our services and website.
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input 
-              id="name" 
-              placeholder="Your name" 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Your name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input 
-              id="email" 
-              type="email" 
-              placeholder="Your email address" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+            
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="your.email@example.com" type="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="feedback">Feedback</Label>
-            <Textarea 
-              id="feedback" 
-              placeholder="Share your thoughts, suggestions or experiences" 
-              rows={5}
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              required
+            
+            <FormField
+              control={form.control}
+              name="feedback"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Feedback</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Share your thoughts, suggestions, or concerns..."
+                      className="min-h-32 resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <span className="mr-2">
-                  <div className="h-4 w-4 border-2 border-current border-t-transparent animate-spin rounded-full" />
-                </span>
-                Submitting...
-              </>
-            ) : 'Submit Feedback'}
-          </Button>
-        </form>
+            
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="animate-spin mr-2">⧖</span>
+                  Submitting...
+                </>
+              ) : 'Submit Feedback'}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
-      <CardFooter className="text-xs text-muted-foreground text-center">
-        Your feedback helps us improve our service. Thank you for sharing!
-      </CardFooter>
     </Card>
   );
 };
