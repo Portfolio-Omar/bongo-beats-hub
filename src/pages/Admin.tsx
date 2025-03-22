@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Tabs, 
   TabsContent, 
@@ -30,6 +30,7 @@ import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import FeedbackTab from '@/components/admin/FeedbackTab';
 
 interface SongType {
   id: string;
@@ -39,6 +40,7 @@ interface SongType {
   year: string | null;
   audio_url?: string;
   cover_url?: string | null;
+  published: boolean;
 }
 
 interface BlogType {
@@ -155,7 +157,13 @@ const AdminDashboard: React.FC = () => {
   const queryClient = useQueryClient();
   
   // New item states
-  const [newSong, setNewSong] = useState<Partial<SongType>>({ title: '', artist: '', genre: '', year: '' });
+  const [newSong, setNewSong] = useState<Partial<SongType>>({ 
+    title: '', 
+    artist: '', 
+    genre: '', 
+    year: '', 
+    published: false 
+  });
   const [newBlog, setNewBlog] = useState<Partial<BlogType>>({ title: '', content: '', status: 'draft' });
   const [newPoll, setNewPoll] = useState<Partial<PollType>>({
     title: '',
@@ -173,6 +181,7 @@ const AdminDashboard: React.FC = () => {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   // Fetch songs from Supabase
   const { data: songs = [], isLoading: loadingSongs, refetch: refetchSongs } = useQuery({
@@ -264,6 +273,31 @@ const AdminDashboard: React.FC = () => {
   // Delete song mutation
   const deleteSongMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Get the song to find audio and cover URLs
+      const { data: song } = await supabase
+        .from('songs')
+        .select('audio_url, cover_url')
+        .eq('id', id)
+        .single();
+        
+      // Delete from storage if files exist
+      if (song) {
+        if (song.audio_url) {
+          const audioPath = song.audio_url.split('/').pop();
+          if (audioPath) {
+            await supabase.storage.from('music').remove([audioPath]);
+          }
+        }
+        
+        if (song.cover_url) {
+          const coverPath = song.cover_url.split('/').pop();
+          if (coverPath) {
+            await supabase.storage.from('covers').remove([coverPath]);
+          }
+        }
+      }
+      
+      // Delete the song record
       const { error } = await supabase
         .from('songs')
         .delete()
@@ -278,6 +312,26 @@ const AdminDashboard: React.FC = () => {
     onError: (error) => {
       console.error('Error deleting song:', error);
       toast.error('Failed to delete song');
+    }
+  });
+  
+  // Toggle song publish status mutation
+  const toggleSongPublishStatusMutation = useMutation({
+    mutationFn: async ({ id, published }: { id: string, published: boolean }) => {
+      const { error } = await supabase
+        .from('songs')
+        .update({ published })
+        .eq('id', id);
+        
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-songs'] });
+      toast.success(`Song ${variables.published ? 'published' : 'unpublished'} successfully`);
+    },
+    onError: (error) => {
+      console.error('Error updating song publish status:', error);
+      toast.error('Failed to update song status');
     }
   });
   
@@ -394,13 +448,28 @@ const AdminDashboard: React.FC = () => {
     
     try {
       setUploading(true);
+      setUploadProgress(0);
+      
+      // Start progress simulation
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 5;
+        });
+      }, 300);
       
       // Upload audio file to Supabase Storage
       const audioFileName = `${Date.now()}-${audioFile.name}`;
       const { data: audioData, error: audioError } = await supabase
         .storage
         .from('music')
-        .upload(audioFileName, audioFile);
+        .upload(audioFileName, audioFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
         
       if (audioError) {
         throw audioError;
@@ -419,7 +488,10 @@ const AdminDashboard: React.FC = () => {
         const { data: coverData, error: coverError } = await supabase
           .storage
           .from('covers')
-          .upload(coverFileName, coverFile);
+          .upload(coverFileName, coverFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
           
         if (coverError) {
           console.error('Error uploading cover image:', coverError);
@@ -443,23 +515,31 @@ const AdminDashboard: React.FC = () => {
           year: newSong.year || null,
           cover_url: coverUrl,
           audio_url: audioUrl.publicUrl,
-          duration: '00:00' // This would ideally be calculated from the audio file
+          duration: '00:00', // This would ideally be calculated from the audio file
+          published: newSong.published || false
         });
         
       if (error) {
         throw error;
       }
       
-      // Reset form
-      setNewSong({ title: '', artist: '', genre: '', year: '' });
-      setAudioFile(null);
-      setCoverFile(null);
-      refetchSongs();
+      // Set progress to 100% and clear interval
+      clearInterval(progressInterval);
+      setUploadProgress(100);
       
-      toast.success('Song uploaded successfully');
-    } catch (error) {
+      // Reset form after a short delay
+      setTimeout(() => {
+        setNewSong({ title: '', artist: '', genre: '', year: '', published: false });
+        setAudioFile(null);
+        setCoverFile(null);
+        setUploadProgress(0);
+        refetchSongs();
+        toast.success('Song uploaded successfully');
+      }, 500);
+      
+    } catch (error: any) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload song');
+      toast.error('Failed to upload song: ' + (error.message || 'Unknown error'));
     } finally {
       setUploading(false);
     }
@@ -596,13 +676,25 @@ const AdminDashboard: React.FC = () => {
   // File input change handlers
   const handleAudioFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setAudioFile(e.target.files[0]);
+      const file = e.target.files[0];
+      // Check file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('Audio file is too large. Maximum size is 10MB.');
+        return;
+      }
+      setAudioFile(file);
     }
   };
   
   const handleCoverFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setCoverFile(e.target.files[0]);
+      const file = e.target.files[0];
+      // Check file size (2MB limit)
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('Cover image is too large. Maximum size is 2MB.');
+        return;
+      }
+      setCoverFile(file);
     }
   };
   
@@ -664,7 +756,7 @@ const AdminDashboard: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <Tabs defaultValue="songs" className="w-full">
-            <TabsList className="grid grid-cols-4 w-full mb-8">
+            <TabsList className="grid grid-cols-5 w-full mb-8">
               <TabsTrigger value="songs" className="flex items-center gap-2">
                 <Music className="h-4 w-4" />
                 <span className="hidden sm:inline">Songs</span>
@@ -680,6 +772,10 @@ const AdminDashboard: React.FC = () => {
               <TabsTrigger value="messages" className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
                 <span className="hidden sm:inline">Messages</span>
+              </TabsTrigger>
+              <TabsTrigger value="feedback" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                <span className="hidden sm:inline">Feedback</span>
               </TabsTrigger>
             </TabsList>
             
@@ -738,7 +834,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="audio-file">Audio File *</Label>
+                        <Label htmlFor="audio-file">Audio File * (Max 10MB)</Label>
                         <div className="flex items-center justify-center w-full">
                           <label
                             htmlFor="audio-file"
@@ -764,13 +860,13 @@ const AdminDashboard: React.FC = () => {
                         </div>
                         {audioFile && (
                           <p className="text-xs text-muted-foreground mt-2">
-                            Selected file: {audioFile.name}
+                            Selected file: {audioFile.name} ({(audioFile.size / (1024 * 1024)).toFixed(2)} MB)
                           </p>
                         )}
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="cover-file">Cover Image (Optional)</Label>
+                        <Label htmlFor="cover-file">Cover Image (Optional, Max 2MB)</Label>
                         <div className="flex items-center justify-center w-full">
                           <label
                             htmlFor="cover-file"
@@ -796,13 +892,35 @@ const AdminDashboard: React.FC = () => {
                         </div>
                         {coverFile && (
                           <p className="text-xs text-muted-foreground mt-2">
-                            Selected file: {coverFile.name}
+                            Selected file: {coverFile.name} ({(coverFile.size / (1024 * 1024)).toFixed(2)} MB)
                           </p>
                         )}
                       </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="publish-now" 
+                          checked={newSong.published}
+                          onCheckedChange={(checked) => setNewSong({ ...newSong, published: checked as boolean })}
+                        />
+                        <Label htmlFor="publish-now">Publish immediately after upload</Label>
+                      </div>
                     </div>
                   </CardContent>
-                  <CardFooter>
+                  <CardFooter className="flex flex-col">
+                    {uploadProgress > 0 && uploadProgress < 100 && (
+                      <div className="w-full mb-4">
+                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary" 
+                            style={{ width: `${uploadProgress}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-center mt-1 text-muted-foreground">
+                          Uploading: {uploadProgress}%
+                        </p>
+                      </div>
+                    )}
                     <Button 
                       className="w-full" 
                       onClick={handleSongUpload} 
@@ -847,6 +965,7 @@ const AdminDashboard: React.FC = () => {
                               <th className="h-10 px-4 text-left font-medium">Artist</th>
                               <th className="h-10 px-4 text-left font-medium hidden md:table-cell">Genre</th>
                               <th className="h-10 px-4 text-left font-medium hidden md:table-cell">Year</th>
+                              <th className="h-10 px-4 text-left font-medium">Status</th>
                               <th className="h-10 px-4 text-right font-medium">Actions</th>
                             </tr>
                           </thead>
@@ -858,7 +977,28 @@ const AdminDashboard: React.FC = () => {
                                   <td className="p-4">{song.artist}</td>
                                   <td className="p-4 hidden md:table-cell">{song.genre || '-'}</td>
                                   <td className="p-4 hidden md:table-cell">{song.year || '-'}</td>
+                                  <td className="p-4">
+                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                      song.published 
+                                        ? 'bg-green-100 text-green-800' 
+                                        : 'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                                      {song.published ? 'Published' : 'Draft'}
+                                    </span>
+                                  </td>
                                   <td className="p-4 text-right flex justify-end items-center space-x-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => toggleSongPublishStatusMutation.mutate({ 
+                                        id: song.id, 
+                                        published: !song.published 
+                                      })}
+                                      disabled={toggleSongPublishStatusMutation.isPending}
+                                      title={song.published ? "Unpublish" : "Publish"}
+                                    >
+                                      <Eye className={`h-4 w-4 ${song.published ? 'text-green-600' : 'text-yellow-600'}`} />
+                                    </Button>
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -889,7 +1029,7 @@ const AdminDashboard: React.FC = () => {
                               ))
                             ) : (
                               <tr>
-                                <td colSpan={5} className="p-4 text-center text-muted-foreground">
+                                <td colSpan={6} className="p-4 text-center text-muted-foreground">
                                   No songs available
                                 </td>
                               </tr>
@@ -1332,6 +1472,11 @@ const AdminDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+            
+            {/* Feedback Tab */}
+            <TabsContent value="feedback">
+              <FeedbackTab />
             </TabsContent>
           </Tabs>
         </motion.div>

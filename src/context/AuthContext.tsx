@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         console.error('Authentication error:', error);
-        toast.error('Authentication failed');
+        toast.error('Authentication failed: ' + error.message);
         return false;
       }
       
@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     } catch (error) {
       console.error('Authentication error:', error);
-      toast.error('Authentication failed');
+      toast.error('Authentication failed. Please try again.');
       return false;
     }
   };
