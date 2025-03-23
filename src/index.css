@@ -82,14 +82,13 @@
 /* Custom Utilities */
 @layer components {
   .music-card {
-    @apply relative overflow-hidden rounded-lg bg-white p-6 shadow-md transition-all duration-300 hover:shadow-lg;
-    background: rgba(255, 255, 255, 0.8);
+    @apply relative overflow-hidden rounded-lg bg-card p-6 shadow-md transition-all duration-300 hover:shadow-lg dark:bg-card/80;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .glass-panel {
-    @apply relative overflow-hidden rounded-xl border border-white/20 bg-white/10 p-6 shadow-lg backdrop-blur-lg;
+    @apply relative overflow-hidden rounded-xl border border-white/20 bg-white/10 p-6 shadow-lg backdrop-blur-lg dark:bg-black/20 dark:border-white/10;
   }
 
   .text-gradient {
