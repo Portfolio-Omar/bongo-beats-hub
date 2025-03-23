@@ -12,12 +12,14 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { Menu, Phone, Home, Music, Settings, Moon, Sun, MessageSquare } from 'lucide-react';
+import { Menu, Phone, Home, Music, Settings, Moon, Sun, MessageSquare, BookOpen, Shield } from 'lucide-react';
 
 const navItems = [
   { name: 'Home', path: '/', icon: <Home className="h-4 w-4 mr-2" /> },
   { name: 'Music', path: '/music', icon: <Music className="h-4 w-4 mr-2" /> },
+  { name: 'Blog', path: '/blog', icon: <BookOpen className="h-4 w-4 mr-2" /> },
   { name: 'Contact', path: '/contact', icon: <Phone className="h-4 w-4 mr-2" /> },
+  { name: 'Admin', path: '/admin', icon: <Shield className="h-4 w-4 mr-2" /> },
   { name: 'Settings', path: '/settings', icon: <Settings className="h-4 w-4 mr-2" /> },
   { name: 'Feedback', path: '/feedback', icon: <MessageSquare className="h-4 w-4 mr-2" /> },
 ];

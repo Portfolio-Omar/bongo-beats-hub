@@ -15,6 +15,7 @@ import Feedback from "./pages/Feedback";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import MobileMenu from "./pages/MobileMenu";
+import Blog from "./pages/Blog";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/admin" element={<Admin />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/menu" element={<MobileMenu />} />
+              <Route path="/blog" element={<Blog />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
