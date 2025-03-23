@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layout } from '@/components/layout/Layout';
+import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { Home, Music, FileText, BarChart2, MessageSquare, Phone, Shield, ArrowLeft } from 'lucide-react';
@@ -15,7 +15,6 @@ const MobileMenu = () => {
     { name: 'Music', path: '/music', icon: <Music className="h-5 w-5 mr-3" /> },
     { name: 'Blog', path: '/blog', icon: <FileText className="h-5 w-5 mr-3" /> },
     { name: 'Polls', path: '/polls', icon: <BarChart2 className="h-5 w-5 mr-3" /> },
-    { name: 'Feedback', path: '/feedback', icon: <MessageSquare className="h-5 w-5 mr-3" /> },
     { name: 'Contact', path: '/contact', icon: <Phone className="h-5 w-5 mr-3" /> },
   ];
 
@@ -26,6 +25,12 @@ const MobileMenu = () => {
       icon: <Shield className="h-5 w-5 mr-3" /> 
     });
   }
+  
+  menuItems.push({ 
+    name: 'Feedback', 
+    path: '/feedback', 
+    icon: <MessageSquare className="h-5 w-5 mr-3" /> 
+  });
 
   return (
     <Layout>
