@@ -1,14 +1,16 @@
-
 import React from 'react';
 import Layout from '@/components/layout/Layout';
 import Hero from '@/components/ui-custom/Hero';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import { 
   Music2, Radio, CalendarDays, BookOpen, BarChart,
-  Share2, Clock, ArrowRight
+  Share2, Clock, ArrowRight, Shield, FileText, BarChart2, MessageSquare
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const featuredPlaylists = [
   {
@@ -52,6 +54,7 @@ const recentBlogs = [
 ];
 
 const Index: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -130,6 +133,84 @@ const Index: React.FC = () => {
           </div>
         </div>
       </section>
+      
+      {/* Admin Panel Section (only visible when authenticated) */}
+      {isAuthenticated && (
+        <section className="py-16 bg-gradient-to-r from-primary/5 to-accent/10">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center gap-3 mb-8">
+              <Shield className="h-8 w-8 text-primary" />
+              <h2 className="font-display text-3xl md:text-4xl font-bold">Admin Dashboard</h2>
+            </div>
+            
+            <Card className="mb-10">
+              <CardHeader>
+                <CardTitle>Quick Management</CardTitle>
+                <CardDescription>
+                  Access key management features for your platform from this dashboard.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <Button asChild variant="outline" className="h-auto py-6 flex flex-col gap-2">
+                    <Link to="/admin" className="w-full">
+                      <Shield className="h-8 w-8 mb-2" />
+                      <span>Admin Panel</span>
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="h-auto py-6 flex flex-col gap-2">
+                    <Link to="/music" className="w-full">
+                      <Music2 className="h-8 w-8 mb-2" />
+                      <span>Manage Music</span>
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="h-auto py-6 flex flex-col gap-2">
+                    <Link to="/blog" className="w-full">
+                      <FileText className="h-8 w-8 mb-2" />
+                      <span>Manage Blogs</span>
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="h-auto py-6 flex flex-col gap-2">
+                    <Link to="/polls" className="w-full">
+                      <BarChart2 className="h-8 w-8 mb-2" />
+                      <span>Manage Polls</span>
+                    </Link>
+                  </Button>
+                </div>
+                
+                <Tabs defaultValue="feedback">
+                  <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsTrigger value="feedback">Recent Feedback</TabsTrigger>
+                    <TabsTrigger value="messages">New Messages</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="feedback" className="p-4 bg-accent/10 rounded-md">
+                    <p className="text-center text-muted-foreground py-4">
+                      View recent user feedback from the Feedback page
+                    </p>
+                    <Button asChild variant="default" className="w-full">
+                      <Link to="/admin">
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        View All Feedback
+                      </Link>
+                    </Button>
+                  </TabsContent>
+                  <TabsContent value="messages" className="p-4 bg-accent/10 rounded-md">
+                    <p className="text-center text-muted-foreground py-4">
+                      View messages from users via the contact form
+                    </p>
+                    <Button asChild variant="default" className="w-full">
+                      <Link to="/admin">
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        View All Messages
+                      </Link>
+                    </Button>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      )}
       
       {/* Featured Playlists */}
       <section className="py-20">
