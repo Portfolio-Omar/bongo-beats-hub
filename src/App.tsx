@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
-import { AnimatePresence } from "framer-motion";
 
 import Index from "./pages/Index";
 import Music from "./pages/Music";
@@ -15,6 +14,7 @@ import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
 import Feedback from "./pages/Feedback";
 import NotFound from "./pages/NotFound";
+import MobileMenu from "./pages/MobileMenu";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +33,7 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/feedback" element={<Feedback />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/menu" element={<MobileMenu />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

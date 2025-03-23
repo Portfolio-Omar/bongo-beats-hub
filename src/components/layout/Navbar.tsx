@@ -13,14 +13,15 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { Menu, FileText, BarChart2, MessageSquare, Phone, Home, Music, Shield } from 'lucide-react';
 
 const navItems = [
-  { name: 'Home', path: '/' },
-  { name: 'Music', path: '/music' },
-  { name: 'Blog', path: '/blog' },
-  { name: 'Polls', path: '/polls' },
-  { name: 'Feedback', path: '/feedback' },
-  { name: 'Contact', path: '/contact' },
+  { name: 'Home', path: '/', icon: <Home className="h-4 w-4 mr-2" /> },
+  { name: 'Music', path: '/music', icon: <Music className="h-4 w-4 mr-2" /> },
+  { name: 'Blog', path: '/blog', icon: <FileText className="h-4 w-4 mr-2" /> },
+  { name: 'Polls', path: '/polls', icon: <BarChart2 className="h-4 w-4 mr-2" /> },
+  { name: 'Feedback', path: '/feedback', icon: <MessageSquare className="h-4 w-4 mr-2" /> },
+  { name: 'Contact', path: '/contact', icon: <Phone className="h-4 w-4 mr-2" /> },
 ];
 
 const Navbar: React.FC = () => {
@@ -48,6 +49,7 @@ const Navbar: React.FC = () => {
                       location.pathname === item.path && "bg-accent/50 text-accent-foreground"
                     )}
                   >
+                    {item.icon}
                     {item.name}
                   </NavigationMenuLink>
                 </Link>
@@ -63,6 +65,7 @@ const Navbar: React.FC = () => {
                       location.pathname === '/admin' && "bg-accent/50 text-accent-foreground"
                     )}
                   >
+                    <Shield className="h-4 w-4 mr-2" />
                     Admin
                   </NavigationMenuLink>
                 </Link>
@@ -76,22 +79,7 @@ const Navbar: React.FC = () => {
           <Button variant="outline" size="icon" asChild>
             <Link to="/menu">
               <span className="sr-only">Toggle menu</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-6 w-6"
-              >
-                <line x1="4" x2="20" y1="12" y2="12" />
-                <line x1="4" x2="20" y1="6" y2="6" />
-                <line x1="4" x2="20" y1="18" y2="18" />
-              </svg>
+              <Menu className="h-6 w-6" />
             </Link>
           </Button>
         </div>
