@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -110,17 +111,29 @@ const SongOfTheWeek: React.FC = () => {
         setComments(commentsData);
       }
 
+      // For reaction counts, we need to manually count them
       const { data: reactionsData, error: reactionsError } = await supabase
         .from('song_reactions')
-        .select('reaction_type, count(*)')
-        .eq('song_id', songId)
-        .group('reaction_type');
+        .select('*')
+        .eq('song_id', songId);
 
       if (reactionsError) {
         console.error('Error fetching reactions:', reactionsError);
       } else {
-        setReactions(reactionsData);
-        const total = reactionsData.reduce((acc, curr) => acc + curr.count, 0);
+        // Process the reactions to count by type
+        const reactionCounts: Record<string, number> = {};
+        reactionsData.forEach(reaction => {
+          const type = reaction.reaction_type;
+          reactionCounts[type] = (reactionCounts[type] || 0) + 1;
+        });
+        
+        // Convert to array format expected by the component
+        const processedReactions = Object.entries(reactionCounts).map(
+          ([reaction_type, count]) => ({ reaction_type, count })
+        );
+        
+        setReactions(processedReactions);
+        const total = processedReactions.reduce((acc, curr) => acc + curr.count, 0);
         setTotalReactions(total);
       }
     } catch (error) {
