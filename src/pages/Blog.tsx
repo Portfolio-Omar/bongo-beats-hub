@@ -17,8 +17,8 @@ interface BlogPost {
   content: string;
   excerpt?: string;
   date: string;
-  featured_image_url?: string;
-  slug?: string;
+  featured_image_url?: string | null;
+  slug?: string | null;
   status: 'draft' | 'published';
   category?: string;
   featured?: boolean;
@@ -50,8 +50,10 @@ const Blog: React.FC = () => {
         }
         
         // Process the blogs to add category and featured flags
+        // Cast the status to ensure it matches the BlogPost type
         const processedBlogs = data.map((blog, index) => ({
           ...blog,
+          status: blog.status as 'draft' | 'published', // Add type casting here
           category: categories[Math.floor(Math.random() * (categories.length - 1)) + 1],
           excerpt: blog.content.substring(0, 150) + '...',
           featured: index < 3 // Mark first 3 as featured

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,7 +47,6 @@ const SongOfTheWeek: React.FC = () => {
   const fetchFeaturedSong = async () => {
     try {
       setIsLoading(true);
-      // First, get the active song of the week
       const { data: songOfWeekData, error: songOfWeekError } = await supabase
         .from('song_of_the_week')
         .select('song_id')
@@ -59,7 +57,6 @@ const SongOfTheWeek: React.FC = () => {
 
       if (songOfWeekError) {
         console.error('Error fetching song of the week:', songOfWeekError);
-        // If no featured song is set, get a random song
         const { data: randomSong, error: randomSongError } = await supabase
           .from('songs')
           .select('id, title, artist, cover_url, audio_url')
@@ -76,7 +73,6 @@ const SongOfTheWeek: React.FC = () => {
         setFeaturedSong(randomSong);
         await fetchCommentsAndReactions(randomSong.id);
       } else {
-        // Get the song details
         const { data: songData, error: songError } = await supabase
           .from('songs')
           .select('id, title, artist, cover_url, audio_url')
@@ -102,7 +98,6 @@ const SongOfTheWeek: React.FC = () => {
 
   const fetchCommentsAndReactions = async (songId: string) => {
     try {
-      // Fetch comments
       const { data: commentsData, error: commentsError } = await supabase
         .from('song_comments')
         .select('*')
@@ -115,13 +110,11 @@ const SongOfTheWeek: React.FC = () => {
         setComments(commentsData);
       }
 
-      // Fetch reactions with counts - using count() aggregation
       const { data: reactionsData, error: reactionsError } = await supabase
         .from('song_reactions')
-        .select('reaction_type, count')
-        .eq('song_id', songId)
         .select('reaction_type, count(*)')
-        .groupBy('reaction_type');
+        .eq('song_id', songId)
+        .group('reaction_type');
 
       if (reactionsError) {
         console.error('Error fetching reactions:', reactionsError);
@@ -160,7 +153,6 @@ const SongOfTheWeek: React.FC = () => {
       } else {
         toast.success('Comment submitted successfully');
         setComment('');
-        // Refresh comments
         fetchCommentsAndReactions(featuredSong.id);
       }
     } catch (error) {
@@ -188,7 +180,6 @@ const SongOfTheWeek: React.FC = () => {
         console.error('Error adding reaction:', error);
       } else {
         toast.success('Thanks for your reaction!');
-        // Refresh reactions
         fetchCommentsAndReactions(featuredSong.id);
       }
     } catch (error) {
