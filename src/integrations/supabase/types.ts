@@ -167,6 +167,99 @@ export type Database = {
         }
         Relationships: []
       }
+      song_comments: {
+        Row: {
+          comment: string
+          created_at: string | null
+          id: string
+          name: string
+          song_id: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string | null
+          id?: string
+          name: string
+          song_id: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          song_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_comments_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      song_of_the_week: {
+        Row: {
+          active: boolean | null
+          feature_date: string | null
+          id: string
+          song_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          feature_date?: string | null
+          id?: string
+          song_id: string
+        }
+        Update: {
+          active?: boolean | null
+          feature_date?: string | null
+          id?: string
+          song_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_of_the_week_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      song_reactions: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          reaction_type: string
+          song_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          reaction_type: string
+          song_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          reaction_type?: string
+          song_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_reactions_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       songs: {
         Row: {
           artist: string
