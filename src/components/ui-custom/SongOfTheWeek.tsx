@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Heart, MessageSquare, Share2 } from 'lucide-react';
+import { Heart, MessageSquare, Share2, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import MusicPlayer from './MusicPlayer';
 
 interface Comment {
   id: string;
@@ -38,6 +39,7 @@ const SongOfTheWeek: React.FC = () => {
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPlayerVisible, setIsPlayerVisible] = useState(false);
 
   useEffect(() => {
     fetchFeaturedSong();
@@ -113,12 +115,13 @@ const SongOfTheWeek: React.FC = () => {
         setComments(commentsData);
       }
 
-      // Fetch reactions with counts
+      // Fetch reactions with counts - using count() aggregation
       const { data: reactionsData, error: reactionsError } = await supabase
         .from('song_reactions')
-        .select('reaction_type, count(*)')
+        .select('reaction_type, count')
         .eq('song_id', songId)
-        .group('reaction_type');
+        .select('reaction_type, count(*)')
+        .groupBy('reaction_type');
 
       if (reactionsError) {
         console.error('Error fetching reactions:', reactionsError);
@@ -194,6 +197,10 @@ const SongOfTheWeek: React.FC = () => {
     }
   };
 
+  const toggleMusicPlayer = () => {
+    setIsPlayerVisible(!isPlayerVisible);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-40">
@@ -224,12 +231,18 @@ const SongOfTheWeek: React.FC = () => {
       <Card className="shadow-lg border-accent/50">
         <CardHeader className="pb-2">
           <div className="flex items-start gap-4">
-            <div className="h-24 w-24 rounded-md overflow-hidden">
+            <div className="h-24 w-24 rounded-md overflow-hidden relative group">
               <img 
                 src={featuredSong.cover_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200&q=80'} 
                 alt={featuredSong.title} 
                 className="h-full w-full object-cover"
               />
+              <div 
+                className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                onClick={toggleMusicPlayer}
+              >
+                <Play className="h-12 w-12 text-white" />
+              </div>
             </div>
             <div>
               <CardTitle className="text-xl">{featuredSong.title}</CardTitle>
@@ -265,12 +278,37 @@ const SongOfTheWeek: React.FC = () => {
                   <Share2 className="h-5 w-5 mr-1" />
                   <span>Share</span>
                 </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="p-1 h-8"
+                  onClick={toggleMusicPlayer}
+                >
+                  <Play className="h-5 w-5 mr-1" />
+                  <span>Play</span>
+                </Button>
               </div>
             </div>
           </div>
         </CardHeader>
         
-        <CardContent className="pt-2">
+        {isPlayerVisible && (
+          <CardContent className="pt-2 border-t border-border mt-3">
+            <div className="mt-4">
+              <MusicPlayer
+                song={{
+                  id: featuredSong.id,
+                  title: featuredSong.title,
+                  artist: featuredSong.artist,
+                  coverUrl: featuredSong.cover_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200&q=80',
+                  audioUrl: featuredSong.audio_url
+                }}
+              />
+            </div>
+          </CardContent>
+        )}
+        
+        <CardContent className={`pt-2 ${isPlayerVisible ? 'mt-4' : ''}`}>
           <div className="mt-4">
             <div className="flex flex-col gap-1">
               <h3 className="text-sm font-medium">Fan Reactions</h3>
