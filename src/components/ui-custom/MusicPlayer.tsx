@@ -16,9 +16,19 @@ interface MusicPlayerProps {
     coverUrl: string;
     audioUrl: string;
   };
+  songs?: Array<{
+    id: string;
+    title: string;
+    artist: string;
+    coverUrl: string;
+    audioUrl: string;
+  }>;
+  onPlayNext?: () => void;
+  onPlayPrevious?: () => void;
+  onSongEnd?: () => void;
 }
 
-const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
+const MusicPlayer: React.FC<MusicPlayerProps> = ({ song, songs = [], onPlayNext, onPlayPrevious, onSongEnd }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -26,6 +36,8 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [prevVolume, setPrevVolume] = useState(0.7);
+  const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
+  const [isShuffleEnabled, setIsShuffleEnabled] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement>(null);
   
@@ -35,6 +47,11 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
 
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
+      // Auto-play when a new song is loaded
+      if (song) {
+        audio.play().catch(err => console.error("Could not autoplay:", err));
+        setIsPlaying(true);
+      }
     };
     
     const handleTimeUpdate = () => {
@@ -44,6 +61,16 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
     const handleEnded = () => {
       setIsPlaying(false);
       setCurrentTime(0);
+      
+      if (isRepeatEnabled) {
+        // Replay the current song
+        audio.currentTime = 0;
+        audio.play().catch(err => console.error("Could not replay:", err));
+        setIsPlaying(true);
+      } else if (onSongEnd) {
+        // Move to the next song
+        onSongEnd();
+      }
     };
     
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
@@ -55,7 +82,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, []);
+  }, [song, isRepeatEnabled, onSongEnd]);
   
   useEffect(() => {
     const audio = audioRef.current;
@@ -91,6 +118,16 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
     toast.success(isLiked ? 'Removed from favorites' : 'Added to favorites');
   };
   
+  const toggleRepeat = () => {
+    setIsRepeatEnabled(!isRepeatEnabled);
+    toast.info(isRepeatEnabled ? 'Repeat disabled' : 'Repeat enabled');
+  };
+  
+  const toggleShuffle = () => {
+    setIsShuffleEnabled(!isShuffleEnabled);
+    toast.info(isShuffleEnabled ? 'Shuffle disabled' : 'Shuffle enabled');
+  };
+  
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
     toast.success('Link copied to clipboard!');
@@ -107,6 +144,22 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
     setVolume(value[0]);
     if (isMuted && value[0] > 0) {
       setIsMuted(false);
+    }
+  };
+  
+  const handlePrevious = () => {
+    if (onPlayPrevious) {
+      onPlayPrevious();
+    } else {
+      toast.info('Previous track not available in demo');
+    }
+  };
+  
+  const handleNext = () => {
+    if (onPlayNext) {
+      onPlayNext();
+    } else {
+      toast.info('Next track not available in demo');
     }
   };
   
@@ -158,8 +211,8 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-muted-foreground hover:text-primary"
-                onClick={() => toast.info('Shuffle not available in demo')}
+                className={`text-muted-foreground hover:text-primary ${isShuffleEnabled ? 'text-primary' : ''}`}
+                onClick={toggleShuffle}
               >
                 <Shuffle className="h-4 w-4" />
               </Button>
@@ -168,7 +221,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
                 variant="ghost"
                 size="icon"
                 className="text-muted-foreground hover:text-primary"
-                onClick={() => toast.info('Previous track not available in demo')}
+                onClick={handlePrevious}
               >
                 <SkipBack className="h-5 w-5" />
               </Button>
@@ -192,7 +245,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
                 variant="ghost"
                 size="icon"
                 className="text-muted-foreground hover:text-primary"
-                onClick={() => toast.info('Next track not available in demo')}
+                onClick={handleNext}
               >
                 <SkipForward className="h-5 w-5" />
               </Button>
@@ -200,8 +253,8 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song }) => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-muted-foreground hover:text-primary"
-                onClick={() => toast.info('Repeat not available in demo')}
+                className={`text-muted-foreground hover:text-primary ${isRepeatEnabled ? 'text-primary' : ''}`}
+                onClick={toggleRepeat}
               >
                 <Repeat className="h-4 w-4" />
               </Button>

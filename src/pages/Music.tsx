@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import MusicPlayer from '@/components/ui-custom/MusicPlayer';
@@ -103,6 +102,48 @@ const Music: React.FC = () => {
     }
   };
   
+  // Functions for playlist navigation
+  const playNextSong = () => {
+    if (!selectedSong || !sortedSongs.length) return;
+    
+    const currentIndex = sortedSongs.findIndex(song => song.id === selectedSong.id);
+    let nextIndex;
+    
+    // If shuffle is enabled, play a random song (we'll simulate shuffle here)
+    if (isShuffleEnabled) {
+      // Get a random index different from the current one
+      let randomIndex;
+      do {
+        randomIndex = Math.floor(Math.random() * sortedSongs.length);
+      } while (randomIndex === currentIndex && sortedSongs.length > 1);
+      
+      nextIndex = randomIndex;
+    } else {
+      // Otherwise, proceed to the next song or loop back to the first
+      nextIndex = (currentIndex + 1) % sortedSongs.length;
+    }
+    
+    setSelectedSong(sortedSongs[nextIndex]);
+  };
+  
+  const playPreviousSong = () => {
+    if (!selectedSong || !sortedSongs.length) return;
+    
+    const currentIndex = sortedSongs.findIndex(song => song.id === selectedSong.id);
+    const previousIndex = (currentIndex - 1 + sortedSongs.length) % sortedSongs.length;
+    
+    setSelectedSong(sortedSongs[previousIndex]);
+  };
+  
+  // State for shuffle functionality
+  const [isShuffleEnabled, setIsShuffleEnabled] = useState(false);
+  
+  // Toggle shuffle function to be passed to music player
+  const toggleShuffle = () => {
+    setIsShuffleEnabled(!isShuffleEnabled);
+    toast.info(isShuffleEnabled ? 'Shuffle disabled' : 'Shuffle enabled');
+  };
+  
   if (error) {
     console.error('Error in rendering:', error);
   }
@@ -138,13 +179,25 @@ const Music: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           {selectedSong ? (
-            <MusicPlayer song={{
-              id: selectedSong.id,
-              title: selectedSong.title,
-              artist: selectedSong.artist,
-              coverUrl: selectedSong.cover_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80',
-              audioUrl: selectedSong.audio_url
-            }} />
+            <MusicPlayer 
+              song={{
+                id: selectedSong.id,
+                title: selectedSong.title,
+                artist: selectedSong.artist,
+                coverUrl: selectedSong.cover_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80',
+                audioUrl: selectedSong.audio_url
+              }}
+              songs={sortedSongs.map(song => ({
+                id: song.id,
+                title: song.title,
+                artist: song.artist,
+                coverUrl: song.cover_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80',
+                audioUrl: song.audio_url
+              }))}
+              onPlayNext={playNextSong}
+              onPlayPrevious={playPreviousSong}
+              onSongEnd={playNextSong}
+            />
           ) : (
             <div className="bg-card p-8 rounded-xl text-center">
               <Music2 className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
