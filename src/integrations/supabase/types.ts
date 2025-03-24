@@ -14,7 +14,9 @@ export type Database = {
           content: string
           created_at: string
           date: string
+          featured_image_url: string | null
           id: string
+          slug: string | null
           status: string
           title: string
         }
@@ -22,7 +24,9 @@ export type Database = {
           content: string
           created_at?: string
           date: string
+          featured_image_url?: string | null
           id?: string
+          slug?: string | null
           status: string
           title: string
         }
@@ -30,7 +34,9 @@ export type Database = {
           content?: string
           created_at?: string
           date?: string
+          featured_image_url?: string | null
           id?: string
+          slug?: string | null
           status?: string
           title?: string
         }
@@ -214,6 +220,12 @@ export type Database = {
       check_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      generate_slug: {
+        Args: {
+          title: string
+        }
+        Returns: string
       }
       is_admin: {
         Args: {
