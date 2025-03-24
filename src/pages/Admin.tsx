@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import FeedbackTab from '@/components/admin/FeedbackTab';
 import BlogTab from '@/components/admin/BlogTab';
+import SetSongOfWeek from '@/components/admin/SetSongOfWeek';
 
 interface SongType {
   id: string;
@@ -924,4 +926,157 @@ const AdminDashboard: React.FC = () => {
                   <CardFooter className="flex flex-col">
                     {uploadProgress > 0 && uploadProgress < 100 && (
                       <div className="w-full mb-4">
-                        <div
+                        <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                          <div
+                            className="bg-primary h-full transition-all duration-300 ease-in-out"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-center text-muted-foreground mt-1">
+                          Uploading... {uploadProgress}%
+                        </p>
+                      </div>
+                    )}
+                    
+                    <Button
+                      className="w-full"
+                      onClick={handleSongUpload}
+                      disabled={uploading || !newSong.title || !newSong.artist || !audioFile}
+                    >
+                      {uploading ? 'Uploading...' : 'Upload Song'}
+                    </Button>
+                  </CardFooter>
+                </Card>
+                
+                {/* Song List */}
+                <Card className="md:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ListMusic className="h-5 w-5" />
+                      Manage Songs
+                    </CardTitle>
+                    <CardDescription>View and manage all songs on the platform</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingSongs ? (
+                      <div className="flex justify-center items-center h-40">
+                        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+                      </div>
+                    ) : songs.length === 0 ? (
+                      <div className="text-center py-10 text-muted-foreground">
+                        <p>No songs found.</p>
+                        <p className="text-sm">Upload your first song to get started.</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-md border">
+                        <div className="relative overflow-x-auto">
+                          <table className="w-full text-sm text-left">
+                            <thead className="text-xs uppercase bg-muted">
+                              <tr>
+                                <th scope="col" className="px-4 py-3">Title</th>
+                                <th scope="col" className="px-4 py-3">Artist</th>
+                                <th scope="col" className="px-4 py-3 hidden md:table-cell">Genre</th>
+                                <th scope="col" className="px-4 py-3 hidden lg:table-cell">Year</th>
+                                <th scope="col" className="px-4 py-3">Status</th>
+                                <th scope="col" className="px-4 py-3 text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {songs.map((song) => (
+                                <tr key={song.id} className="bg-card border-b border-border hover:bg-muted/50">
+                                  <td className="px-4 py-3 font-medium">{song.title}</td>
+                                  <td className="px-4 py-3">{song.artist}</td>
+                                  <td className="px-4 py-3 hidden md:table-cell">{song.genre || '-'}</td>
+                                  <td className="px-4 py-3 hidden lg:table-cell">{song.year || '-'}</td>
+                                  <td className="px-4 py-3">
+                                    <span className={`px-2 py-1 rounded-full text-xs ${song.published ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'}`}>
+                                      {song.published ? 'Published' : 'Draft'}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-right">
+                                    <div className="flex justify-end gap-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => toggleSongPublishStatusMutation.mutate({ id: song.id, published: !song.published })}
+                                        className="hidden sm:inline-flex"
+                                      >
+                                        {song.published ? 'Unpublish' : 'Publish'}
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => deleteSongMutation.mutate(song.id)}
+                                        className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="md:col-span-3">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Music className="h-5 w-5" />
+                      Set Song of the Week
+                    </CardTitle>
+                    <CardDescription>Feature a song on the homepage</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <SetSongOfWeek />
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            
+            {/* Blogs Tab */}
+            <TabsContent value="blogs">
+              <BlogTab />
+            </TabsContent>
+            
+            {/* Polls Tab */}
+            <TabsContent value="polls">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Add more poll content here */}
+              </div>
+            </TabsContent>
+            
+            {/* Messages Tab */}
+            <TabsContent value="messages">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Add more messages content here */}
+              </div>
+            </TabsContent>
+            
+            {/* Feedback Tab */}
+            <TabsContent value="feedback">
+              <FeedbackTab />
+            </TabsContent>
+          </Tabs>
+        </motion.div>
+      </div>
+    </Layout>
+  );
+};
+
+// Export the main Admin component
+const Admin: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <AdminLogin />;
+  }
+  
+  return <AdminDashboard />;
+};
+
+export default Admin;
