@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BarChart, ChartContainer, ChartBars, ChartBar } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart3, Info } from 'lucide-react';
 import {
@@ -20,6 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Skeleton } from '@/components/ui/skeleton';
+import * as RechartsPrimitive from "recharts";
 
 interface ViewStats {
   date: string;
@@ -203,12 +204,41 @@ const VisitorStats: React.FC = () => {
         {viewStats.length > 0 ? (
           <div className="space-y-6">
             <div className="h-[200px] w-full">
-              <ChartContainer>
-                <BarChart
+              <ChartContainer config={{
+                views: { color: "#0ea5e9" }
+              }}>
+                <RechartsPrimitive.BarChart
                   data={chartData}
-                  yAxisWidth={30}
-                  showAnimation={true}
-                />
+                  margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
+                >
+                  <RechartsPrimitive.CartesianGrid strokeDasharray="3 3" />
+                  <RechartsPrimitive.XAxis dataKey="name" />
+                  <RechartsPrimitive.YAxis />
+                  <RechartsPrimitive.Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="rounded-lg border bg-background p-2 shadow-sm">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="flex flex-col">
+                                <span className="text-xs text-muted-foreground">Date</span>
+                                <span className="font-bold text-xs">
+                                  {payload[0].payload.name}
+                                </span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-xs text-muted-foreground">Views</span>
+                                <span className="font-bold text-xs">{payload[0].value}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      }
+                      return null
+                    }}
+                  />
+                  <RechartsPrimitive.Bar dataKey="value" fill="var(--color-views)" radius={[4, 4, 0, 0]} />
+                </RechartsPrimitive.BarChart>
               </ChartContainer>
             </div>
             
