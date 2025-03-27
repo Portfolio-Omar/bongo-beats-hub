@@ -24,6 +24,7 @@ interface SongOfWeek {
   id: string;
   song_id: string;
   active: boolean;
+  feature_date: string; // This property was missing from the interface
 }
 
 interface ViewStats {
