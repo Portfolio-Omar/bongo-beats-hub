@@ -13,6 +13,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Song {
   id: string;
@@ -39,6 +48,7 @@ const SetSongOfWeek: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [viewStats, setViewStats] = useState<ViewStats[]>([]);
   const [showStats, setShowStats] = useState(false);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
   
   useEffect(() => {
     fetchSongs();
@@ -93,15 +103,17 @@ const SetSongOfWeek: React.FC = () => {
   
   const fetchViewStats = async (songId: string) => {
     try {
+      setIsLoadingStats(true);
       const { data, error } = await supabase
         .from('song_view_stats')
         .select('view_date, view_count')
         .eq('song_id', songId)
         .order('view_date', { ascending: false })
-        .limit(7);
+        .limit(14); // Increased from 7 to 14 days for better insight
         
       if (error) {
         console.error('Error fetching view stats:', error);
+        setIsLoadingStats(false);
         return;
       }
       
@@ -111,8 +123,10 @@ const SetSongOfWeek: React.FC = () => {
       }));
       
       setViewStats(formattedStats);
+      setIsLoadingStats(false);
     } catch (error) {
       console.error('Error in fetchViewStats:', error);
+      setIsLoadingStats(false);
     }
   };
   
@@ -172,6 +186,9 @@ const SetSongOfWeek: React.FC = () => {
     }
   };
   
+  // Calculate total views
+  const totalViews = viewStats.reduce((sum, stat) => sum + stat.count, 0);
+  
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -200,6 +217,11 @@ const SetSongOfWeek: React.FC = () => {
             <p className="text-xs text-muted-foreground mt-1">
               Featured since: {new Date(currentFeatured.feature_date).toLocaleDateString()}
             </p>
+            {totalViews > 0 && (
+              <p className="text-xs font-medium text-green-600 mt-1">
+                Total Views: {totalViews}
+              </p>
+            )}
           </div>
           <TooltipProvider>
             <Tooltip>
@@ -216,20 +238,50 @@ const SetSongOfWeek: React.FC = () => {
         </div>
       )}
       
-      {showStats && viewStats.length > 0 && (
+      {showStats && (
         <div className="p-4 bg-muted/50 border rounded-md">
-          <h3 className="text-sm font-medium mb-2">View Statistics (Last 7 days)</h3>
-          <div className="space-y-2">
-            {viewStats.map((stat, index) => (
-              <div key={index} className="flex justify-between items-center text-sm">
-                <span>{stat.date}</span>
-                <span className="font-medium">{stat.count} views</span>
+          <h3 className="text-sm font-medium mb-3">Visitor Statistics (Last 14 days)</h3>
+          
+          {isLoadingStats ? (
+            <div className="flex justify-center py-4">
+              <p className="text-sm text-muted-foreground">Loading statistics...</p>
+            </div>
+          ) : viewStats.length > 0 ? (
+            <Table>
+              <TableCaption>Song views by day</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Views</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {viewStats.map((stat, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{stat.date}</TableCell>
+                    <TableCell className="text-right font-medium">{stat.count}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground">No view data available yet</p>
+              <p className="text-xs text-muted-foreground mt-1">Views will be recorded when visitors access the Song of the Week</p>
+            </div>
+          )}
+          
+          {viewStats.length > 0 && (
+            <div className="mt-4 pt-3 border-t">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Total Views:</span>
+                <span className="text-sm font-bold">{totalViews}</span>
               </div>
-            ))}
-            {viewStats.length === 0 && (
-              <p className="text-xs text-muted-foreground">No view data available</p>
-            )}
-          </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Note: Each page load counts as one view. These statistics help track engagement with your featured song.
+              </p>
+            </div>
+          )}
         </div>
       )}
       
