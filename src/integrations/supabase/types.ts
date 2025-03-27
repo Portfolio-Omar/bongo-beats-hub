@@ -260,6 +260,35 @@ export type Database = {
           },
         ]
       }
+      song_view_stats: {
+        Row: {
+          id: string
+          song_id: string
+          view_count: number
+          view_date: string
+        }
+        Insert: {
+          id?: string
+          song_id: string
+          view_count?: number
+          view_date?: string
+        }
+        Update: {
+          id?: string
+          song_id?: string
+          view_count?: number
+          view_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_view_stats_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       songs: {
         Row: {
           artist: string
@@ -319,6 +348,13 @@ export type Database = {
           title: string
         }
         Returns: string
+      }
+      increment_song_view: {
+        Args: {
+          _song_id: string
+          _view_date?: string
+        }
+        Returns: undefined
       }
       is_admin: {
         Args: {
