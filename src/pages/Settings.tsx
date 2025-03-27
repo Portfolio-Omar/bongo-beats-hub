@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Toggle } from '@/components/ui/toggle';
+import VisitorStats from '@/components/settings/VisitorStats';
 
 const Settings = () => {
   const { isAuthenticated } = useAuth();
@@ -75,6 +76,11 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Visitor Statistics - Only visible for authenticated users */}
+          {isAuthenticated && (
+            <VisitorStats />
+          )}
 
           {/* Admin Panel Access - Only visible for authenticated users */}
           {isAuthenticated && (
