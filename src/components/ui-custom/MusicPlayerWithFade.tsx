@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, 
@@ -26,7 +27,6 @@ interface MusicPlayerWithFadeProps {
   onPlayNext?: () => void;
   onPlayPrevious?: () => void;
   onSongEnd?: () => void;
-  muted?: boolean;
 }
 
 const MusicPlayerWithFade: React.FC<MusicPlayerWithFadeProps> = ({ 
@@ -34,24 +34,19 @@ const MusicPlayerWithFade: React.FC<MusicPlayerWithFadeProps> = ({
   songs = [], 
   onPlayNext, 
   onPlayPrevious, 
-  onSongEnd,
-  muted = false
+  onSongEnd 
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(0.7);
-  const [isMuted, setIsMuted] = useState(muted);
+  const [isMuted, setIsMuted] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [prevVolume, setPrevVolume] = useState(0.7);
   const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
   const [isShuffleEnabled, setIsShuffleEnabled] = useState(false);
   const [isFading, setIsFading] = useState(false);
   const [nextSong, setNextSong] = useState<typeof song | null>(null);
-  
-  useEffect(() => {
-    setIsMuted(muted);
-  }, [muted]);
   
   const audioRef = useRef<HTMLAudioElement>(null);
   const fadeIntervalRef = useRef<number | null>(null);
@@ -62,6 +57,7 @@ const MusicPlayerWithFade: React.FC<MusicPlayerWithFadeProps> = ({
 
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
+      // Auto-play when a new song is loaded with fade in
       if (song) {
         audio.volume = 0;
         audio.play().catch(err => console.error("Could not autoplay:", err));
@@ -73,7 +69,9 @@ const MusicPlayerWithFade: React.FC<MusicPlayerWithFadeProps> = ({
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
       
+      // Start fade out when approaching the end (5 seconds before)
       if (duration > 0 && audio.currentTime > duration - 5 && !isFading) {
+        // Only fade out if we're going to play another song automatically
         if (isRepeatEnabled || onSongEnd) {
           fadeOut();
         }
@@ -85,11 +83,13 @@ const MusicPlayerWithFade: React.FC<MusicPlayerWithFadeProps> = ({
       setCurrentTime(0);
       
       if (isRepeatEnabled) {
+        // Replay the current song with fade effect
         audio.currentTime = 0;
         fadeIn();
         audio.play().catch(err => console.error("Could not replay:", err));
         setIsPlaying(true);
       } else if (onSongEnd) {
+        // Move to the next song
         onSongEnd();
       }
     };
@@ -180,9 +180,12 @@ const MusicPlayerWithFade: React.FC<MusicPlayerWithFadeProps> = ({
     if (!audio) return;
     
     if (!isPlaying) {
+      // Fade in when starting playback
       fadeIn();
     } else {
+      // Fade out when pausing
       fadeOut();
+      // We need to actually pause after the fade completes
       setTimeout(() => {
         if (audio) audio.pause();
       }, 1000);
@@ -193,9 +196,11 @@ const MusicPlayerWithFade: React.FC<MusicPlayerWithFadeProps> = ({
   
   const toggleMute = () => {
     if (isMuted) {
+      // Unmuting - restore previous volume with fade
       setIsMuted(false);
       fadeIn();
     } else {
+      // Muting - fade out then mute
       setPrevVolume(volume);
       fadeOut();
       setIsMuted(true);
@@ -236,10 +241,12 @@ const MusicPlayerWithFade: React.FC<MusicPlayerWithFadeProps> = ({
     const audio = audioRef.current;
     if (!audio) return;
     
+    // Apply volume change with a small fade effect
     if (isMuted && newVolume > 0) {
       setIsMuted(false);
       fadeIn();
     } else if (!isMuted) {
+      // Apply the new volume with a mini-fade
       let currentVol = audio.volume;
       const step = (newVolume - currentVol) / 5;
       
@@ -258,7 +265,10 @@ const MusicPlayerWithFade: React.FC<MusicPlayerWithFadeProps> = ({
   };
   
   const handleSkip = (direction: 'next' | 'previous') => {
+    // Fade out current song
     fadeOut();
+    
+    // Give time for fade out before changing
     setTimeout(() => {
       if (direction === 'next') {
         if (onPlayNext) {
@@ -295,6 +305,7 @@ const MusicPlayerWithFade: React.FC<MusicPlayerWithFadeProps> = ({
           transition={{ duration: 0.5 }}
           className="flex flex-col md:flex-row gap-6"
         >
+          {/* Album Art */}
           <div className="w-full md:w-48 h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0">
             <img 
               src={song.coverUrl} 
@@ -303,12 +314,14 @@ const MusicPlayerWithFade: React.FC<MusicPlayerWithFadeProps> = ({
             />
           </div>
           
+          {/* Player Controls */}
           <div className="flex flex-col justify-between flex-grow">
             <div>
               <h3 className="text-xl font-display font-semibold text-foreground mb-1">{song.title}</h3>
               <p className="text-sm text-muted-foreground mb-6">{song.artist}</p>
             </div>
             
+            {/* Time Slider */}
             <div className="mb-4">
               <Slider
                 value={[currentTime]}
@@ -323,6 +336,7 @@ const MusicPlayerWithFade: React.FC<MusicPlayerWithFadeProps> = ({
               </div>
             </div>
             
+            {/* Control Buttons */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Button

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import MusicPlayer from '@/components/ui-custom/MusicPlayer';
@@ -5,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
   Search, Music2, PlayCircle, Clock,
-  ChevronDown, Filter, Loader2, Download
+  ChevronDown, Filter, Loader2, Download, Edit
 } from 'lucide-react';
 import {
   Select,
@@ -20,6 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 
+// Define Song type for TypeScript
 interface Song {
   id: string;
   title: string;
@@ -36,8 +38,13 @@ const Music: React.FC = () => {
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [sortBy, setSortBy] = useState('title');
   const [filterGenre, setFilterGenre] = useState('all');
-  const [isShuffleEnabled, setIsShuffleEnabled] = useState(false);
+  const [editingSong, setEditingSong] = useState<Song | null>(null);
+  const [editedTitle, setEditedTitle] = useState('');
+  const [editedArtist, setEditedArtist] = useState('');
+  const [editedGenre, setEditedGenre] = useState('');
+  const [editedYear, setEditedYear] = useState('');
   
+  // Fetch songs from Supabase
   const { data: songs, isLoading, error, refetch } = useQuery({
     queryKey: ['songs'],
     queryFn: async () => {
@@ -55,16 +62,19 @@ const Music: React.FC = () => {
     }
   });
   
+  // Set first song as selected when data loads
   useEffect(() => {
     if (songs && songs.length > 0 && !selectedSong) {
       setSelectedSong(songs[0]);
     }
   }, [songs, selectedSong]);
   
+  // Extract unique genres for the filter
   const genres = songs 
     ? ['all', ...new Set(songs.filter(song => song.genre).map(song => song.genre as string))]
     : ['all'];
   
+  // Filter songs based on search query and genre
   const filteredSongs = songs ? songs.filter(song => {
     const matchesSearch = 
       song.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -73,6 +83,7 @@ const Music: React.FC = () => {
     return matchesSearch && matchesGenre;
   }) : [];
   
+  // Sort songs based on selected sort option
   const sortedSongs = [...filteredSongs].sort((a, b) => {
     if (sortBy === 'title') return a.title.localeCompare(b.title);
     if (sortBy === 'artist') return a.artist.localeCompare(b.artist);
@@ -80,8 +91,10 @@ const Music: React.FC = () => {
     return 0;
   });
 
+  // Handle download
   const handleDownload = (song: Song) => {
     try {
+      // Create an anchor element and set the href to the audio file
       const link = document.createElement('a');
       link.href = song.audio_url;
       link.download = `${song.title} - ${song.artist}.mp3`;
@@ -96,13 +109,62 @@ const Music: React.FC = () => {
     }
   };
   
+  // Edit song functionality
+  const handleEditClick = (song: Song, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingSong(song);
+    setEditedTitle(song.title);
+    setEditedArtist(song.artist);
+    setEditedGenre(song.genre || '');
+    setEditedYear(song.year || '');
+  };
+  
+  const handleSaveEdit = async () => {
+    if (!editingSong) return;
+    
+    try {
+      const { error } = await supabase
+        .from('songs')
+        .update({
+          title: editedTitle,
+          artist: editedArtist,
+          genre: editedGenre || null,
+          year: editedYear || null
+        })
+        .eq('id', editingSong.id);
+      
+      if (error) throw error;
+      
+      toast.success('Song updated successfully');
+      refetch();
+      setEditingSong(null);
+      
+      // Update selectedSong if it was the one being edited
+      if (selectedSong && selectedSong.id === editingSong.id) {
+        setSelectedSong({
+          ...selectedSong,
+          title: editedTitle,
+          artist: editedArtist,
+          genre: editedGenre || null,
+          year: editedYear || null
+        });
+      }
+    } catch (error) {
+      console.error('Error updating song:', error);
+      toast.error('Failed to update song');
+    }
+  };
+  
+  // Functions for playlist navigation
   const playNextSong = () => {
     if (!selectedSong || !sortedSongs.length) return;
     
     const currentIndex = sortedSongs.findIndex(song => song.id === selectedSong.id);
     let nextIndex;
     
+    // If shuffle is enabled, play a random song (we'll simulate shuffle here)
     if (isShuffleEnabled) {
+      // Get a random index different from the current one
       let randomIndex;
       do {
         randomIndex = Math.floor(Math.random() * sortedSongs.length);
@@ -110,6 +172,7 @@ const Music: React.FC = () => {
       
       nextIndex = randomIndex;
     } else {
+      // Otherwise, proceed to the next song or loop back to the first
       nextIndex = (currentIndex + 1) % sortedSongs.length;
     }
     
@@ -125,6 +188,10 @@ const Music: React.FC = () => {
     setSelectedSong(sortedSongs[previousIndex]);
   };
   
+  // State for shuffle functionality
+  const [isShuffleEnabled, setIsShuffleEnabled] = useState(false);
+  
+  // Toggle shuffle function to be passed to music player
   const toggleShuffle = () => {
     setIsShuffleEnabled(!isShuffleEnabled);
     toast.info(isShuffleEnabled ? 'Shuffle disabled' : 'Shuffle enabled');
@@ -157,6 +224,7 @@ const Music: React.FC = () => {
           </motion.p>
         </div>
         
+        {/* Music Player */}
         <motion.div 
           className="mb-16"
           initial={{ opacity: 0, y: 20 }}
@@ -192,6 +260,7 @@ const Music: React.FC = () => {
           )}
         </motion.div>
         
+        {/* Search and Filters */}
         <motion.div 
           className="mb-8 flex flex-col md:flex-row gap-4 justify-between"
           initial={{ opacity: 0, y: 20 }}
@@ -241,6 +310,7 @@ const Music: React.FC = () => {
           </div>
         </motion.div>
         
+        {/* Song List */}
         <motion.div
           className="space-y-4"
           initial={{ opacity: 0 }}
@@ -305,6 +375,14 @@ const Music: React.FC = () => {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-primary"
+                    onClick={(e) => handleEditClick(song, e)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-primary"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDownload(song);
@@ -324,6 +402,59 @@ const Music: React.FC = () => {
           )}
         </motion.div>
       </div>
+      
+      {/* Edit Song Dialog */}
+      <Dialog open={!!editingSong} onOpenChange={(open) => !open && setEditingSong(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Song</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="title" className="text-sm font-medium">Title</label>
+              <Input
+                id="title"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                placeholder="Song title"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="artist" className="text-sm font-medium">Artist</label>
+              <Input
+                id="artist"
+                value={editedArtist}
+                onChange={(e) => setEditedArtist(e.target.value)}
+                placeholder="Artist name"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="genre" className="text-sm font-medium">Genre</label>
+              <Input
+                id="genre"
+                value={editedGenre}
+                onChange={(e) => setEditedGenre(e.target.value)}
+                placeholder="Genre"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="year" className="text-sm font-medium">Year</label>
+              <Input
+                id="year"
+                value={editedYear}
+                onChange={(e) => setEditedYear(e.target.value)}
+                placeholder="Year"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleSaveEdit}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
