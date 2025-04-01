@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -34,6 +33,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import FeedbackTab from '@/components/admin/FeedbackTab';
 import BlogTab from '@/components/admin/BlogTab';
 import SetSongOfWeek from '@/components/admin/SetSongOfWeek';
+import BatchUploadSongs from '@/components/admin/BatchUploadSongs';
 
 interface SongType {
   id: string;
@@ -74,7 +74,6 @@ interface MessageType {
   read: boolean;
 }
 
-// Admin Login Component
 const AdminLogin: React.FC = () => {
   const [pin, setPin] = useState('');
   const { authenticateAdmin } = useAuth();
@@ -154,12 +153,10 @@ const AdminLogin: React.FC = () => {
   );
 };
 
-// Admin Dashboard Component
 const AdminDashboard: React.FC = () => {
   const { logout } = useAuth();
   const queryClient = useQueryClient();
   
-  // New item states
   const [newSong, setNewSong] = useState<Partial<SongType>>({ 
     title: '', 
     artist: '', 
@@ -177,16 +174,13 @@ const AdminDashboard: React.FC = () => {
     status: 'draft'
   });
   
-  // Selected item states
   const [selectedMessage, setSelectedMessage] = useState<MessageType | null>(null);
   
-  // File upload state
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
-  // Fetch songs from Supabase
   const { data: songs = [], isLoading: loadingSongs, refetch: refetchSongs } = useQuery({
     queryKey: ['admin-songs'],
     queryFn: async () => {
@@ -204,7 +198,6 @@ const AdminDashboard: React.FC = () => {
     }
   });
   
-  // Fetch blogs from Supabase
   const { data: blogs = [], isLoading: loadingBlogs, refetch: refetchBlogs } = useQuery({
     queryKey: ['admin-blogs'],
     queryFn: async () => {
@@ -222,7 +215,6 @@ const AdminDashboard: React.FC = () => {
     }
   });
   
-  // Fetch polls from Supabase
   const { data: polls = [], isLoading: loadingPolls, refetch: refetchPolls } = useQuery({
     queryKey: ['admin-polls'],
     queryFn: async () => {
@@ -255,7 +247,6 @@ const AdminDashboard: React.FC = () => {
     }
   });
   
-  // Fetch messages from Supabase
   const { data: messages = [], isLoading: loadingMessages, refetch: refetchMessages } = useQuery({
     queryKey: ['admin-messages'],
     queryFn: async () => {
@@ -273,17 +264,14 @@ const AdminDashboard: React.FC = () => {
     }
   });
   
-  // Delete song mutation
   const deleteSongMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Get the song to find audio and cover URLs
       const { data: song } = await supabase
         .from('songs')
         .select('audio_url, cover_url')
         .eq('id', id)
         .single();
         
-      // Delete from storage if files exist
       if (song) {
         if (song.audio_url) {
           const audioPath = song.audio_url.split('/').pop();
@@ -300,7 +288,6 @@ const AdminDashboard: React.FC = () => {
         }
       }
       
-      // Delete the song record
       const { error } = await supabase
         .from('songs')
         .delete()
@@ -318,7 +305,6 @@ const AdminDashboard: React.FC = () => {
     }
   });
   
-  // Toggle song publish status mutation
   const toggleSongPublishStatusMutation = useMutation({
     mutationFn: async ({ id, published }: { id: string, published: boolean }) => {
       const { error } = await supabase
@@ -338,7 +324,6 @@ const AdminDashboard: React.FC = () => {
     }
   });
   
-  // Delete blog mutation
   const deleteBlogMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -358,7 +343,6 @@ const AdminDashboard: React.FC = () => {
     }
   });
   
-  // Publish blog mutation
   const publishBlogMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -378,7 +362,6 @@ const AdminDashboard: React.FC = () => {
     }
   });
   
-  // Delete poll mutation
   const deletePollMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -398,7 +381,6 @@ const AdminDashboard: React.FC = () => {
     }
   });
   
-  // Mark message as read mutation
   const markMessageAsReadMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -416,7 +398,6 @@ const AdminDashboard: React.FC = () => {
     }
   });
   
-  // Delete message mutation
   const deleteMessageMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -437,7 +418,6 @@ const AdminDashboard: React.FC = () => {
     }
   });
   
-  // Handle song upload
   const handleSongUpload = async () => {
     if (!newSong.title || !newSong.artist) {
       toast.error('Please provide at least a title and artist');
@@ -453,7 +433,6 @@ const AdminDashboard: React.FC = () => {
       setUploading(true);
       setUploadProgress(0);
       
-      // Start progress simulation
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => {
           if (prev >= 90) {
@@ -465,7 +444,6 @@ const AdminDashboard: React.FC = () => {
       }, 300);
       
       console.log('Uploading audio file:', audioFile.name);
-      // Upload audio file to Supabase Storage
       const audioFileName = `${Date.now()}-${audioFile.name}`;
       const { data: audioData, error: audioError } = await supabase
         .storage
@@ -482,7 +460,6 @@ const AdminDashboard: React.FC = () => {
       
       console.log('Audio uploaded successfully:', audioData);
       
-      // Get public URL for audio
       const { data: audioUrl } = supabase
         .storage
         .from('music')
@@ -490,7 +467,6 @@ const AdminDashboard: React.FC = () => {
         
       console.log('Audio URL:', audioUrl);
       
-      // Upload cover image if provided
       let coverUrl = null;
       if (coverFile) {
         console.log('Uploading cover file:', coverFile.name);
@@ -518,7 +494,6 @@ const AdminDashboard: React.FC = () => {
       }
       
       console.log('Saving song data to database');
-      // Save song data to Supabase
       const { data, error } = await supabase
         .from('songs')
         .insert({
@@ -528,7 +503,7 @@ const AdminDashboard: React.FC = () => {
           year: newSong.year || null,
           cover_url: coverUrl,
           audio_url: audioUrl.publicUrl,
-          duration: '00:00', // This would ideally be calculated from the audio file
+          duration: '00:00',
           published: newSong.published || false
         });
         
@@ -539,11 +514,9 @@ const AdminDashboard: React.FC = () => {
       
       console.log('Song saved successfully:', data);
       
-      // Set progress to 100% and clear interval
       clearInterval(progressInterval);
       setUploadProgress(100);
       
-      // Reset form after a short delay
       setTimeout(() => {
         setNewSong({ title: '', artist: '', genre: '', year: '', published: false });
         setAudioFile(null);
@@ -561,7 +534,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
   
-  // Handle blog create/publish
   const handleSaveBlog = async (status: 'draft' | 'published') => {
     if (!newBlog.title || !newBlog.content) {
       toast.error('Please provide a title and content');
@@ -592,14 +564,12 @@ const AdminDashboard: React.FC = () => {
     }
   };
   
-  // Handle poll option change
   const handlePollOptionChange = (index: number, value: string) => {
     const updatedOptions = [...(newPoll.options || [])];
     updatedOptions[index] = value;
     setNewPoll({ ...newPoll, options: updatedOptions });
   };
   
-  // Handle add poll option
   const handleAddPollOption = () => {
     if ((newPoll.options?.length || 0) >= 6) {
       toast.error('Maximum 6 options allowed');
@@ -611,7 +581,6 @@ const AdminDashboard: React.FC = () => {
     });
   };
   
-  // Handle remove poll option
   const handleRemovePollOption = (index: number) => {
     if ((newPoll.options?.length || 0) <= 2) {
       toast.error('Minimum 2 options required');
@@ -622,7 +591,6 @@ const AdminDashboard: React.FC = () => {
     setNewPoll({ ...newPoll, options: updatedOptions });
   };
   
-  // Handle poll create
   const handleCreatePoll = async (status: 'draft' | 'scheduled') => {
     if (!newPoll.title || !newPoll.description || !newPoll.startDate || !newPoll.endDate) {
       toast.error('Please fill in all required fields');
@@ -635,7 +603,6 @@ const AdminDashboard: React.FC = () => {
     }
     
     try {
-      // Insert poll
       const { data: pollData, error: pollError } = await supabase
         .from('polls')
         .insert({
@@ -654,7 +621,6 @@ const AdminDashboard: React.FC = () => {
       if (pollData && pollData.length > 0) {
         const pollId = pollData[0].id;
         
-        // Insert poll options
         const options = (newPoll.options || []).filter(opt => opt.trim() !== '');
         const optionsToInsert = options.map(text => ({
           poll_id: pollId,
@@ -670,7 +636,6 @@ const AdminDashboard: React.FC = () => {
         }
       }
       
-      // Reset form
       setNewPoll({
         title: '',
         description: '',
@@ -689,11 +654,9 @@ const AdminDashboard: React.FC = () => {
     }
   };
   
-  // File input change handlers
   const handleAudioFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      // Check file size (10MB limit)
       if (file.size > 10 * 1024 * 1024) {
         toast.error('Audio file is too large. Maximum size is 10MB.');
         return;
@@ -705,7 +668,6 @@ const AdminDashboard: React.FC = () => {
   const handleCoverFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      // Check file size (2MB limit)
       if (file.size > 2 * 1024 * 1024) {
         toast.error('Cover image is too large. Maximum size is 2MB.');
         return;
@@ -714,7 +676,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
   
-  // Handle message click
   const handleMessageClick = (message: MessageType) => {
     setSelectedMessage(message);
     if (!message.read) {
@@ -722,7 +683,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
   
-  // Dashboard stats
   const stats = [
     { title: 'Total Songs', value: songs.length, icon: <Music className="h-5 w-5 text-primary" /> },
     { title: 'Published Blogs', value: blogs.filter(b => b.status === 'published').length, icon: <FileText className="h-5 w-5 text-primary" /> },
@@ -743,7 +703,6 @@ const AdminDashboard: React.FC = () => {
           <Button variant="outline" onClick={logout}>Logout</Button>
         </motion.div>
         
-        {/* Stats Cards */}
         <motion.div 
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
           initial={{ opacity: 0, y: 20 }}
@@ -765,7 +724,6 @@ const AdminDashboard: React.FC = () => {
           ))}
         </motion.div>
         
-        {/* Admin Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -795,269 +753,266 @@ const AdminDashboard: React.FC = () => {
               </TabsTrigger>
             </TabsList>
             
-            {/* Songs Tab */}
             <TabsContent value="songs">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Upload Form */}
-                <Card className="md:col-span-1">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Upload className="h-5 w-5" />
-                      Upload Song
-                    </CardTitle>
-                    <CardDescription>Add new songs to the platform</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="song-title">Title *</Label>
-                        <Input
-                          id="song-title"
-                          placeholder="Song title"
-                          value={newSong.title}
-                          onChange={(e) => setNewSong({ ...newSong, title: e.target.value })}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="song-artist">Artist *</Label>
-                        <Input
-                          id="song-artist"
-                          placeholder="Artist name"
-                          value={newSong.artist}
-                          onChange={(e) => setNewSong({ ...newSong, artist: e.target.value })}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="song-genre">Genre</Label>
-                        <Input
-                          id="song-genre"
-                          placeholder="Genre"
-                          value={newSong.genre || ''}
-                          onChange={(e) => setNewSong({ ...newSong, genre: e.target.value })}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="song-year">Year</Label>
-                        <Input
-                          id="song-year"
-                          placeholder="Year"
-                          value={newSong.year || ''}
-                          onChange={(e) => setNewSong({ ...newSong, year: e.target.value })}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="audio-file">Audio File * (Max 10MB)</Label>
-                        <div className="flex items-center justify-center w-full">
-                          <label
-                            htmlFor="audio-file"
-                            className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/50 hover:bg-secondary border-border"
-                          >
-                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                              <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
-                              <p className="mb-2 text-sm text-muted-foreground">
-                                <span className="font-semibold">Click to upload</span> or drag and drop
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                MP3, WAV, OGG, or FLAC (MAX. 10MB)
-                              </p>
-                            </div>
-                            <Input
-                              id="audio-file"
-                              type="file"
-                              accept="audio/*"
-                              className="hidden"
-                              onChange={handleAudioFileChange}
-                            />
-                          </label>
-                        </div>
-                        {audioFile && (
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Selected file: {audioFile.name} ({(audioFile.size / (1024 * 1024)).toFixed(2)} MB)
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="cover-file">Cover Image (Optional, Max 2MB)</Label>
-                        <div className="flex items-center justify-center w-full">
-                          <label
-                            htmlFor="cover-file"
-                            className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/50 hover:bg-secondary border-border"
-                          >
-                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                              <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
-                              <p className="mb-2 text-sm text-muted-foreground">
-                                <span className="font-semibold">Click to upload</span> or drag and drop
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                JPG, PNG, or WEBP (MAX. 2MB)
-                              </p>
-                            </div>
-                            <Input
-                              id="cover-file"
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={handleCoverFileChange}
-                            />
-                          </label>
-                        </div>
-                        {coverFile && (
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Selected file: {coverFile.name} ({(coverFile.size / (1024 * 1024)).toFixed(2)} MB)
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="publish-now" 
-                          checked={newSong.published}
-                          onCheckedChange={(checked) => setNewSong({ ...newSong, published: checked as boolean })}
-                        />
-                        <Label htmlFor="publish-now">Publish immediately after upload</Label>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex flex-col">
-                    {uploadProgress > 0 && uploadProgress < 100 && (
-                      <div className="w-full mb-4">
-                        <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
-                          <div
-                            className="bg-primary h-full transition-all duration-300 ease-in-out"
-                            style={{ width: `${uploadProgress}%` }}
+              <div className="grid grid-cols-1 gap-8">
+                <BatchUploadSongs />
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <Card className="md:col-span-1">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Upload className="h-5 w-5" />
+                        Upload Single Song
+                      </CardTitle>
+                      <CardDescription>Add a single song to the platform</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="song-title">Title *</Label>
+                          <Input
+                            id="song-title"
+                            placeholder="Song title"
+                            value={newSong.title}
+                            onChange={(e) => setNewSong({ ...newSong, title: e.target.value })}
                           />
                         </div>
-                        <p className="text-xs text-center text-muted-foreground mt-1">
-                          Uploading... {uploadProgress}%
-                        </p>
-                      </div>
-                    )}
-                    
-                    <Button
-                      className="w-full"
-                      onClick={handleSongUpload}
-                      disabled={uploading || !newSong.title || !newSong.artist || !audioFile}
-                    >
-                      {uploading ? 'Uploading...' : 'Upload Song'}
-                    </Button>
-                  </CardFooter>
-                </Card>
-                
-                {/* Song List */}
-                <Card className="md:col-span-2">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <ListMusic className="h-5 w-5" />
-                      Manage Songs
-                    </CardTitle>
-                    <CardDescription>View and manage all songs on the platform</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {loadingSongs ? (
-                      <div className="flex justify-center items-center h-40">
-                        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-                      </div>
-                    ) : songs.length === 0 ? (
-                      <div className="text-center py-10 text-muted-foreground">
-                        <p>No songs found.</p>
-                        <p className="text-sm">Upload your first song to get started.</p>
-                      </div>
-                    ) : (
-                      <div className="rounded-md border">
-                        <div className="relative overflow-x-auto">
-                          <table className="w-full text-sm text-left">
-                            <thead className="text-xs uppercase bg-muted">
-                              <tr>
-                                <th scope="col" className="px-4 py-3">Title</th>
-                                <th scope="col" className="px-4 py-3">Artist</th>
-                                <th scope="col" className="px-4 py-3 hidden md:table-cell">Genre</th>
-                                <th scope="col" className="px-4 py-3 hidden lg:table-cell">Year</th>
-                                <th scope="col" className="px-4 py-3">Status</th>
-                                <th scope="col" className="px-4 py-3 text-right">Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {songs.map((song) => (
-                                <tr key={song.id} className="bg-card border-b border-border hover:bg-muted/50">
-                                  <td className="px-4 py-3 font-medium">{song.title}</td>
-                                  <td className="px-4 py-3">{song.artist}</td>
-                                  <td className="px-4 py-3 hidden md:table-cell">{song.genre || '-'}</td>
-                                  <td className="px-4 py-3 hidden lg:table-cell">{song.year || '-'}</td>
-                                  <td className="px-4 py-3">
-                                    <span className={`px-2 py-1 rounded-full text-xs ${song.published ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'}`}>
-                                      {song.published ? 'Published' : 'Draft'}
-                                    </span>
-                                  </td>
-                                  <td className="px-4 py-3 text-right">
-                                    <div className="flex justify-end gap-2">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => toggleSongPublishStatusMutation.mutate({ id: song.id, published: !song.published })}
-                                        className="hidden sm:inline-flex"
-                                      >
-                                        {song.published ? 'Unpublish' : 'Publish'}
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => deleteSongMutation.mutate(song.id)}
-                                        className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="song-artist">Artist *</Label>
+                          <Input
+                            id="song-artist"
+                            placeholder="Artist name"
+                            value={newSong.artist}
+                            onChange={(e) => setNewSong({ ...newSong, artist: e.target.value })}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="song-genre">Genre</Label>
+                          <Input
+                            id="song-genre"
+                            placeholder="Genre"
+                            value={newSong.genre || ''}
+                            onChange={(e) => setNewSong({ ...newSong, genre: e.target.value })}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="song-year">Year</Label>
+                          <Input
+                            id="song-year"
+                            placeholder="Year"
+                            value={newSong.year || ''}
+                            onChange={(e) => setNewSong({ ...newSong, year: e.target.value })}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="audio-file">Audio File * (Max 10MB)</Label>
+                          <div className="flex items-center justify-center w-full">
+                            <label
+                              htmlFor="audio-file"
+                              className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/50 hover:bg-secondary border-border"
+                            >
+                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
+                                <p className="mb-2 text-sm text-muted-foreground">
+                                  <span className="font-semibold">Click to upload</span> or drag and drop
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  MP3, WAV, OGG, or FLAC (MAX. 10MB)
+                                </p>
+                              </div>
+                              <Input
+                                id="audio-file"
+                                type="file"
+                                accept="audio/*"
+                                className="hidden"
+                                onChange={handleAudioFileChange}
+                              />
+                            </label>
+                          </div>
+                          {audioFile && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              Selected file: {audioFile.name} ({(audioFile.size / (1024 * 1024)).toFixed(2)} MB)
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="cover-file">Cover Image (Optional, Max 2MB)</Label>
+                          <div className="flex items-center justify-center w-full">
+                            <label
+                              htmlFor="cover-file"
+                              className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/50 hover:bg-secondary border-border"
+                            >
+                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
+                                <p className="mb-2 text-sm text-muted-foreground">
+                                  <span className="font-semibold">Click to upload</span> or drag and drop
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  JPG, PNG, or WEBP (MAX. 2MB)
+                                </p>
+                              </div>
+                              <Input
+                                id="cover-file"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleCoverFileChange}
+                              />
+                            </label>
+                          </div>
+                          {coverFile && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              Selected file: {coverFile.name} ({(coverFile.size / (1024 * 1024)).toFixed(2)} MB)
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="publish-now" 
+                            checked={newSong.published}
+                            onCheckedChange={(checked) => setNewSong({ ...newSong, published: checked as boolean })}
+                          />
+                          <Label htmlFor="publish-now">Publish immediately after upload</Label>
                         </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                    <CardFooter className="flex flex-col">
+                      {uploadProgress > 0 && uploadProgress < 100 && (
+                        <div className="w-full mb-4">
+                          <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                            <div
+                              className="bg-primary h-full transition-all duration-300 ease-in-out"
+                              style={{ width: `${uploadProgress}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-center text-muted-foreground mt-1">
+                            Uploading... {uploadProgress}%
+                          </p>
+                        </div>
+                      )}
+                      
+                      <Button
+                        className="w-full"
+                        onClick={handleSongUpload}
+                        disabled={uploading || !newSong.title || !newSong.artist || !audioFile}
+                      >
+                        {uploading ? 'Uploading...' : 'Upload Song'}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                  
+                  <Card className="md:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <ListMusic className="h-5 w-5" />
+                        Manage Songs
+                      </CardTitle>
+                      <CardDescription>View and manage all songs on the platform</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {loadingSongs ? (
+                        <div className="flex justify-center items-center h-40">
+                          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+                        </div>
+                      ) : songs.length === 0 ? (
+                        <div className="text-center py-10 text-muted-foreground">
+                          <p>No songs found.</p>
+                          <p className="text-sm">Upload your first song to get started.</p>
+                        </div>
+                      ) : (
+                        <div className="rounded-md border">
+                          <div className="relative overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                              <thead className="text-xs uppercase bg-muted">
+                                <tr>
+                                  <th scope="col" className="px-4 py-3">Title</th>
+                                  <th scope="col" className="px-4 py-3">Artist</th>
+                                  <th scope="col" className="px-4 py-3 hidden md:table-cell">Genre</th>
+                                  <th scope="col" className="px-4 py-3 hidden lg:table-cell">Year</th>
+                                  <th scope="col" className="px-4 py-3">Status</th>
+                                  <th scope="col" className="px-4 py-3 text-right">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {songs.map((song) => (
+                                  <tr key={song.id} className="bg-card border-b border-border hover:bg-muted/50">
+                                    <td className="px-4 py-3 font-medium">{song.title}</td>
+                                    <td className="px-4 py-3">{song.artist}</td>
+                                    <td className="px-4 py-3 hidden md:table-cell">{song.genre || '-'}</td>
+                                    <td className="px-4 py-3 hidden lg:table-cell">{song.year || '-'}</td>
+                                    <td className="px-4 py-3">
+                                      <span className={`px-2 py-1 rounded-full text-xs ${song.published ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'}`}>
+                                        {song.published ? 'Published' : 'Draft'}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-right">
+                                      <div className="flex justify-end gap-2">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => toggleSongPublishStatusMutation.mutate({ id: song.id, published: !song.published })}
+                                          className="hidden sm:inline-flex"
+                                        >
+                                          {song.published ? 'Unpublish' : 'Publish'}
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => deleteSongMutation.mutate(song.id)}
+                                          className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
 
-                <Card className="md:col-span-3">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Music className="h-5 w-5" />
-                      Set Song of the Week
-                    </CardTitle>
-                    <CardDescription>Feature a song on the homepage</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SetSongOfWeek />
-                  </CardContent>
-                </Card>
+                  <Card className="md:col-span-3">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Music className="h-5 w-5" />
+                        Set Song of the Week
+                      </CardTitle>
+                      <CardDescription>Feature a song on the homepage</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <SetSongOfWeek />
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             </TabsContent>
             
-            {/* Blogs Tab */}
             <TabsContent value="blogs">
               <BlogTab />
             </TabsContent>
             
-            {/* Polls Tab */}
             <TabsContent value="polls">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Add more poll content here */}
               </div>
             </TabsContent>
             
-            {/* Messages Tab */}
             <TabsContent value="messages">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Add more messages content here */}
               </div>
             </TabsContent>
             
-            {/* Feedback Tab */}
             <TabsContent value="feedback">
               <FeedbackTab />
             </TabsContent>
@@ -1068,7 +1023,6 @@ const AdminDashboard: React.FC = () => {
   );
 };
 
-// Export the main Admin component
 const Admin: React.FC = () => {
   const { isAuthenticated } = useAuth();
   

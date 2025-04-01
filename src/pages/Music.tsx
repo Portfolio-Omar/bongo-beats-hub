@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import MusicPlayer from '@/components/ui-custom/MusicPlayer';
@@ -5,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
   Search, Music2, PlayCircle, Clock,
-  ChevronDown, Filter, Loader2, Download
+  ChevronDown, Filter, Loader2, Download, Edit
 } from 'lucide-react';
 import {
   Select,
@@ -18,6 +19,7 @@ import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 
 // Define Song type for TypeScript
 interface Song {
@@ -36,9 +38,14 @@ const Music: React.FC = () => {
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [sortBy, setSortBy] = useState('title');
   const [filterGenre, setFilterGenre] = useState('all');
+  const [editingSong, setEditingSong] = useState<Song | null>(null);
+  const [editedTitle, setEditedTitle] = useState('');
+  const [editedArtist, setEditedArtist] = useState('');
+  const [editedGenre, setEditedGenre] = useState('');
+  const [editedYear, setEditedYear] = useState('');
   
   // Fetch songs from Supabase
-  const { data: songs, isLoading, error } = useQuery({
+  const { data: songs, isLoading, error, refetch } = useQuery({
     queryKey: ['songs'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -99,6 +106,52 @@ const Music: React.FC = () => {
     } catch (error) {
       console.error('Download error:', error);
       toast.error('Failed to download song');
+    }
+  };
+  
+  // Edit song functionality
+  const handleEditClick = (song: Song, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingSong(song);
+    setEditedTitle(song.title);
+    setEditedArtist(song.artist);
+    setEditedGenre(song.genre || '');
+    setEditedYear(song.year || '');
+  };
+  
+  const handleSaveEdit = async () => {
+    if (!editingSong) return;
+    
+    try {
+      const { error } = await supabase
+        .from('songs')
+        .update({
+          title: editedTitle,
+          artist: editedArtist,
+          genre: editedGenre || null,
+          year: editedYear || null
+        })
+        .eq('id', editingSong.id);
+      
+      if (error) throw error;
+      
+      toast.success('Song updated successfully');
+      refetch();
+      setEditingSong(null);
+      
+      // Update selectedSong if it was the one being edited
+      if (selectedSong && selectedSong.id === editingSong.id) {
+        setSelectedSong({
+          ...selectedSong,
+          title: editedTitle,
+          artist: editedArtist,
+          genre: editedGenre || null,
+          year: editedYear || null
+        });
+      }
+    } catch (error) {
+      console.error('Error updating song:', error);
+      toast.error('Failed to update song');
     }
   };
   
@@ -270,7 +323,7 @@ const Music: React.FC = () => {
             <div className="col-span-2">Artist</div>
             <div className="col-span-2">Genre</div>
             <div className="col-span-1">Duration</div>
-            <div className="col-span-1 text-right">Action</div>
+            <div className="col-span-1 text-right">Actions</div>
           </div>
           
           {isLoading ? (
@@ -317,7 +370,15 @@ const Music: React.FC = () => {
                 <div className="hidden md:block col-span-2 text-muted-foreground">{song.genre || '-'}</div>
                 <div className="hidden md:block col-span-1 text-muted-foreground">{song.duration || '--:--'}</div>
                 
-                <div className="hidden md:flex col-span-1 justify-end">
+                <div className="hidden md:flex col-span-1 justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-primary"
+                    onClick={(e) => handleEditClick(song, e)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -341,6 +402,59 @@ const Music: React.FC = () => {
           )}
         </motion.div>
       </div>
+      
+      {/* Edit Song Dialog */}
+      <Dialog open={!!editingSong} onOpenChange={(open) => !open && setEditingSong(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Song</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="title" className="text-sm font-medium">Title</label>
+              <Input
+                id="title"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                placeholder="Song title"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="artist" className="text-sm font-medium">Artist</label>
+              <Input
+                id="artist"
+                value={editedArtist}
+                onChange={(e) => setEditedArtist(e.target.value)}
+                placeholder="Artist name"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="genre" className="text-sm font-medium">Genre</label>
+              <Input
+                id="genre"
+                value={editedGenre}
+                onChange={(e) => setEditedGenre(e.target.value)}
+                placeholder="Genre"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="year" className="text-sm font-medium">Year</label>
+              <Input
+                id="year"
+                value={editedYear}
+                onChange={(e) => setEditedYear(e.target.value)}
+                placeholder="Year"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleSaveEdit}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
