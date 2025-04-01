@@ -343,11 +343,48 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      check_song_exists: {
+        Args: {
+          _title: string
+          _artist: string
+        }
+        Returns: boolean
+      }
       generate_slug: {
         Args: {
           title: string
         }
         Returns: string
+      }
+      gtrgm_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: {
+          "": unknown
+        }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
       }
       increment_song_view: {
         Args: {
@@ -361,6 +398,22 @@ export type Database = {
           pin: string
         }
         Returns: boolean
+      }
+      set_limit: {
+        Args: {
+          "": number
+        }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: {
+          "": string
+        }
+        Returns: string[]
       }
     }
     Enums: {

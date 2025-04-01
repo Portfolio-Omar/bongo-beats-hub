@@ -107,6 +107,26 @@ const BatchUploadSongs: React.FC = () => {
     });
   };
   
+  // Check if a song already exists
+  const checkSongExists = async (title: string, artist: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc('check_song_exists', {
+        _title: title,
+        _artist: artist
+      });
+      
+      if (error) {
+        console.error('Error checking if song exists:', error);
+        return false;
+      }
+      
+      return data as boolean;
+    } catch (error) {
+      console.error('Unexpected error checking if song exists:', error);
+      return false;
+    }
+  };
+  
   // Handle uploading all songs
   const handleUploadAll = async () => {
     if (songUploads.length === 0) {
@@ -125,6 +145,21 @@ const BatchUploadSongs: React.FC = () => {
     // Process uploads sequentially for better reliability
     for (let i = 0; i < songUploads.length; i++) {
       try {
+        // First check if a similar song already exists
+        const songExists = await checkSongExists(songUploads[i].title, songUploads[i].artist);
+        
+        if (songExists) {
+          setSongUploads(prev => {
+            const newUploads = [...prev];
+            newUploads[i] = {
+              ...newUploads[i],
+              error: 'A similar song already exists in the library'
+            };
+            return newUploads;
+          });
+          continue; // Skip this song and proceed to the next one
+        }
+        
         // Update progress for current upload
         setSongUploads(prev => {
           const newUploads = [...prev];
@@ -249,6 +284,7 @@ const BatchUploadSongs: React.FC = () => {
     
     // Check if all uploads were successful
     const failedUploads = songUploads.filter(song => song.error);
+    const skippedDuplicates = songUploads.filter(song => song.error && song.error.includes('already exists'));
     
     if (failedUploads.length === 0) {
       toast.success(`Successfully uploaded ${songUploads.length} songs`);
@@ -256,8 +292,12 @@ const BatchUploadSongs: React.FC = () => {
       setTimeout(() => {
         setSongUploads([]);
       }, 3000);
+    } else if (skippedDuplicates.length === failedUploads.length) {
+      toast.warning(`${skippedDuplicates.length} duplicate songs were skipped.`);
+      // Only remove successful uploads
+      setSongUploads(prev => prev.filter(song => song.error && song.error.includes('already exists')));
     } else {
-      toast.error(`${failedUploads.length} uploads failed. Please check the errors and try again.`);
+      toast.error(`${failedUploads.length - skippedDuplicates.length} uploads failed. Please check the errors and try again.`);
     }
   };
   

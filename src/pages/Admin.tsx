@@ -430,6 +430,19 @@ const AdminDashboard: React.FC = () => {
     }
     
     try {
+      // First check if a similar song already exists
+      const { data: songExists, error: checkError } = await supabase.rpc('check_song_exists', {
+        _title: newSong.title,
+        _artist: newSong.artist
+      });
+      
+      if (checkError) {
+        console.error('Error checking if song exists:', checkError);
+      } else if (songExists) {
+        toast.error('A similar song already exists in the library');
+        return;
+      }
+      
       setUploading(true);
       setUploadProgress(0);
       
