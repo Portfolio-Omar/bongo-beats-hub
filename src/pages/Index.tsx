@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import Hero from '@/components/ui-custom/Hero';
-import SongOfTheWeek from '@/components/ui-custom/SongOfTheWeek';
+import SongOfTheDay from '@/components/ui-custom/SongOfTheDay';
 import AdminPopup from '@/components/admin/AdminPopup';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,7 +15,7 @@ const Index: React.FC = () => {
     // to track the home page visit
     const trackHomePageVisit = async () => {
       try {
-        const { data: songOfWeekData, error: songOfWeekError } = await supabase
+        const { data: songOfDayData, error: songOfDayError } = await supabase
           .from('song_of_the_week')
           .select('song_id')
           .eq('active', true)
@@ -23,15 +23,15 @@ const Index: React.FC = () => {
           .limit(1)
           .maybeSingle();
           
-        if (songOfWeekError || !songOfWeekData) {
-          console.error('Error fetching song of the week for tracking:', songOfWeekError);
+        if (songOfDayError || !songOfDayData) {
+          console.error('Error fetching song of the day for tracking:', songOfDayError);
           return;
         }
         
         // Call the function to increment view count
         const { error: rpcError } = await supabase.rpc(
           'increment_song_view',
-          { _song_id: songOfWeekData.song_id }
+          { _song_id: songOfDayData.song_id }
         );
         
         if (rpcError) {
@@ -48,7 +48,7 @@ const Index: React.FC = () => {
   return (
     <Layout>
       <Hero />
-      <SongOfTheWeek />
+      <SongOfTheDay />
       {isAuthenticated && <AdminPopup delay={20000} />}
     </Layout>
   );

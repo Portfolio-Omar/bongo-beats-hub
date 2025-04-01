@@ -1,13 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Heart, MessageSquare, Share2, Play } from 'lucide-react';
+import { Heart, MessageSquare, Share2, Play, VolumeX, Volume2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
-import MusicPlayer from './MusicPlayer';
+import { motion, AnimatePresence } from 'framer-motion';
+import MusicPlayerWithFade from './MusicPlayerWithFade';
 
 interface Comment {
   id: string;
@@ -25,7 +26,7 @@ interface Song {
   id: string;
   title: string;
   artist: string;
-  cover_url: string;
+  cover_url: string | null;
   audio_url: string;
 }
 
@@ -39,6 +40,7 @@ const SongOfTheDay: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isPlayerVisible, setIsPlayerVisible] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
     fetchFeaturedSong();
@@ -47,85 +49,46 @@ const SongOfTheDay: React.FC = () => {
   const fetchFeaturedSong = async () => {
     try {
       setIsLoading(true);
-      
-      // Check if we already have a song of the day for today
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Get a random published song
-      const { data: publishedSongs, error: publishedSongsError } = await supabase
-        .from('songs')
-        .select('id')
-        .eq('published', true);
-        
-      if (publishedSongsError || !publishedSongs || publishedSongs.length === 0) {
-        console.error('Error fetching published songs:', publishedSongsError);
-        setIsLoading(false);
-        return;
-      }
-      
-      // Randomly select one of the published songs
-      const randomIndex = Math.floor(Math.random() * publishedSongs.length);
-      const randomSongId = publishedSongs[randomIndex].id;
-      
-      // Check if this song was already featured today
       const { data: songOfDayData, error: songOfDayError } = await supabase
-        .from('song_of_the_week')
-        .select('song_id')
-        .eq('feature_date', today)
-        .limit(1)
-        .maybeSingle();
-      
-      // If there's no song featured today, add the random song as today's featured song
-      if (!songOfDayData) {
-        // Deactivate all previously active songs
-        await supabase
-          .from('song_of_the_week')
-          .update({ active: false })
-          .eq('active', true);
-        
-        // Add the new song of the day
-        await supabase
-          .from('song_of_the_week')
-          .insert({
-            song_id: randomSongId,
-            active: true,
-            feature_date: today
-          });
-      }
-      
-      // Now get the active song
-      const { data: activeSongData, error: activeSongError } = await supabase
         .from('song_of_the_week')
         .select('song_id')
         .eq('active', true)
         .order('feature_date', { ascending: false })
         .limit(1)
         .single();
-        
-      if (activeSongError) {
-        console.error('Error fetching active song:', activeSongError);
-        setIsLoading(false);
-        return;
-      }
-      
-      const { data: songData, error: songError } = await supabase
-        .from('songs')
-        .select('id, title, artist, cover_url, audio_url')
-        .eq('id', activeSongData.song_id)
-        .single();
-        
-      if (songError) {
-        console.error('Error fetching song details:', songError);
-        setIsLoading(false);
-        return;
-      }
-        
-      setFeaturedSong(songData);
-      await fetchCommentsAndReactions(songData.id);
-      
-      // Track view count
-      if (songData.id) {
-        await supabase.rpc('increment_song_view', { _song_id: songData.id });
+
+      if (songOfDayError) {
+        console.error('Error fetching song of the day:', songOfDayError);
+        const { data: randomSong, error: randomSongError } = await supabase
+          .from('songs')
+          .select('id, title, artist, cover_url, audio_url')
+          .eq('published', true)
+          .limit(1)
+          .single();
+
+        if (randomSongError) {
+          console.error('Error fetching random song:', randomSongError);
+          setIsLoading(false);
+          return;
+        }
+
+        setFeaturedSong(randomSong);
+        await fetchCommentsAndReactions(randomSong.id);
+      } else {
+        const { data: songData, error: songError } = await supabase
+          .from('songs')
+          .select('id, title, artist, cover_url, audio_url')
+          .eq('id', songOfDayData.song_id)
+          .single();
+
+        if (songError) {
+          console.error('Error fetching song details:', songError);
+          setIsLoading(false);
+          return;
+        }
+
+        setFeaturedSong(songData);
+        await fetchCommentsAndReactions(songData.id);
       }
       
       setIsLoading(false);
@@ -242,6 +205,10 @@ const SongOfTheDay: React.FC = () => {
   const toggleMusicPlayer = () => {
     setIsPlayerVisible(!isPlayerVisible);
   };
+  
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+  };
 
   if (isLoading) {
     return (
@@ -270,8 +237,9 @@ const SongOfTheDay: React.FC = () => {
     >
       <h2 className="text-3xl font-bold text-center mb-8">Song of the Day</h2>
       
-      <Card className="shadow-lg border-accent/50">
-        <CardHeader className="pb-2">
+      <Card className="shadow-lg border-accent/50 overflow-hidden">
+        <CardHeader className="pb-2 relative">
+          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/10 to-background/0"></div>
           <div className="flex items-start gap-4">
             <div className="h-24 w-24 rounded-md overflow-hidden relative group">
               <img 
@@ -279,12 +247,13 @@ const SongOfTheDay: React.FC = () => {
                 alt={featuredSong.title} 
                 className="h-full w-full object-cover"
               />
-              <div 
+              <motion.div 
                 className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                whileHover={{ scale: 1.05 }}
                 onClick={toggleMusicPlayer}
               >
                 <Play className="h-12 w-12 text-white" />
-              </div>
+              </motion.div>
             </div>
             <div>
               <CardTitle className="text-xl">{featuredSong.title}</CardTitle>
@@ -329,26 +298,47 @@ const SongOfTheDay: React.FC = () => {
                   <Play className="h-5 w-5 mr-1" />
                   <span>Play</span>
                 </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="p-1 h-8"
+                  onClick={toggleMute}
+                >
+                  {isMuted ? 
+                    <VolumeX className="h-5 w-5" /> : 
+                    <Volume2 className="h-5 w-5" />
+                  }
+                </Button>
               </div>
             </div>
           </div>
         </CardHeader>
         
-        {isPlayerVisible && (
-          <CardContent className="pt-2 border-t border-border mt-3">
-            <div className="mt-4">
-              <MusicPlayer
-                song={{
-                  id: featuredSong.id,
-                  title: featuredSong.title,
-                  artist: featuredSong.artist,
-                  coverUrl: featuredSong.cover_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200&q=80',
-                  audioUrl: featuredSong.audio_url
-                }}
-              />
-            </div>
-          </CardContent>
-        )}
+        <AnimatePresence>
+          {isPlayerVisible && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <CardContent className="pt-2 border-t border-border mt-3">
+                <div className="mt-4">
+                  <MusicPlayerWithFade
+                    song={{
+                      id: featuredSong.id,
+                      title: featuredSong.title,
+                      artist: featuredSong.artist,
+                      coverUrl: featuredSong.cover_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200&q=80',
+                      audioUrl: featuredSong.audio_url
+                    }}
+                    muted={isMuted}
+                  />
+                </div>
+              </CardContent>
+            </motion.div>
+          )}
+        </AnimatePresence>
         
         <CardContent className={`pt-2 ${isPlayerVisible ? 'mt-4' : ''}`}>
           <div className="mt-4">
