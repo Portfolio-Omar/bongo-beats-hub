@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -6,7 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Upload, FileText, Trash2, Music, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, rpcFunctions } from '@/integrations/supabase/client';
 
 interface SongUpload {
   file: File;
@@ -26,24 +25,21 @@ const BatchUploadSongs: React.FC = () => {
   const [publishImmediately, setPublishImmediately] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   
-  // Handle adding new song files
   const handleAddSongs = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
     const newUploads: SongUpload[] = [];
     
     Array.from(e.target.files).forEach(file => {
-      // Check file size (10MB limit)
       if (file.size > 10 * 1024 * 1024) {
         toast.error(`${file.name} is too large. Maximum size is 10MB.`);
         return;
       }
       
-      // Try to extract title and artist from filename (format: Artist - Title.mp3)
       let title = '';
       let artist = '';
       
-      const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove file extension
+      const fileName = file.name.replace(/\.[^/.]+$/, "");
       const splitName = fileName.split(' - ');
       
       if (splitName.length >= 2) {
@@ -64,17 +60,14 @@ const BatchUploadSongs: React.FC = () => {
     
     setSongUploads(prev => [...prev, ...newUploads]);
     
-    // Reset the input value so the same files can be selected again
     e.target.value = '';
   };
   
-  // Handle attaching cover image to a song
   const handleAddCover = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
     const file = e.target.files[0];
     
-    // Check file size (2MB limit)
     if (file.size > 2 * 1024 * 1024) {
       toast.error('Cover image is too large. Maximum size is 2MB.');
       return;
@@ -89,16 +82,13 @@ const BatchUploadSongs: React.FC = () => {
       return newUploads;
     });
     
-    // Reset the input value so the same file can be selected again
     e.target.value = '';
   };
   
-  // Handle removing a song from the upload list
   const handleRemoveSong = (index: number) => {
     setSongUploads(prev => prev.filter((_, i) => i !== index));
   };
   
-  // Handle updating song metadata
   const handleSongMetadataChange = (index: number, field: keyof SongUpload, value: string) => {
     setSongUploads(prev => {
       const newUploads = [...prev];
@@ -107,27 +97,15 @@ const BatchUploadSongs: React.FC = () => {
     });
   };
   
-  // Check if a song already exists
   const checkSongExists = async (title: string, artist: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.rpc('check_song_exists', {
-        _title: title,
-        _artist: artist
-      });
-      
-      if (error) {
-        console.error('Error checking if song exists:', error);
-        return false;
-      }
-      
-      return data as boolean;
+      return await rpcFunctions.checkSongExists(title, artist);
     } catch (error) {
       console.error('Unexpected error checking if song exists:', error);
       return false;
     }
   };
   
-  // Handle uploading all songs
   const handleUploadAll = async () => {
     if (songUploads.length === 0) {
       toast.error('No songs to upload');
@@ -142,10 +120,8 @@ const BatchUploadSongs: React.FC = () => {
     
     setIsUploading(true);
     
-    // Process uploads sequentially for better reliability
     for (let i = 0; i < songUploads.length; i++) {
       try {
-        // First check if a similar song already exists
         const songExists = await checkSongExists(songUploads[i].title, songUploads[i].artist);
         
         if (songExists) {
@@ -157,10 +133,9 @@ const BatchUploadSongs: React.FC = () => {
             };
             return newUploads;
           });
-          continue; // Skip this song and proceed to the next one
+          continue;
         }
         
-        // Update progress for current upload
         setSongUploads(prev => {
           const newUploads = [...prev];
           newUploads[i] = {
@@ -171,7 +146,6 @@ const BatchUploadSongs: React.FC = () => {
           return newUploads;
         });
         
-        // Upload progress simulation
         const progressInterval = setInterval(() => {
           setSongUploads(prev => {
             const newUploads = [...prev];
@@ -187,7 +161,6 @@ const BatchUploadSongs: React.FC = () => {
           });
         }, 300);
         
-        // Upload audio file to Supabase Storage
         const audioFileName = `${Date.now()}-${songUploads[i].file.name}`;
         const { data: audioData, error: audioError } = await supabase
           .storage
@@ -201,13 +174,11 @@ const BatchUploadSongs: React.FC = () => {
           throw audioError;
         }
         
-        // Get public URL for audio
         const { data: audioUrl } = supabase
           .storage
           .from('music')
           .getPublicUrl(audioFileName);
           
-        // Upload cover image if provided
         let coverUrl = null;
         if (songUploads[i].coverFile) {
           const coverFileName = `${Date.now()}-${songUploads[i].coverFile.name}`;
@@ -231,7 +202,6 @@ const BatchUploadSongs: React.FC = () => {
           }
         }
         
-        // Save song data to Supabase
         const { data, error } = await supabase
           .from('songs')
           .insert({
@@ -241,7 +211,7 @@ const BatchUploadSongs: React.FC = () => {
             year: songUploads[i].year || null,
             cover_url: coverUrl,
             audio_url: audioUrl.publicUrl,
-            duration: '00:00', // This would ideally be calculated from the audio file
+            duration: '00:00',
             published: publishImmediately
           })
           .select();
@@ -252,7 +222,6 @@ const BatchUploadSongs: React.FC = () => {
         
         clearInterval(progressInterval);
         
-        // Update upload status to complete
         setSongUploads(prev => {
           const newUploads = [...prev];
           newUploads[i] = {
@@ -267,7 +236,6 @@ const BatchUploadSongs: React.FC = () => {
       } catch (error: any) {
         console.error(`Error uploading song ${i + 1}:`, error);
         
-        // Update upload status to error
         setSongUploads(prev => {
           const newUploads = [...prev];
           newUploads[i] = {
@@ -282,19 +250,16 @@ const BatchUploadSongs: React.FC = () => {
     
     setIsUploading(false);
     
-    // Check if all uploads were successful
     const failedUploads = songUploads.filter(song => song.error);
     const skippedDuplicates = songUploads.filter(song => song.error && song.error.includes('already exists'));
     
     if (failedUploads.length === 0) {
       toast.success(`Successfully uploaded ${songUploads.length} songs`);
-      // Clear all uploads after a short delay
       setTimeout(() => {
         setSongUploads([]);
       }, 3000);
     } else if (skippedDuplicates.length === failedUploads.length) {
       toast.warning(`${skippedDuplicates.length} duplicate songs were skipped.`);
-      // Only remove successful uploads
       setSongUploads(prev => prev.filter(song => song.error && song.error.includes('already exists')));
     } else {
       toast.error(`${failedUploads.length - skippedDuplicates.length} uploads failed. Please check the errors and try again.`);
@@ -313,7 +278,6 @@ const BatchUploadSongs: React.FC = () => {
       
       <CardContent>
         <div className="space-y-6">
-          {/* Song file input */}
           <div className="space-y-2">
             <Label htmlFor="audio-files">Audio Files (Max 10MB each)</Label>
             <div className="flex items-center justify-center w-full">
@@ -343,7 +307,6 @@ const BatchUploadSongs: React.FC = () => {
             </div>
           </div>
           
-          {/* List of songs to upload */}
           <div className="space-y-4">
             <h3 className="font-medium text-sm">Songs to Upload ({songUploads.length})</h3>
             
@@ -463,7 +426,6 @@ const BatchUploadSongs: React.FC = () => {
                       </div>
                     </div>
                     
-                    {/* Upload progress */}
                     {song.uploading && (
                       <div className="w-full mt-2">
                         <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
@@ -478,12 +440,10 @@ const BatchUploadSongs: React.FC = () => {
                       </div>
                     )}
                     
-                    {/* Error message */}
                     {song.error && (
                       <p className="text-sm text-destructive mt-2">{song.error}</p>
                     )}
                     
-                    {/* Success message */}
                     {song.progress === 100 && !song.error && (
                       <p className="text-sm text-green-600 dark:text-green-500 mt-2">Upload complete</p>
                     )}
@@ -493,7 +453,6 @@ const BatchUploadSongs: React.FC = () => {
             )}
           </div>
           
-          {/* Publish option */}
           {songUploads.length > 0 && (
             <div className="flex items-center space-x-2">
               <Checkbox 

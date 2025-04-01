@@ -19,3 +19,13 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     }
   }
 });
+
+// Add explicitly typed functions for RPC calls to ensure TypeScript correctly recognizes them
+export const rpcFunctions = {
+  checkSongExists: (title: string, artist: string) => 
+    supabase.rpc('check_song_exists', { _title: title, _artist: artist })
+      .then(result => {
+        if (result.error) throw result.error;
+        return result.data as boolean;
+      })
+};

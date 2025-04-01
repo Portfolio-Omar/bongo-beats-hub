@@ -28,7 +28,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, rpcFunctions } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import FeedbackTab from '@/components/admin/FeedbackTab';
 import BlogTab from '@/components/admin/BlogTab';
@@ -430,15 +430,9 @@ const AdminDashboard: React.FC = () => {
     }
     
     try {
-      // First check if a similar song already exists
-      const { data: songExists, error: checkError } = await supabase.rpc('check_song_exists', {
-        _title: newSong.title,
-        _artist: newSong.artist
-      });
+      const songExists = await rpcFunctions.checkSongExists(newSong.title, newSong.artist);
       
-      if (checkError) {
-        console.error('Error checking if song exists:', checkError);
-      } else if (songExists) {
+      if (songExists) {
         toast.error('A similar song already exists in the library');
         return;
       }
