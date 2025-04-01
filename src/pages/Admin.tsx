@@ -32,7 +32,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import FeedbackTab from '@/components/admin/FeedbackTab';
 import BlogTab from '@/components/admin/BlogTab';
-import AutomaticSongRotation from '@/components/admin/AutomaticSongRotation';
+import SetSongOfWeek from '@/components/admin/SetSongOfWeek';
 import BatchUploadSongs from '@/components/admin/BatchUploadSongs';
 
 interface SongType {
@@ -985,12 +985,12 @@ const AdminDashboard: React.FC = () => {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Music className="h-5 w-5" />
-                        Song of the Day
+                        Set Song of the Week
                       </CardTitle>
-                      <CardDescription>View statistics for the featured song</CardDescription>
+                      <CardDescription>Feature a song on the homepage</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <AutomaticSongRotation />
+                      <SetSongOfWeek />
                     </CardContent>
                   </Card>
                 </div>

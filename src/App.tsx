@@ -16,7 +16,6 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import MobileMenu from "./pages/MobileMenu";
 import Blog from "./pages/Blog";
-import SongOfTheDay from './components/ui-custom/SongOfTheDay';
 
 const queryClient = new QueryClient();
 
