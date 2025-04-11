@@ -27,5 +27,7 @@ export const rpcFunctions = {
       .then(result => {
         if (result.error) throw result.error;
         return result.data as boolean;
-      })
-};
+      }),
+  incrementSongView: (songId: string) =>
+    supabase.rpc('increment_song_view', { _song_id: songId })
+}

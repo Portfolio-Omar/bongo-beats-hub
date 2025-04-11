@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import MusicPlayer from '@/components/ui-custom/MusicPlayer';
@@ -6,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
   Search, Music2, PlayCircle, Clock,
-  ChevronDown, Filter, Loader2, Download, Edit
+  ChevronDown, Filter, Loader2, Download, Heart
 } from 'lucide-react';
 import {
   Select,
@@ -31,6 +30,7 @@ interface Song {
   year: string | null;
   cover_url: string | null;
   audio_url: string;
+  download_count?: number;
 }
 
 const Music: React.FC = () => {
@@ -92,7 +92,8 @@ const Music: React.FC = () => {
   });
 
   // Handle download
-  const handleDownload = (song: Song) => {
+  const handleDownload = async (song: Song, e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       // Create an anchor element and set the href to the audio file
       const link = document.createElement('a');
@@ -101,6 +102,17 @@ const Music: React.FC = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      // Update download count in Supabase
+      const { error } = await supabase
+        .from('songs')
+        .update({ download_count: (song.download_count || 0) + 1 })
+        .eq('id', song.id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      refetch();
       
       toast.success(`Downloading ${song.title}`);
     } catch (error) {
@@ -203,7 +215,36 @@ const Music: React.FC = () => {
   
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-12 relative overflow-hidden">
+        {/* Animated background */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 to-secondary/5"></div>
+          <motion.div 
+            className="absolute top-1/2 left-1/4 w-96 h-96 rounded-full bg-primary/10 blur-3xl"
+            animate={{
+              x: [0, 30, 0, -30, 0],
+              y: [0, -30, 0, 30, 0],
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+              repeatType: "loop"
+            }}
+          />
+          <motion.div 
+            className="absolute bottom-1/3 right-1/4 w-64 h-64 rounded-full bg-secondary/10 blur-3xl"
+            animate={{
+              x: [0, -20, 0, 20, 0],
+              y: [0, 20, 0, -20, 0],
+            }}
+            transition={{
+              duration: 12,
+              repeat: Infinity,
+              repeatType: "loop"
+            }}
+          />
+        </div>
+
         <div className="text-center mb-12">
           <motion.h1 
             className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4"
@@ -238,14 +279,16 @@ const Music: React.FC = () => {
                 title: selectedSong.title,
                 artist: selectedSong.artist,
                 coverUrl: selectedSong.cover_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80',
-                audioUrl: selectedSong.audio_url
+                audioUrl: selectedSong.audio_url,
+                downloadCount: selectedSong.download_count || 0
               }}
               songs={sortedSongs.map(song => ({
                 id: song.id,
                 title: song.title,
                 artist: song.artist,
                 coverUrl: song.cover_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80',
-                audioUrl: song.audio_url
+                audioUrl: song.audio_url,
+                downloadCount: song.download_count || 0
               }))}
               onPlayNext={playNextSong}
               onPlayPrevious={playPreviousSong}
@@ -375,20 +418,11 @@ const Music: React.FC = () => {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-primary"
-                    onClick={(e) => handleEditClick(song, e)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDownload(song);
-                    }}
+                    onClick={(e) => handleDownload(song, e)}
+                    title={`Downloads: ${song.download_count || 0}`}
                   >
                     <Download className="h-4 w-4" />
+                    <span className="sr-only">Download ({song.download_count || 0})</span>
                   </Button>
                 </div>
               </motion.div>
@@ -403,7 +437,7 @@ const Music: React.FC = () => {
         </motion.div>
       </div>
       
-      {/* Edit Song Dialog */}
+      {/* Edit Song Dialog - We're keeping this, but it can only be accessed from Admin page now */}
       <Dialog open={!!editingSong} onOpenChange={(open) => !open && setEditingSong(null)}>
         <DialogContent>
           <DialogHeader>

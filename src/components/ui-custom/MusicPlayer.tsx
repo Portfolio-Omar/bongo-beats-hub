@@ -2,11 +2,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, 
-  Repeat, Shuffle, Share2, Heart
+  Repeat, Shuffle, Share2, Heart, Download
 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 
 interface MusicPlayerProps {
   song: {
@@ -15,6 +16,7 @@ interface MusicPlayerProps {
     artist: string;
     coverUrl: string;
     audioUrl: string;
+    downloadCount?: number;
   };
   songs?: Array<{
     id: string;
@@ -22,6 +24,7 @@ interface MusicPlayerProps {
     artist: string;
     coverUrl: string;
     audioUrl: string;
+    downloadCount?: number;
   }>;
   onPlayNext?: () => void;
   onPlayPrevious?: () => void;
@@ -174,12 +177,18 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song, songs = [], onPlayNext,
       <audio ref={audioRef} src={song.audioUrl} preload="metadata" />
       
       <div className="flex flex-col md:flex-row gap-6">
-        {/* Album Art */}
-        <div className="w-full md:w-48 h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0">
+        {/* Album Art with animated glow effect */}
+        <div className="w-full md:w-48 h-48 rounded-lg overflow-hidden shadow-md flex-shrink-0 relative group">
+          {isPlaying && (
+            <div className="absolute inset-0 z-0">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 animate-pulse"></div>
+              <div className="absolute inset-2 rounded-lg blur-md bg-gradient-to-br from-primary/20 to-secondary/20 animate-pulse"></div>
+            </div>
+          )}
           <img 
             src={song.coverUrl} 
             alt={`${song.title} cover`} 
-            className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
+            className="w-full h-full object-cover transition-transform duration-700 hover:scale-110 relative z-10"
           />
         </div>
         
@@ -261,14 +270,23 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ song, songs = [], onPlayNext,
             </div>
             
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`${isLiked ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
-                onClick={toggleLike}
-              >
-                <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-              </Button>
+              <div className="flex flex-col items-end">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`${isLiked ? 'text-red-500' : 'text-muted-foreground'} hover:text-red-500`}
+                  onClick={toggleLike}
+                >
+                  <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+                </Button>
+                
+                {song.downloadCount !== undefined && song.downloadCount > 0 && (
+                  <Badge variant="outline" className="text-[10px] px-2 py-0 h-4 flex items-center gap-0.5">
+                    <Download className="h-2 w-2" />
+                    {song.downloadCount}
+                  </Badge>
+                )}
+              </div>
               
               <Button
                 variant="ghost"
