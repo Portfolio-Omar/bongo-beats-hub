@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,12 @@ import SetSongOfWeek from '@/components/admin/SetSongOfWeek';
 import FeedbackTab from '@/components/admin/FeedbackTab';
 import BlogTab from '@/components/admin/BlogTab';
 import VideoMusicTab from '@/components/admin/VideoMusicTab';
+import BatchUploadSongs from '@/components/admin/BatchUploadSongs';
+import { motion } from 'framer-motion';
+import { 
+  Music, Video, FileText, MessageSquare, 
+  Star, Upload, Settings, LogOut
+} from 'lucide-react';
 
 const Admin: React.FC = () => {
   const { isAuthenticated, authenticateAdmin, logout } = useAuth();
@@ -31,12 +37,33 @@ const Admin: React.FC = () => {
     }
   };
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+
   return (
     <Layout>
       <div className="container py-12">
         {!isAuthenticated ? (
-          <div className="max-w-md mx-auto bg-card p-8 rounded-xl shadow-md">
-            <h2 className="text-2xl font-semibold mb-6 text-center">Admin Login</h2>
+          <motion.div 
+            className="max-w-md mx-auto bg-card p-8 rounded-xl shadow-md border border-border/40"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-2xl font-semibold mb-6 text-center text-gradient">Admin Login</h2>
             <div className="space-y-4">
               <div>
                 <Input
@@ -49,52 +76,137 @@ const Admin: React.FC = () => {
                       handleLogin();
                     }
                   }}
+                  className="transition-all duration-300 focus:ring-2 focus:ring-primary/50"
                 />
               </div>
-              <Button className="w-full" onClick={handleLogin}>
+              <Button 
+                className="w-full transition-all duration-300 hover:shadow-lg hover:shadow-primary/20" 
+                onClick={handleLogin}
+              >
                 Login
               </Button>
             </div>
-          </div>
+          </motion.div>
         ) : (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-              <Button variant="outline" onClick={logout}>Logout</Button>
-            </div>
+          <motion.div 
+            className="space-y-6"
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+          >
+            <motion.div 
+              className="flex justify-between items-center"
+              variants={itemVariants}
+            >
+              <h1 className="text-3xl font-bold text-gradient">Admin Dashboard</h1>
+              <Button 
+                variant="outline" 
+                onClick={logout}
+                className="flex items-center gap-2 hover:bg-destructive/10 hover:text-destructive transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            </motion.div>
             
-            <Tabs defaultValue="songs" className="space-y-6">
-              <div className="overflow-x-auto pb-2">
-                <TabsList>
-                  <TabsTrigger value="songs">Songs</TabsTrigger>
-                  <TabsTrigger value="videos">Music Videos</TabsTrigger>
-                  <TabsTrigger value="blog">Blog Posts</TabsTrigger>
-                  <TabsTrigger value="featured">Featured</TabsTrigger>
-                  <TabsTrigger value="feedback">Feedback</TabsTrigger>
-                </TabsList>
-              </div>
-              
-              <TabsContent value="songs" className="space-y-8">
-                <SetSongOfWeek />
-              </TabsContent>
-              
-              <TabsContent value="videos">
-                <VideoMusicTab />
-              </TabsContent>
-              
-              <TabsContent value="blog">
-                <BlogTab />
-              </TabsContent>
-              
-              <TabsContent value="featured">
-                <SetSongOfWeek />
-              </TabsContent>
-              
-              <TabsContent value="feedback">
-                <FeedbackTab />
-              </TabsContent>
-            </Tabs>
-          </div>
+            <motion.div 
+              className="p-1 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-lg"
+              variants={itemVariants}
+            >
+              <Tabs defaultValue="songs" className="bg-background rounded-md">
+                <div className="overflow-x-auto pb-2 pt-4 px-4">
+                  <TabsList className="h-12 bg-muted/80 backdrop-blur-sm">
+                    <TabsTrigger value="songs" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
+                      <Music className="h-4 w-4" />
+                      <span>Songs</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="videos" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
+                      <Video className="h-4 w-4" />
+                      <span>Music Videos</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="blog" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
+                      <FileText className="h-4 w-4" />
+                      <span>Blog Posts</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="featured" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
+                      <Star className="h-4 w-4" />
+                      <span>Featured</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="feedback" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Feedback</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="uploads" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
+                      <Upload className="h-4 w-4" />
+                      <span>Upload Songs</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+                
+                <div className="p-4">
+                  <TabsContent value="songs" className="space-y-8 mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <SetSongOfWeek />
+                    </motion.div>
+                  </TabsContent>
+                  
+                  <TabsContent value="videos" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <VideoMusicTab />
+                    </motion.div>
+                  </TabsContent>
+                  
+                  <TabsContent value="blog" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <BlogTab />
+                    </motion.div>
+                  </TabsContent>
+                  
+                  <TabsContent value="featured" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <SetSongOfWeek />
+                    </motion.div>
+                  </TabsContent>
+                  
+                  <TabsContent value="feedback" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <FeedbackTab />
+                    </motion.div>
+                  </TabsContent>
+                  
+                  <TabsContent value="uploads" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <BatchUploadSongs />
+                    </motion.div>
+                  </TabsContent>
+                </div>
+              </Tabs>
+            </motion.div>
+          </motion.div>
         )}
       </div>
     </Layout>
