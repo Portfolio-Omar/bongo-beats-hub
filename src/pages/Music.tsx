@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, rpcFunctions } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 
@@ -31,6 +31,8 @@ interface Song {
   cover_url: string | null;
   audio_url: string;
   download_count?: number;
+  published?: boolean;
+  created_at?: string;
 }
 
 const Music: React.FC = () => {
