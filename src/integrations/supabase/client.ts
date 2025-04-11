@@ -29,5 +29,7 @@ export const rpcFunctions = {
         return result.data as boolean;
       }),
   incrementSongView: (songId: string) =>
-    supabase.rpc('increment_song_view', { _song_id: songId })
+    supabase.rpc('increment_song_view', { _song_id: songId }),
+  incrementVideoView: (videoId: string) =>
+    supabase.rpc('increment_video_view', { _video_id: videoId })
 }

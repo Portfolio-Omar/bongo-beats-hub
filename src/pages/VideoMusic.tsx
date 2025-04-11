@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -6,18 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Search, Video, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, rpcFunctions } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-interface MusicVideo {
-  id: string;
-  title: string;
-  artist: string;
-  video_url: string;
-  thumbnail_url: string | null;
-  view_count: number;
-  created_at: string;
-}
+import { MusicVideo } from '@/types/music-videos';
 
 const VideoMusic: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,10 +67,7 @@ const VideoMusic: React.FC = () => {
   const handleVideoView = async (videoId: string) => {
     try {
       // Update view count in Supabase
-      const { error } = await supabase.rpc('increment_video_view', { _video_id: videoId });
-        
-      if (error) throw error;
-      
+      await rpcFunctions.incrementVideoView(videoId);
     } catch (error) {
       console.error('Error updating view count:', error);
       // Continue without showing error to user

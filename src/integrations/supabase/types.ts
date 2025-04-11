@@ -102,6 +102,39 @@ export type Database = {
         }
         Relationships: []
       }
+      music_videos: {
+        Row: {
+          artist: string
+          created_at: string
+          id: string
+          published: boolean | null
+          thumbnail_url: string | null
+          title: string
+          video_url: string
+          view_count: number | null
+        }
+        Insert: {
+          artist: string
+          created_at?: string
+          id?: string
+          published?: boolean | null
+          thumbnail_url?: string | null
+          title: string
+          video_url: string
+          view_count?: number | null
+        }
+        Update: {
+          artist?: string
+          created_at?: string
+          id?: string
+          published?: boolean | null
+          thumbnail_url?: string | null
+          title?: string
+          video_url?: string
+          view_count?: number | null
+        }
+        Relationships: []
+      }
       poll_options: {
         Row: {
           created_at: string
@@ -371,6 +404,10 @@ export type Database = {
       }
       increment_song_view: {
         Args: { _song_id: string; _view_date?: string }
+        Returns: undefined
+      }
+      increment_video_view: {
+        Args: { _video_id: string }
         Returns: undefined
       }
       is_admin: {

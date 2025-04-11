@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -5,25 +6,25 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { SetSongOfWeek } from '@/components/admin/SetSongOfWeek';
-import { FeedbackTab } from '@/components/admin/FeedbackTab';
-import { BlogTab } from '@/components/admin/BlogTab';
+import SetSongOfWeek from '@/components/admin/SetSongOfWeek';
+import FeedbackTab from '@/components/admin/FeedbackTab';
+import BlogTab from '@/components/admin/BlogTab';
 import VideoMusicTab from '@/components/admin/VideoMusicTab';
 
 const Admin: React.FC = () => {
-  const { isAuthenticated, login, logout } = useAuth();
+  const { isAuthenticated, user, setAuthenticated } = useAuth();
   const [password, setPassword] = useState('');
 
   useEffect(() => {
     // Check if already authenticated on mount
     if (localStorage.getItem('isAuthenticated') === 'true') {
-      login();
+      setAuthenticated(true);
     }
-  }, [login]);
+  }, [setAuthenticated]);
 
   const handleLogin = async () => {
     if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
-      login();
+      setAuthenticated(true);
       localStorage.setItem('isAuthenticated', 'true');
       toast.success('Admin access granted');
     } else {
@@ -33,7 +34,7 @@ const Admin: React.FC = () => {
   };
 
   const handleLogout = () => {
-    logout();
+    setAuthenticated(false);
     localStorage.removeItem('isAuthenticated');
     toast.success('Admin logged out');
   };

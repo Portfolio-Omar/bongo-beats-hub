@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Loader2, Upload, Video, Trash2, Eye, AlertCircle } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, rpcFunctions } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -26,24 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-interface MusicVideoUpload {
-  title: string;
-  artist: string;
-  video: File | null;
-  thumbnail: File | null;
-}
-
-interface MusicVideo {
-  id: string;
-  title: string;
-  artist: string;
-  video_url: string;
-  thumbnail_url: string | null;
-  view_count: number;
-  published: boolean;
-  created_at: string;
-}
+import { MusicVideo, MusicVideoUpload } from '@/types/music-videos';
 
 const VideoMusicTab: React.FC = () => {
   const queryClient = useQueryClient();
