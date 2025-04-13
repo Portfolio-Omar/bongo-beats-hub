@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Video, ChevronUp, ChevronDown, VolumeX, Volume2 } from 'lucide-react';
+import { Search, Video, ChevronUp, ChevronDown, VolumeX, Volume2, Shuffle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { supabase, rpcFunctions } from '@/integrations/supabase/client';
@@ -49,6 +49,14 @@ const VideoMusic: React.FC = () => {
       setCurrentVideoIndex(0);
     }
   }, [filteredVideos, currentVideoIndex]);
+
+  // Initialize with a random video
+  useEffect(() => {
+    if (filteredVideos.length > 0) {
+      const randomIndex = Math.floor(Math.random() * filteredVideos.length);
+      setCurrentVideoIndex(randomIndex);
+    }
+  }, [filteredVideos.length]);
 
   const handleVideoClick = (index: number) => {
     // Pause the currently playing video if any
@@ -97,11 +105,42 @@ const VideoMusic: React.FC = () => {
     setIsMuted(video.muted);
   };
 
+  // Shuffle videos
+  const shuffleVideos = () => {
+    if (filteredVideos.length <= 1) return;
+    
+    let newIndex;
+    do {
+      newIndex = Math.floor(Math.random() * filteredVideos.length);
+    } while (newIndex === currentVideoIndex);
+    
+    // Pause current video
+    if (videoRefs.current[currentVideoIndex]) {
+      videoRefs.current[currentVideoIndex]?.pause();
+    }
+    
+    // Set new index
+    setCurrentVideoIndex(newIndex);
+    
+    // Auto-play the new video after a short delay
+    setTimeout(() => {
+      if (videoRefs.current[newIndex]) {
+        videoRefs.current[newIndex]?.play();
+        setIsPlaying(true);
+      }
+    }, 100);
+    
+    toast.success(`Playing: ${filteredVideos[newIndex].title}`, {
+      duration: 2000
+    });
+  };
+
   // Handle video view count
   const handleVideoView = async (videoId: string) => {
     try {
       // Update view count in Supabase
       await rpcFunctions.incrementVideoView(videoId);
+      console.log('Video view recorded for:', videoId);
     } catch (error) {
       console.error('Error updating view count:', error);
       // Continue without showing error to user
@@ -127,6 +166,8 @@ const VideoMusic: React.FC = () => {
             animate={{
               x: [0, 30, 0, -30, 0],
               y: [0, -30, 0, 30, 0],
+              scale: [1, 1.1, 1],
+              opacity: [0.3, 0.5, 0.3],
             }}
             transition={{
               duration: 20,
@@ -139,6 +180,8 @@ const VideoMusic: React.FC = () => {
             animate={{
               x: [0, -20, 0, 20, 0],
               y: [0, 20, 0, -20, 0],
+              scale: [1, 1.2, 1],
+              opacity: [0.2, 0.4, 0.2],
             }}
             transition={{
               duration: 15,
@@ -219,6 +262,15 @@ const VideoMusic: React.FC = () => {
                   ) : (
                     <Volume2 className="h-4 w-4" />
                   )}
+                </Button>
+                
+                <Button
+                  variant="outline" 
+                  size="icon"
+                  className="bg-background/50 backdrop-blur-sm pointer-events-auto hover:bg-background/80 transition-colors"
+                  onClick={shuffleVideos}
+                >
+                  <Shuffle className="h-4 w-4" />
                 </Button>
 
                 <Button

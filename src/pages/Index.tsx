@@ -12,31 +12,37 @@ const Index: React.FC = () => {
   
   useEffect(() => {
     // This effect runs only once when the page loads
-    // to track the home page visit
+    // to track the home page visit and select a random song
     const trackHomePageVisit = async () => {
       try {
-        const { data: songOfWeekData, error: songOfWeekError } = await supabase
-          .from('song_of_the_week')
-          .select('song_id')
-          .eq('active', true)
-          .order('feature_date', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        // Get a random song instead of featured song
+        const { data: randomSongData, error: randomSongError } = await supabase
+          .from('songs')
+          .select('id')
+          .eq('published', true)
+          .order('created_at', { ascending: false })
+          .limit(100);
           
-        if (songOfWeekError || !songOfWeekData) {
-          console.error('Error fetching song of the week for tracking:', songOfWeekError);
+        if (randomSongError || !randomSongData || randomSongData.length === 0) {
+          console.error('Error fetching random songs for tracking:', randomSongError);
           return;
         }
+        
+        // Randomly select one song from the array
+        const randomIndex = Math.floor(Math.random() * randomSongData.length);
+        const selectedSongId = randomSongData[randomIndex].id;
         
         // Call the function to increment view count
         const { error: rpcError } = await supabase.rpc(
           'increment_song_view',
-          { _song_id: songOfWeekData.song_id }
+          { _song_id: selectedSongId }
         );
         
         if (rpcError) {
           console.error('Error incrementing song view:', rpcError);
         }
+        
+        console.log('Random song selected and view tracked:', selectedSongId);
       } catch (error) {
         console.error('Error in trackHomePageVisit:', error);
       }

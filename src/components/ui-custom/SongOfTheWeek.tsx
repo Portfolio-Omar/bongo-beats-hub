@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import MusicPlayer from './MusicPlayer';
+import type { Song } from '@/types/music';
 
 interface Comment {
   id: string;
@@ -20,14 +20,6 @@ interface Comment {
 interface Reaction {
   reaction_type: string;
   count: number;
-}
-
-interface Song {
-  id: string;
-  title: string;
-  artist: string;
-  cover_url: string;
-  audio_url: string;
 }
 
 const SongOfTheWeek: React.FC = () => {
@@ -48,48 +40,27 @@ const SongOfTheWeek: React.FC = () => {
   const fetchFeaturedSong = async () => {
     try {
       setIsLoading(true);
-      const { data: songOfWeekData, error: songOfWeekError } = await supabase
-        .from('song_of_the_week')
-        .select('song_id')
-        .eq('active', true)
-        .order('feature_date', { ascending: false })
-        .limit(1)
-        .single();
+      
+      // Get random song from published songs
+      const { data: songsData, error: songsError } = await supabase
+        .from('songs')
+        .select('id, title, artist, cover_url, audio_url')
+        .eq('published', true)
+        .limit(100);
 
-      if (songOfWeekError) {
-        console.error('Error fetching song of the week:', songOfWeekError);
-        const { data: randomSong, error: randomSongError } = await supabase
-          .from('songs')
-          .select('id, title, artist, cover_url, audio_url')
-          .eq('published', true)
-          .limit(1)
-          .single();
-
-        if (randomSongError) {
-          console.error('Error fetching random song:', randomSongError);
-          setIsLoading(false);
-          return;
-        }
-
-        setFeaturedSong(randomSong);
-        await fetchCommentsAndReactions(randomSong.id);
-      } else {
-        const { data: songData, error: songError } = await supabase
-          .from('songs')
-          .select('id, title, artist, cover_url, audio_url')
-          .eq('id', songOfWeekData.song_id)
-          .single();
-
-        if (songError) {
-          console.error('Error fetching song details:', songError);
-          setIsLoading(false);
-          return;
-        }
-
-        setFeaturedSong(songData);
-        await fetchCommentsAndReactions(songData.id);
+      if (songsError || !songsData || songsData.length === 0) {
+        console.error('Error fetching songs:', songsError);
+        setIsLoading(false);
+        return;
       }
       
+      // Randomly select one song
+      const randomIndex = Math.floor(Math.random() * songsData.length);
+      const randomSong = songsData[randomIndex];
+      
+      console.log('Random song selected for display:', randomSong);
+      setFeaturedSong(randomSong);
+      await fetchCommentsAndReactions(randomSong.id);
       setIsLoading(false);
     } catch (error) {
       console.error('Error in fetchFeaturedSong:', error);
@@ -230,7 +201,7 @@ const SongOfTheWeek: React.FC = () => {
       transition={{ duration: 0.6 }}
       className="w-full max-w-4xl mx-auto my-12"
     >
-      <h2 className="text-3xl font-bold text-center mb-8">Song of the Week</h2>
+      <h2 className="text-3xl font-bold text-center mb-8">Featured Song</h2>
       
       <Card className="shadow-lg border-accent/50">
         <CardHeader className="pb-2">
