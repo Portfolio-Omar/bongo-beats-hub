@@ -10,7 +10,7 @@ export interface Song {
   duration: string | null;
   published: boolean;
   created_at: string;
-  download_count?: number;
+  download_count: number;
 }
 
 export interface SongOfTheWeek {

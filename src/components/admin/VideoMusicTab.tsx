@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Upload, Video, Trash2, Eye, AlertCircle } from 'lucide-react';
+import { Loader2, Upload, Video, Trash2, Eye, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase, rpcFunctions } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -25,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { motion } from 'framer-motion';
 import { MusicVideo, MusicVideoUpload } from '@/types/music-videos';
 
 const VideoMusicTab: React.FC = () => {
@@ -37,6 +39,8 @@ const VideoMusicTab: React.FC = () => {
   });
   const [isUploading, setIsUploading] = useState(false);
   const [videoToDelete, setVideoToDelete] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStep, setUploadStep] = useState<'idle' | 'uploading' | 'processing' | 'complete'>('idle');
   const videoInputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
@@ -73,7 +77,7 @@ const VideoMusicTab: React.FC = () => {
     }
   };
 
-  // Handle video upload
+  // Handle video upload with progress tracking
   const handleUpload = async () => {
     const { title, artist, video, thumbnail } = uploadData;
     
@@ -83,13 +87,28 @@ const VideoMusicTab: React.FC = () => {
     }
 
     setIsUploading(true);
+    setUploadStep('uploading');
+    setUploadProgress(0);
 
     try {
-      // Upload video file
+      // Upload video file with progress tracking
       const videoFileName = `${Date.now()}-${video.name}`;
+      
+      // Create a virtual progress tracker
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev < 80) return prev + Math.random() * 5;
+          return prev;
+        });
+      }, 300);
+      
       const { error: videoUploadError, data: videoData } = await supabase.storage
         .from('music_videos')
         .upload(videoFileName, video);
+
+      clearInterval(progressInterval);
+      setUploadProgress(80);
+      setUploadStep('processing');
 
       if (videoUploadError) throw videoUploadError;
 
@@ -114,6 +133,8 @@ const VideoMusicTab: React.FC = () => {
         }
       }
 
+      setUploadProgress(90);
+
       // Insert record in database
       const { error: dbError } = await supabase
         .from('music_videos')
@@ -128,23 +149,32 @@ const VideoMusicTab: React.FC = () => {
 
       if (dbError) throw dbError;
 
-      // Reset form and refresh data
-      setUploadData({
-        title: '',
-        artist: '',
-        video: null,
-        thumbnail: null,
-      });
-      if (videoInputRef.current) videoInputRef.current.value = '';
-      if (thumbnailInputRef.current) thumbnailInputRef.current.value = '';
-      
-      queryClient.invalidateQueries({ queryKey: ['admin_music_videos'] });
-      toast.success('Music video uploaded successfully');
+      setUploadProgress(100);
+      setUploadStep('complete');
+
+      // Reset form and refresh data after a short delay to show completion
+      setTimeout(() => {
+        setUploadData({
+          title: '',
+          artist: '',
+          video: null,
+          thumbnail: null,
+        });
+        if (videoInputRef.current) videoInputRef.current.value = '';
+        if (thumbnailInputRef.current) thumbnailInputRef.current.value = '';
+        
+        queryClient.invalidateQueries({ queryKey: ['admin_music_videos'] });
+        toast.success('Music video uploaded successfully');
+        setIsUploading(false);
+        setUploadStep('idle');
+        setUploadProgress(0);
+      }, 1000);
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error(`Upload failed: ${error.message}`);
-    } finally {
       setIsUploading(false);
+      setUploadStep('idle');
+      setUploadProgress(0);
     }
   };
 
@@ -162,6 +192,9 @@ const VideoMusicTab: React.FC = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin_music_videos'] });
       toast.success(`Video ${data.published ? 'published' : 'unpublished'} successfully`);
+      
+      // Also invalidate the main videos page query
+      queryClient.invalidateQueries({ queryKey: ['music_videos'] });
     },
     onError: (error) => {
       console.error('Error updating video:', error);
@@ -213,6 +246,7 @@ const VideoMusicTab: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin_music_videos'] });
+      queryClient.invalidateQueries({ queryKey: ['music_videos'] });
       toast.success('Video deleted successfully');
       setVideoToDelete(null);
     },
@@ -222,11 +256,42 @@ const VideoMusicTab: React.FC = () => {
       setVideoToDelete(null);
     }
   });
+  
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-card p-6 rounded-lg border space-y-4">
-        <h3 className="text-lg font-medium">Upload New Music Video</h3>
+    <motion.div 
+      className="space-y-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+    >
+      <motion.div 
+        className="bg-card p-6 rounded-lg border space-y-4 relative overflow-hidden"
+        variants={itemVariants}
+      >
+        {/* Background gradients */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full filter blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-secondary/5 rounded-full filter blur-2xl translate-y-1/2 -translate-x-1/2"></div>
+        
+        <h3 className="text-lg font-medium flex items-center gap-2">
+          <Upload className="h-5 w-5 text-primary" />
+          Upload New Music Video
+        </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -238,6 +303,7 @@ const VideoMusicTab: React.FC = () => {
               onChange={handleInputChange}
               placeholder="Enter video title"
               required
+              className="transition-all focus:ring-1 focus:ring-primary/30 focus:border-primary/50"
             />
           </div>
           
@@ -250,6 +316,7 @@ const VideoMusicTab: React.FC = () => {
               onChange={handleInputChange}
               placeholder="Enter artist name"
               required
+              className="transition-all focus:ring-1 focus:ring-primary/30 focus:border-primary/50"
             />
           </div>
         </div>
@@ -265,7 +332,8 @@ const VideoMusicTab: React.FC = () => {
                 accept="video/mp4,video/webm,video/quicktime"
                 onChange={(e) => handleFileChange(e, 'video')}
                 required
-                className="flex-1"
+                className="flex-1 transition-all focus:ring-1 focus:ring-primary/30 focus:border-primary/50"
+                disabled={isUploading}
               />
               {uploadData.video && (
                 <div className="text-xs text-muted-foreground">
@@ -283,16 +351,51 @@ const VideoMusicTab: React.FC = () => {
               ref={thumbnailInputRef}
               accept="image/jpeg,image/png,image/webp"
               onChange={(e) => handleFileChange(e, 'thumbnail')}
-              className="flex-1"
+              className="flex-1 transition-all focus:ring-1 focus:ring-primary/30 focus:border-primary/50"
+              disabled={isUploading}
             />
           </div>
         </div>
+        
+        {isUploading && (
+          <div className="w-full bg-muted rounded-full h-2 mt-2 overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300 ease-out"
+              style={{ width: `${uploadProgress}%` }}
+            ></div>
+          </div>
+        )}
+        
+        {isUploading && (
+          <div className="flex items-center justify-center">
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
+              {uploadStep === 'uploading' && (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span>Uploading video... {Math.round(uploadProgress)}%</span>
+                </>
+              )}
+              {uploadStep === 'processing' && (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span>Processing video...</span>
+                </>
+              )}
+              {uploadStep === 'complete' && (
+                <>
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span>Upload complete!</span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
         
         <div className="pt-2">
           <Button 
             onClick={handleUpload} 
             disabled={isUploading || !uploadData.title || !uploadData.artist || !uploadData.video}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 transition-all"
           >
             {isUploading ? (
               <>
@@ -307,10 +410,16 @@ const VideoMusicTab: React.FC = () => {
             )}
           </Button>
         </div>
-      </div>
+      </motion.div>
       
-      <div className="bg-card p-6 rounded-lg border space-y-4">
-        <h3 className="text-lg font-medium mb-4">Manage Music Videos</h3>
+      <motion.div 
+        className="bg-card p-6 rounded-lg border space-y-4"
+        variants={itemVariants}
+      >
+        <h3 className="text-lg font-medium flex items-center gap-2">
+          <Video className="h-5 w-5 text-primary" />
+          Manage Music Videos
+        </h3>
         
         {isLoading ? (
           <div className="flex justify-center py-8">
@@ -331,9 +440,9 @@ const VideoMusicTab: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {videos.map((video) => (
-                  <TableRow key={video.id}>
+                  <TableRow key={video.id} className="transition-colors hover:bg-muted/50">
                     <TableCell>
-                      <div className="h-14 w-14 bg-secondary rounded-md overflow-hidden relative">
+                      <div className="h-14 w-14 bg-secondary/10 rounded-md overflow-hidden relative">
                         {video.thumbnail_url ? (
                           <img 
                             src={video.thumbnail_url} 
@@ -349,10 +458,16 @@ const VideoMusicTab: React.FC = () => {
                     <TableCell>{video.artist}</TableCell>
                     <TableCell className="text-right">{video.view_count}</TableCell>
                     <TableCell>
-                      <Switch
-                        checked={video.published}
-                        onCheckedChange={(checked) => togglePublishedMutation.mutate({ id: video.id, published: checked })}
-                      />
+                      <div className="flex items-center">
+                        <Switch
+                          checked={video.published}
+                          onCheckedChange={(checked) => togglePublishedMutation.mutate({ id: video.id, published: checked })}
+                          className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-primary data-[state=checked]:to-secondary"
+                        />
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          {video.published ? 'Public' : 'Draft'}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -360,6 +475,7 @@ const VideoMusicTab: React.FC = () => {
                           variant="outline"
                           size="icon"
                           asChild
+                          className="hover:text-primary hover:border-primary/50 transition-colors"
                         >
                           <a href={video.video_url} target="_blank" rel="noopener noreferrer">
                             <Eye className="h-4 w-4" />
@@ -369,6 +485,7 @@ const VideoMusicTab: React.FC = () => {
                           variant="destructive"
                           size="icon"
                           onClick={() => setVideoToDelete(video.id)}
+                          className="hover:bg-destructive/90 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -386,13 +503,16 @@ const VideoMusicTab: React.FC = () => {
             <p className="text-muted-foreground">Upload your first music video using the form above</p>
           </div>
         )}
-      </div>
+      </motion.div>
       
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!videoToDelete} onOpenChange={(open) => !open && setVideoToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="border border-destructive/20">
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              Are you sure?
+            </AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete the music video. This action cannot be undone.
             </AlertDialogDescription>
@@ -408,7 +528,7 @@ const VideoMusicTab: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </motion.div>
   );
 };
 

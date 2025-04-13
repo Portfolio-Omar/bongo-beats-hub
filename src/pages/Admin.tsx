@@ -14,7 +14,7 @@ import BatchUploadSongs from '@/components/admin/BatchUploadSongs';
 import { motion } from 'framer-motion';
 import { 
   Music, Video, FileText, MessageSquare, 
-  Star, Upload, Settings, LogOut
+  Star, Upload, Lock, LogOut 
 } from 'lucide-react';
 
 const Admin: React.FC = () => {
@@ -63,7 +63,15 @@ const Admin: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h2 className="text-2xl font-semibold mb-6 text-center text-gradient">Admin Login</h2>
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="mx-auto w-16 h-16 mb-4 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center"
+            >
+              <Lock className="h-8 w-8 text-primary" />
+            </motion.div>
+            <h2 className="text-2xl font-semibold mb-6 text-center text-gradient bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Admin Login</h2>
             <div className="space-y-4">
               <div>
                 <Input
@@ -80,7 +88,7 @@ const Admin: React.FC = () => {
                 />
               </div>
               <Button 
-                className="w-full transition-all duration-300 hover:shadow-lg hover:shadow-primary/20" 
+                className="w-full transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90" 
                 onClick={handleLogin}
               >
                 Login
@@ -98,7 +106,7 @@ const Admin: React.FC = () => {
               className="flex justify-between items-center"
               variants={itemVariants}
             >
-              <h1 className="text-3xl font-bold text-gradient">Admin Dashboard</h1>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Admin Dashboard</h1>
               <Button 
                 variant="outline" 
                 onClick={logout}
@@ -127,10 +135,6 @@ const Admin: React.FC = () => {
                     <TabsTrigger value="blog" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
                       <FileText className="h-4 w-4" />
                       <span>Blog Posts</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="featured" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
-                      <Star className="h-4 w-4" />
-                      <span>Featured</span>
                     </TabsTrigger>
                     <TabsTrigger value="feedback" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
                       <MessageSquare className="h-4 w-4" />
@@ -171,16 +175,6 @@ const Admin: React.FC = () => {
                       transition={{ duration: 0.5 }}
                     >
                       <BlogTab />
-                    </motion.div>
-                  </TabsContent>
-                  
-                  <TabsContent value="featured" className="mt-0">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5 }}
-                    >
-                      <SetSongOfWeek />
                     </motion.div>
                   </TabsContent>
                   

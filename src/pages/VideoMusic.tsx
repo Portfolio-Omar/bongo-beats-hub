@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Video, ChevronUp, ChevronDown } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Search, Video, ChevronUp, ChevronDown, VolumeX, Volume2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { supabase, rpcFunctions } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -13,6 +14,7 @@ const VideoMusic: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
 
   // Fetch videos from Supabase
@@ -41,6 +43,13 @@ const VideoMusic: React.FC = () => {
     video.artist.toLowerCase().includes(searchQuery.toLowerCase())
   ) : [];
 
+  // Reset current video index when filtered videos change
+  useEffect(() => {
+    if (filteredVideos.length > 0 && currentVideoIndex >= filteredVideos.length) {
+      setCurrentVideoIndex(0);
+    }
+  }, [filteredVideos, currentVideoIndex]);
+
   const handleVideoClick = (index: number) => {
     // Pause the currently playing video if any
     if (videoRefs.current[currentVideoIndex]) {
@@ -61,6 +70,31 @@ const VideoMusic: React.FC = () => {
         setIsPlaying(false);
       }
     }
+  };
+
+  const togglePlayPause = () => {
+    if (!filteredVideos.length) return;
+    
+    const video = videoRefs.current[currentVideoIndex];
+    if (!video) return;
+    
+    if (video.paused) {
+      video.play();
+      setIsPlaying(true);
+    } else {
+      video.pause();
+      setIsPlaying(false);
+    }
+  };
+  
+  const toggleMute = () => {
+    if (!filteredVideos.length) return;
+    
+    const video = videoRefs.current[currentVideoIndex];
+    if (!video) return;
+    
+    video.muted = !video.muted;
+    setIsMuted(video.muted);
   };
 
   // Handle video view count
@@ -116,7 +150,7 @@ const VideoMusic: React.FC = () => {
 
         <div className="text-center mb-12">
           <motion.h1 
-            className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4"
+            className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -146,7 +180,7 @@ const VideoMusic: React.FC = () => {
               placeholder="Search by title or artist..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
             />
           </div>
         </motion.div>
@@ -154,9 +188,9 @@ const VideoMusic: React.FC = () => {
         {/* Video Player Interface */}
         <div className="flex flex-col items-center justify-center">
           {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-              <span className="ml-2 text-muted-foreground">Loading videos...</span>
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+              <span className="text-muted-foreground">Loading videos...</span>
             </div>
           ) : filteredVideos.length > 0 ? (
             <div className="relative w-full max-w-md aspect-[9/16] bg-black rounded-lg overflow-hidden shadow-xl">
@@ -165,7 +199,7 @@ const VideoMusic: React.FC = () => {
                 <Button
                   variant="outline" 
                   size="icon" 
-                  className="bg-background/50 backdrop-blur-sm pointer-events-auto"
+                  className="bg-background/50 backdrop-blur-sm pointer-events-auto hover:bg-background/80 transition-colors"
                   onClick={() => handleScroll('up')}
                   disabled={currentVideoIndex === 0}
                 >
@@ -173,11 +207,24 @@ const VideoMusic: React.FC = () => {
                 </Button>
               </div>
 
-              <div className="absolute left-0 right-0 bottom-4 z-20 flex justify-center pointer-events-none">
+              <div className="absolute left-0 right-0 bottom-4 z-20 flex justify-center pointer-events-none gap-2">
+                <Button
+                  variant="outline" 
+                  size="icon"
+                  className="bg-background/50 backdrop-blur-sm pointer-events-auto hover:bg-background/80 transition-colors"
+                  onClick={toggleMute}
+                >
+                  {isMuted ? (
+                    <VolumeX className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Volume2 className="h-4 w-4" />
+                  )}
+                </Button>
+
                 <Button
                   variant="outline" 
                   size="icon" 
-                  className="bg-background/50 backdrop-blur-sm pointer-events-auto"
+                  className="bg-background/50 backdrop-blur-sm pointer-events-auto hover:bg-background/80 transition-colors"
                   onClick={() => handleScroll('down')}
                   disabled={currentVideoIndex === filteredVideos.length - 1}
                 >
@@ -196,23 +243,52 @@ const VideoMusic: React.FC = () => {
               </div>
 
               {/* Videos - Only render current video for performance */}
-              {filteredVideos.map((video, index) => (
-                <div 
-                  key={video.id}
-                  className={`absolute inset-0 transition-all duration-500 ${index === currentVideoIndex ? 'opacity-100 z-0' : 'opacity-0 -z-10'}`}
-                >
-                  <video
-                    ref={el => { videoRefs.current[index] = el; }}
-                    src={video.video_url}
-                    poster={video.thumbnail_url || undefined}
-                    className="w-full h-full object-cover"
-                    loop
-                    playsInline
-                    onClick={() => handleVideoClick(index)}
-                    onPlay={() => handleVideoView(video.id)}
-                  />
-                </div>
-              ))}
+              <AnimatePresence mode="wait">
+                {filteredVideos.map((video, index) => (
+                  <motion.div 
+                    key={video.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: index === currentVideoIndex ? 1 : 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`absolute inset-0 ${index === currentVideoIndex ? 'z-0' : '-z-10'}`}
+                  >
+                    <video
+                      ref={el => { videoRefs.current[index] = el; }}
+                      src={video.video_url}
+                      poster={video.thumbnail_url || undefined}
+                      className="w-full h-full object-cover"
+                      loop
+                      playsInline
+                      muted={isMuted}
+                      onClick={() => togglePlayPause()}
+                      onPlay={() => {
+                        setIsPlaying(true);
+                        handleVideoView(video.id);
+                      }}
+                      onPause={() => setIsPlaying(false)}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {/* Play/pause overlay */}
+              <div 
+                className="absolute inset-0 flex items-center justify-center z-5 cursor-pointer"
+                onClick={togglePlayPause}
+              >
+                {!isPlaying && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="h-16 w-16 bg-background/30 backdrop-blur-sm rounded-full flex items-center justify-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-10 h-10">
+                      <path fillRule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clipRule="evenodd" />
+                    </svg>
+                  </motion.div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="text-center py-16">
