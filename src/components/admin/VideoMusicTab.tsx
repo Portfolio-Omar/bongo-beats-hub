@@ -11,9 +11,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Upload, Video, Trash2, Eye, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, Upload, Video, Trash2, Eye } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase, rpcFunctions } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -27,20 +27,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { motion } from 'framer-motion';
-import { MusicVideo, MusicVideoUpload } from '@/types/music-videos';
+import { MusicVideo } from '@/types/music-videos';
 
 const VideoMusicTab: React.FC = () => {
   const queryClient = useQueryClient();
-  const [uploadData, setUploadData] = useState<MusicVideoUpload>({
-    title: '',
-    artist: '',
-    video: null,
-    thumbnail: null,
-  });
+  const [title, setTitle] = useState('');
+  const [artist, setArtist] = useState('');
+  const [video, setVideo] = useState<File | null>(null);
+  const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [videoToDelete, setVideoToDelete] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStep, setUploadStep] = useState<'idle' | 'uploading' | 'processing' | 'complete'>('idle');
   const videoInputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,79 +59,73 @@ const VideoMusicTab: React.FC = () => {
     }
   });
 
-  // Handle input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setUploadData(prev => ({ ...prev, [name]: value }));
-  };
-
   // Handle file input changes
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'video' | 'thumbnail') => {
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setUploadData(prev => ({ ...prev, [type]: file }));
+      setVideo(e.target.files[0]);
     }
   };
 
-  // Handle video upload with progress tracking
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setThumbnail(e.target.files[0]);
+    }
+  };
+
+  // Simplified video upload
   const handleUpload = async () => {
-    const { title, artist, video, thumbnail } = uploadData;
-    
     if (!title || !artist || !video) {
       toast.error('Please fill in all required fields and select a video');
       return;
     }
 
     setIsUploading(true);
-    setUploadStep('uploading');
-    setUploadProgress(0);
+    toast.info('Uploading video... This may take a few moments');
 
     try {
-      // Upload video file with progress tracking
+      console.log("Starting video upload process");
+      
+      // 1. Upload video file
       const videoFileName = `${Date.now()}-${video.name}`;
-      
-      // Create a virtual progress tracker
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev < 80) return prev + Math.random() * 5;
-          return prev;
-        });
-      }, 300);
-      
-      const { error: videoUploadError, data: videoData } = await supabase.storage
+      const { error: videoUploadError } = await supabase.storage
         .from('music_videos')
         .upload(videoFileName, video);
 
-      clearInterval(progressInterval);
-      setUploadProgress(80);
-      setUploadStep('processing');
+      if (videoUploadError) {
+        console.error("Video upload error:", videoUploadError);
+        throw videoUploadError;
+      }
 
-      if (videoUploadError) throw videoUploadError;
-
-      // Get video URL
+      console.log("Video uploaded successfully, getting URL");
+      
+      // 2. Get video URL
       const { data: videoUrl } = supabase.storage
         .from('music_videos')
         .getPublicUrl(videoFileName);
 
-      // Upload thumbnail if provided
+      // 3. Upload thumbnail if provided
       let thumbnailUrl = null;
       if (thumbnail) {
+        console.log("Uploading thumbnail");
         const thumbnailFileName = `thumbnails/${Date.now()}-${thumbnail.name}`;
-        const { error: thumbnailUploadError, data: thumbnailData } = await supabase.storage
+        const { error: thumbnailUploadError } = await supabase.storage
           .from('music_videos')
           .upload(thumbnailFileName, thumbnail);
 
-        if (!thumbnailUploadError) {
+        if (thumbnailUploadError) {
+          console.error("Thumbnail upload error:", thumbnailUploadError);
+        } else {
           const { data: thumbUrl } = supabase.storage
             .from('music_videos')
             .getPublicUrl(thumbnailFileName);
           thumbnailUrl = thumbUrl.publicUrl;
+          console.log("Thumbnail URL:", thumbnailUrl);
         }
       }
 
-      setUploadProgress(90);
-
-      // Insert record in database
+      console.log("Inserting record into database");
+      
+      // 4. Insert record in database - using RLS policy for admin
       const { error: dbError } = await supabase
         .from('music_videos')
         .insert({
@@ -144,37 +134,33 @@ const VideoMusicTab: React.FC = () => {
           video_url: videoUrl.publicUrl,
           thumbnail_url: thumbnailUrl,
           view_count: 0,
-          published: false
+          published: true // Default to published
         });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("Database insertion error:", dbError);
+        throw dbError;
+      }
 
-      setUploadProgress(100);
-      setUploadStep('complete');
-
-      // Reset form and refresh data after a short delay to show completion
-      setTimeout(() => {
-        setUploadData({
-          title: '',
-          artist: '',
-          video: null,
-          thumbnail: null,
-        });
-        if (videoInputRef.current) videoInputRef.current.value = '';
-        if (thumbnailInputRef.current) thumbnailInputRef.current.value = '';
-        
-        queryClient.invalidateQueries({ queryKey: ['admin_music_videos'] });
-        toast.success('Music video uploaded successfully');
-        setIsUploading(false);
-        setUploadStep('idle');
-        setUploadProgress(0);
-      }, 1000);
+      console.log("Video upload completed successfully");
+      
+      // 5. Reset form and refresh data
+      setTitle('');
+      setArtist('');
+      setVideo(null);
+      setThumbnail(null);
+      if (videoInputRef.current) videoInputRef.current.value = '';
+      if (thumbnailInputRef.current) thumbnailInputRef.current.value = '';
+      
+      queryClient.invalidateQueries({ queryKey: ['admin_music_videos'] });
+      queryClient.invalidateQueries({ queryKey: ['music_videos'] });
+      
+      toast.success('Music video uploaded successfully');
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error(`Upload failed: ${error.message}`);
+    } finally {
       setIsUploading(false);
-      setUploadStep('idle');
-      setUploadProgress(0);
     }
   };
 
@@ -191,10 +177,8 @@ const VideoMusicTab: React.FC = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin_music_videos'] });
-      toast.success(`Video ${data.published ? 'published' : 'unpublished'} successfully`);
-      
-      // Also invalidate the main videos page query
       queryClient.invalidateQueries({ queryKey: ['music_videos'] });
+      toast.success(`Video ${data.published ? 'published' : 'unpublished'} successfully`);
     },
     onError: (error) => {
       console.error('Error updating video:', error);
@@ -256,38 +240,10 @@ const VideoMusicTab: React.FC = () => {
       setVideoToDelete(null);
     }
   });
-  
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
 
   return (
-    <motion.div 
-      className="space-y-6"
-      variants={containerVariants}
-      initial="hidden"
-      animate="show"
-    >
-      <motion.div 
-        className="bg-card p-6 rounded-lg border space-y-4 relative overflow-hidden"
-        variants={itemVariants}
-      >
-        {/* Background gradients */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full filter blur-2xl -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-secondary/5 rounded-full filter blur-2xl translate-y-1/2 -translate-x-1/2"></div>
-        
+    <div className="space-y-6">
+      <div className="bg-card p-6 rounded-lg border space-y-4">
         <h3 className="text-lg font-medium flex items-center gap-2">
           <Upload className="h-5 w-5 text-primary" />
           Upload New Music Video
@@ -298,12 +254,10 @@ const VideoMusicTab: React.FC = () => {
             <Label htmlFor="title">Title *</Label>
             <Input
               id="title"
-              name="title"
-              value={uploadData.title}
-              onChange={handleInputChange}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter video title"
-              required
-              className="transition-all focus:ring-1 focus:ring-primary/30 focus:border-primary/50"
+              className="transition-all focus:border-primary"
             />
           </div>
           
@@ -311,12 +265,10 @@ const VideoMusicTab: React.FC = () => {
             <Label htmlFor="artist">Artist *</Label>
             <Input
               id="artist"
-              name="artist"
-              value={uploadData.artist}
-              onChange={handleInputChange}
+              value={artist}
+              onChange={(e) => setArtist(e.target.value)}
               placeholder="Enter artist name"
-              required
-              className="transition-all focus:ring-1 focus:ring-primary/30 focus:border-primary/50"
+              className="transition-all focus:border-primary"
             />
           </div>
         </div>
@@ -324,23 +276,15 @@ const VideoMusicTab: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="video">Video File *</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="video"
-                type="file"
-                ref={videoInputRef}
-                accept="video/mp4,video/webm,video/quicktime"
-                onChange={(e) => handleFileChange(e, 'video')}
-                required
-                className="flex-1 transition-all focus:ring-1 focus:ring-primary/30 focus:border-primary/50"
-                disabled={isUploading}
-              />
-              {uploadData.video && (
-                <div className="text-xs text-muted-foreground">
-                  {Math.round(uploadData.video.size / 1024 / 1024 * 10) / 10} MB
-                </div>
-              )}
-            </div>
+            <Input
+              id="video"
+              type="file"
+              ref={videoInputRef}
+              accept="video/mp4,video/webm,video/quicktime"
+              onChange={handleVideoChange}
+              className="transition-all focus:border-primary"
+              disabled={isUploading}
+            />
           </div>
           
           <div className="space-y-2">
@@ -350,52 +294,18 @@ const VideoMusicTab: React.FC = () => {
               type="file"
               ref={thumbnailInputRef}
               accept="image/jpeg,image/png,image/webp"
-              onChange={(e) => handleFileChange(e, 'thumbnail')}
-              className="flex-1 transition-all focus:ring-1 focus:ring-primary/30 focus:border-primary/50"
+              onChange={handleThumbnailChange}
+              className="transition-all focus:border-primary"
               disabled={isUploading}
             />
           </div>
         </div>
         
-        {isUploading && (
-          <div className="w-full bg-muted rounded-full h-2 mt-2 overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300 ease-out"
-              style={{ width: `${uploadProgress}%` }}
-            ></div>
-          </div>
-        )}
-        
-        {isUploading && (
-          <div className="flex items-center justify-center">
-            <div className="text-sm text-muted-foreground flex items-center gap-2">
-              {uploadStep === 'uploading' && (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span>Uploading video... {Math.round(uploadProgress)}%</span>
-                </>
-              )}
-              {uploadStep === 'processing' && (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span>Processing video...</span>
-                </>
-              )}
-              {uploadStep === 'complete' && (
-                <>
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <span>Upload complete!</span>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-        
         <div className="pt-2">
           <Button 
             onClick={handleUpload} 
-            disabled={isUploading || !uploadData.title || !uploadData.artist || !uploadData.video}
-            className="w-full sm:w-auto bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 transition-all"
+            disabled={isUploading || !title || !artist || !video}
+            className="w-full sm:w-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all"
           >
             {isUploading ? (
               <>
@@ -410,12 +320,9 @@ const VideoMusicTab: React.FC = () => {
             )}
           </Button>
         </div>
-      </motion.div>
+      </div>
       
-      <motion.div 
-        className="bg-card p-6 rounded-lg border space-y-4"
-        variants={itemVariants}
-      >
+      <div className="bg-card p-6 rounded-lg border space-y-4">
         <h3 className="text-lg font-medium flex items-center gap-2">
           <Video className="h-5 w-5 text-primary" />
           Manage Music Videos
@@ -464,9 +371,6 @@ const VideoMusicTab: React.FC = () => {
                           onCheckedChange={(checked) => togglePublishedMutation.mutate({ id: video.id, published: checked })}
                           className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-primary data-[state=checked]:to-secondary"
                         />
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          {video.published ? 'Public' : 'Draft'}
-                        </span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
@@ -474,18 +378,15 @@ const VideoMusicTab: React.FC = () => {
                         <Button
                           variant="outline"
                           size="icon"
-                          asChild
-                          className="hover:text-primary hover:border-primary/50 transition-colors"
+                          onClick={() => window.open(video.video_url, '_blank')}
+                          className="hover:text-primary hover:border-primary/50"
                         >
-                          <a href={video.video_url} target="_blank" rel="noopener noreferrer">
-                            <Eye className="h-4 w-4" />
-                          </a>
+                          <Eye className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="destructive"
                           size="icon"
                           onClick={() => setVideoToDelete(video.id)}
-                          className="hover:bg-destructive/90 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -503,16 +404,13 @@ const VideoMusicTab: React.FC = () => {
             <p className="text-muted-foreground">Upload your first music video using the form above</p>
           </div>
         )}
-      </motion.div>
+      </div>
       
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!videoToDelete} onOpenChange={(open) => !open && setVideoToDelete(null)}>
-        <AlertDialogContent className="border border-destructive/20">
+        <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-destructive" />
-              Are you sure?
-            </AlertDialogTitle>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete the music video. This action cannot be undone.
             </AlertDialogDescription>
@@ -521,14 +419,14 @@ const VideoMusicTab: React.FC = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={() => videoToDelete && deleteVideoMutation.mutate(videoToDelete)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground"
             >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </motion.div>
+    </div>
   );
 };
 

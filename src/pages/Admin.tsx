@@ -14,7 +14,7 @@ import BatchUploadSongs from '@/components/admin/BatchUploadSongs';
 import { motion } from 'framer-motion';
 import { 
   Music, Video, FileText, MessageSquare, 
-  Star, Upload, Lock, LogOut 
+  Upload, Lock, LogOut 
 } from 'lucide-react';
 
 const Admin: React.FC = () => {
@@ -148,7 +148,7 @@ const Admin: React.FC = () => {
                 </div>
                 
                 <div className="p-4">
-                  <TabsContent value="songs" className="space-y-8 mt-0">
+                  <TabsContent value="songs" className="mt-0">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
