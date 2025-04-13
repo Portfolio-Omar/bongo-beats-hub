@@ -1,362 +1,175 @@
+
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
-import { Heart, MessageSquare, Share2, Play } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { motion } from 'framer-motion';
+import { Card, CardContent } from "@/components/ui/card";
 import MusicPlayer from './MusicPlayer';
-import type { Song } from '@/types/music';
-
-interface Comment {
-  id: string;
-  name: string;
-  comment: string;
-  created_at: string;
-}
-
-interface Reaction {
-  reaction_type: string;
-  count: number;
-}
+import { supabase } from '@/integrations/supabase/client';
+import { Song } from '@/types/music';
+import { motion } from 'framer-motion';
 
 const SongOfTheWeek: React.FC = () => {
-  const [featuredSong, setFeaturedSong] = useState<Song | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [reactions, setReactions] = useState<Reaction[]>([]);
-  const [totalReactions, setTotalReactions] = useState(0);
-  const [name, setName] = useState('');
-  const [comment, setComment] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isPlayerVisible, setIsPlayerVisible] = useState(false);
-
+  const [song, setSong] = useState<Song | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   useEffect(() => {
-    fetchFeaturedSong();
+    const fetchSongOfTheWeek = async () => {
+      try {
+        setLoading(true);
+        
+        // First check if we have a random song ID from the homepage
+        const randomSongId = localStorage.getItem('random_song_id');
+        
+        if (randomSongId) {
+          // If we have a random song ID, fetch that specific song
+          const { data: songData, error: songError } = await supabase
+            .from('songs')
+            .select('*')
+            .eq('id', randomSongId)
+            .single();
+          
+          if (songError) {
+            console.error('Error fetching random song:', songError);
+            setError('Failed to load featured song.');
+            // If error, fallback to regular song of the week
+          } else if (songData) {
+            setSong(songData);
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // If no random song or there was an error, fetch the official song of the week
+        const { data: sotw, error: sotwError } = await supabase
+          .from('song_of_the_week')
+          .select('*, song:song_id(*)')
+          .eq('active', true)
+          .order('feature_date', { ascending: false })
+          .limit(1)
+          .single();
+          
+        if (sotwError) {
+          console.error('Error fetching song of the week:', sotwError);
+          
+          // If no song of the week is set, fallback to a random song
+          const { data: fallbackSongs, error: fallbackError } = await supabase
+            .from('songs')
+            .select('*')
+            .eq('published', true)
+            .order('created_at', { ascending: false })
+            .limit(20);
+            
+          if (fallbackError || !fallbackSongs || fallbackSongs.length === 0) {
+            setError('No songs available at the moment.');
+          } else {
+            // Randomly select one song
+            const randomIndex = Math.floor(Math.random() * fallbackSongs.length);
+            setSong(fallbackSongs[randomIndex]);
+          }
+        } else if (sotw && sotw.song) {
+          setSong(sotw.song);
+        } else {
+          setError('No featured song available.');
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err);
+        setError('An unexpected error occurred.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSongOfTheWeek();
   }, []);
-
-  const fetchFeaturedSong = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Get random song from published songs
-      const { data: songsData, error: songsError } = await supabase
-        .from('songs')
-        .select('id, title, artist, cover_url, audio_url')
-        .eq('published', true)
-        .limit(100);
-
-      if (songsError || !songsData || songsData.length === 0) {
-        console.error('Error fetching songs:', songsError);
-        setIsLoading(false);
-        return;
-      }
-      
-      // Randomly select one song
-      const randomIndex = Math.floor(Math.random() * songsData.length);
-      const randomSong = songsData[randomIndex];
-      
-      console.log('Random song selected for display:', randomSong);
-      setFeaturedSong(randomSong);
-      await fetchCommentsAndReactions(randomSong.id);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error in fetchFeaturedSong:', error);
-      setIsLoading(false);
-    }
-  };
-
-  const fetchCommentsAndReactions = async (songId: string) => {
-    try {
-      const { data: commentsData, error: commentsError } = await supabase
-        .from('song_comments')
-        .select('*')
-        .eq('song_id', songId)
-        .order('created_at', { ascending: false });
-
-      if (commentsError) {
-        console.error('Error fetching comments:', commentsError);
-      } else {
-        setComments(commentsData);
-      }
-
-      // For reaction counts, we need to manually count them
-      const { data: reactionsData, error: reactionsError } = await supabase
-        .from('song_reactions')
-        .select('*')
-        .eq('song_id', songId);
-
-      if (reactionsError) {
-        console.error('Error fetching reactions:', reactionsError);
-      } else {
-        // Process the reactions to count by type
-        const reactionCounts: Record<string, number> = {};
-        reactionsData.forEach(reaction => {
-          const type = reaction.reaction_type;
-          reactionCounts[type] = (reactionCounts[type] || 0) + 1;
-        });
-        
-        // Convert to array format expected by the component
-        const processedReactions = Object.entries(reactionCounts).map(
-          ([reaction_type, count]) => ({ reaction_type, count })
-        );
-        
-        setReactions(processedReactions);
-        const total = processedReactions.reduce((acc, curr) => acc + curr.count, 0);
-        setTotalReactions(total);
-      }
-    } catch (error) {
-      console.error('Error in fetchCommentsAndReactions:', error);
-    }
-  };
-
-  const handleCommentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !comment.trim()) {
-      toast.error('Please enter your name and comment');
-      return;
-    }
-
-    if (!featuredSong) return;
-
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase
-        .from('song_comments')
-        .insert({
-          song_id: featuredSong.id,
-          name,
-          comment
-        });
-
-      if (error) {
-        toast.error('Failed to submit comment');
-        console.error('Error submitting comment:', error);
-      } else {
-        toast.success('Comment submitted successfully');
-        setComment('');
-        fetchCommentsAndReactions(featuredSong.id);
-      }
-    } catch (error) {
-      console.error('Error in handleCommentSubmit:', error);
-      toast.error('An error occurred');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleReaction = async (reactionType: string) => {
-    if (!featuredSong) return;
-
-    try {
-      const { error } = await supabase
-        .from('song_reactions')
-        .insert({
-          song_id: featuredSong.id,
-          name: name || 'Anonymous',
-          reaction_type: reactionType
-        });
-
-      if (error) {
-        toast.error('Failed to add reaction');
-        console.error('Error adding reaction:', error);
-      } else {
-        toast.success('Thanks for your reaction!');
-        fetchCommentsAndReactions(featuredSong.id);
-      }
-    } catch (error) {
-      console.error('Error in handleReaction:', error);
-      toast.error('An error occurred');
-    }
-  };
-
-  const toggleMusicPlayer = () => {
-    setIsPlayerVisible(!isPlayerVisible);
-  };
-
-  if (isLoading) {
+  
+  if (loading) {
     return (
-      <div className="flex justify-center items-center h-40">
-        <div className="animate-pulse text-center">
-          <p className="text-muted-foreground">Loading song of the week...</p>
+      <div className="container mx-auto px-4 py-16">
+        <div className="skeleton-card w-full max-w-4xl mx-auto h-96 rounded-2xl animate-pulse bg-accent/10" />
+      </div>
+    );
+  }
+  
+  if (error || !song) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <div className="text-center text-muted-foreground">
+          {error || 'No song available at the moment.'}
         </div>
       </div>
     );
   }
 
-  if (!featuredSong) {
-    return (
-      <div className="flex justify-center items-center h-40">
-        <p className="text-muted-foreground">No featured song available</p>
-      </div>
-    );
-  }
-
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-      className="w-full max-w-4xl mx-auto my-12"
-    >
-      <h2 className="text-3xl font-bold text-center mb-8">Featured Song</h2>
-      
-      <Card className="shadow-lg border-accent/50">
-        <CardHeader className="pb-2">
-          <div className="flex items-start gap-4">
-            <div className="h-24 w-24 rounded-md overflow-hidden relative group">
-              <img 
-                src={featuredSong.cover_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200&q=80'} 
-                alt={featuredSong.title} 
-                className="h-full w-full object-cover"
-              />
-              <div 
-                className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                onClick={toggleMusicPlayer}
-              >
-                <Play className="h-12 w-12 text-white" />
-              </div>
-            </div>
-            <div>
-              <CardTitle className="text-xl">{featuredSong.title}</CardTitle>
-              <CardDescription>{featuredSong.artist}</CardDescription>
-              <div className="flex gap-4 mt-2">
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="p-1 h-8 text-red-500 hover:text-red-600 hover:bg-red-100/10"
-                  onClick={() => handleReaction('love')}
-                >
-                  <Heart className="h-5 w-5 mr-1" />
-                  <span>{reactions.find(r => r.reaction_type === 'love')?.count || 0}</span>
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="p-1 h-8"
-                  onClick={() => handleReaction('comment')}
-                >
-                  <MessageSquare className="h-5 w-5 mr-1" />
-                  <span>{comments.length}</span>
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="p-1 h-8"
-                  onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
-                    toast.success('Link copied to clipboard!');
-                  }}
-                >
-                  <Share2 className="h-5 w-5 mr-1" />
-                  <span>Share</span>
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="p-1 h-8"
-                  onClick={toggleMusicPlayer}
-                >
-                  <Play className="h-5 w-5 mr-1" />
-                  <span>Play</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        
-        {isPlayerVisible && (
-          <CardContent className="pt-2 border-t border-border mt-3">
-            <div className="mt-4">
-              <MusicPlayer
-                song={{
-                  id: featuredSong.id,
-                  title: featuredSong.title,
-                  artist: featuredSong.artist,
-                  coverUrl: featuredSong.cover_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&h=200&q=80',
-                  audioUrl: featuredSong.audio_url
-                }}
-              />
-            </div>
-          </CardContent>
-        )}
-        
-        <CardContent className={`pt-2 ${isPlayerVisible ? 'mt-4' : ''}`}>
-          <div className="mt-4">
-            <div className="flex flex-col gap-1">
-              <h3 className="text-sm font-medium">Fan Reactions</h3>
-              {totalReactions > 0 ? (
-                reactions.map((reaction) => (
-                  <div key={reaction.reaction_type} className="flex items-center gap-2 mb-1">
-                    <span className="text-xs w-16">{reaction.reaction_type}</span>
-                    <Progress 
-                      value={(reaction.count / totalReactions) * 100} 
-                      className="h-2" 
-                      indicatorClassName={
-                        reaction.reaction_type === 'love' ? 'bg-red-500' : 
-                        reaction.reaction_type === 'fire' ? 'bg-orange-500' : 
-                        'bg-blue-500'
-                      }
-                    />
-                    <span className="text-xs">{reaction.count}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">Be the first to react!</p>
-              )}
-            </div>
+    <div className="container mx-auto px-4 py-16">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-accent/5 to-background">
+          <div className="relative">
+            {/* Decorative elements */}
+            <div className="absolute top-0 left-0 w-48 h-48 bg-primary/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
+            <div className="absolute bottom-0 right-0 w-64 h-64 bg-accent/10 rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
             
-            <div className="mt-6">
-              <h3 className="text-sm font-medium mb-3">Add Your Comment</h3>
-              <form onSubmit={handleCommentSubmit}>
-                <div className="space-y-3">
-                  <Input
-                    placeholder="Your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full"
-                    required
-                  />
-                  <div className="flex items-center gap-2">
-                    <Input
-                      placeholder="Add a comment..."
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      className="flex-grow"
-                      required
+            <CardContent className="p-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+                {/* Cover Art Section */}
+                <div className="relative h-64 md:h-auto overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 mix-blend-overlay" />
+                  {song.cover_url ? (
+                    <img 
+                      src={song.cover_url} 
+                      alt={`${song.title} by ${song.artist}`} 
+                      className="w-full h-full object-cover md:h-full"
                     />
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? 'Posting...' : 'Post'}
-                    </Button>
+                  ) : (
+                    <div className="w-full h-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-4xl text-primary/50">♪</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Song Info & Player Section */}
+                <div className="p-6 md:p-8 flex flex-col relative">
+                  <div className="mb-6">
+                    <span className="text-xs font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">
+                      Featured Song
+                    </span>
+                    <h2 className="mt-3 text-2xl md:text-3xl font-display font-bold">{song.title}</h2>
+                    <p className="text-lg text-muted-foreground">{song.artist}</p>
+                    
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {song.genre && (
+                        <span className="text-xs bg-muted px-2 py-1 rounded text-muted-foreground">
+                          {song.genre}
+                        </span>
+                      )}
+                      {song.year && (
+                        <span className="text-xs bg-muted px-2 py-1 rounded text-muted-foreground">
+                          {song.year}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Music Player */}
+                  <div className="mt-auto">
+                    <MusicPlayer 
+                      audioUrl={song.audio_url} 
+                      title={song.title}
+                      artist={song.artist}
+                      allowDownload={true}
+                      songId={song.id}
+                    />
                   </div>
                 </div>
-              </form>
-            </div>
-            
-            <div className="mt-6 space-y-4">
-              <h3 className="text-sm font-medium mb-2">Comments ({comments.length})</h3>
-              {comments.length > 0 ? (
-                comments.map((comment) => (
-                  <div key={comment.id} className="border-b border-border pb-3">
-                    <div className="flex justify-between">
-                      <h4 className="font-medium">{comment.name}</h4>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(comment.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-sm mt-1">{comment.comment}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">No comments yet. Be the first to comment!</p>
-              )}
-            </div>
+              </div>
+            </CardContent>
           </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+        </Card>
+      </motion.div>
+    </div>
   );
 };
 

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Send, Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
+import { Send, Mail, Phone, MapPin, MessageCircle, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Contact: React.FC = () => {
@@ -181,8 +181,7 @@ const Contact: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="font-medium mb-1">Email</h3>
-                      <p className="text-muted-foreground">hello@bongobeat.com</p>
-                      <p className="text-muted-foreground">support@bongobeat.com</p>
+                      <p className="text-muted-foreground">omaryw003@gmail.com</p>
                     </div>
                   </div>
                   
@@ -192,8 +191,7 @@ const Contact: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="font-medium mb-1">Phone</h3>
-                      <p className="text-muted-foreground">+254 700 000 000</p>
-                      <p className="text-muted-foreground">+254 733 000 000</p>
+                      <p className="text-muted-foreground">+254 725 409 996</p>
                     </div>
                   </div>
                   
@@ -204,7 +202,7 @@ const Contact: React.FC = () => {
                     <div>
                       <h3 className="font-medium mb-1">Location</h3>
                       <p className="text-muted-foreground">
-                        Nairobi, Kenya
+                        Mombasa, Kenya
                       </p>
                     </div>
                   </div>
@@ -230,8 +228,8 @@ const Contact: React.FC = () => {
                   <div>
                     <h4 className="font-medium mb-1">Can I download music from the platform?</h4>
                     <p className="text-sm text-muted-foreground">
-                      Our platform is designed for streaming purposes only. Downloads are not currently supported 
-                      to respect artist rights.
+                      Yes! You can download music from our platform. Each song has a download option 
+                      that allows you to save it to your device for offline listening.
                     </p>
                   </div>
                   
@@ -240,6 +238,17 @@ const Contact: React.FC = () => {
                     <p className="text-sm text-muted-foreground">
                       We welcome suggestions! Please use the contact form to let us know which artists or songs 
                       you'd like to see added to our library.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium mb-1 flex items-center gap-2">
+                      How do I download songs?
+                      <Download className="h-4 w-4 text-primary" />
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      To download a song, simply click the download button next to the song player.
+                      The file will be saved to your device in MP3 format for you to enjoy offline.
                     </p>
                   </div>
                 </div>

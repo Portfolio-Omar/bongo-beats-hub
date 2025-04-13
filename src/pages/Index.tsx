@@ -43,6 +43,10 @@ const Index: React.FC = () => {
         }
         
         console.log('Random song selected and view tracked:', selectedSongId);
+        
+        // Also set this song as the current song of the week in local storage
+        // This allows SongOfTheWeek component to display a random song on each visit
+        localStorage.setItem('random_song_id', selectedSongId);
       } catch (error) {
         console.error('Error in trackHomePageVisit:', error);
       }

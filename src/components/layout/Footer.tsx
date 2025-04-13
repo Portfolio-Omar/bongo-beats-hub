@@ -51,9 +51,9 @@ const Footer: React.FC = () => {
               <span className="h-1 w-1 rounded-full bg-primary/50 group-hover:w-2 transition-all duration-300"></span>
               Blog
             </Link>
-            <Link to="/polls" className="text-sm text-muted-foreground transition-colors hover:text-primary flex items-center gap-2 group">
+            <Link to="/videos" className="text-sm text-muted-foreground transition-colors hover:text-primary flex items-center gap-2 group">
               <span className="h-1 w-1 rounded-full bg-primary/50 group-hover:w-2 transition-all duration-300"></span>
-              Polls
+              Videos
             </Link>
             <Link to="/contact" className="text-sm text-muted-foreground transition-colors hover:text-primary flex items-center gap-2 group">
               <span className="h-1 w-1 rounded-full bg-primary/50 group-hover:w-2 transition-all duration-300"></span>
