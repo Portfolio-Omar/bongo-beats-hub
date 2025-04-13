@@ -20,7 +20,6 @@ import { supabase, rpcFunctions } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 
-// Define Song type for TypeScript
 interface Song {
   id: string;
   title: string;
@@ -46,7 +45,6 @@ const Music: React.FC = () => {
   const [editedGenre, setEditedGenre] = useState('');
   const [editedYear, setEditedYear] = useState('');
   
-  // Fetch songs from Supabase
   const { data: songs, isLoading, error, refetch } = useQuery({
     queryKey: ['songs'],
     queryFn: async () => {
@@ -60,23 +58,23 @@ const Music: React.FC = () => {
         throw error;
       }
       
-      return data as Song[];
+      return (data || []).map(song => ({
+        ...song,
+        download_count: song.download_count || 0
+      })) as Song[];
     }
   });
   
-  // Set first song as selected when data loads
   useEffect(() => {
     if (songs && songs.length > 0 && !selectedSong) {
       setSelectedSong(songs[0]);
     }
   }, [songs, selectedSong]);
   
-  // Extract unique genres for the filter
   const genres = songs 
     ? ['all', ...new Set(songs.filter(song => song.genre).map(song => song.genre as string))]
     : ['all'];
   
-  // Filter songs based on search query and genre
   const filteredSongs = songs ? songs.filter(song => {
     const matchesSearch = 
       song.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -85,7 +83,6 @@ const Music: React.FC = () => {
     return matchesSearch && matchesGenre;
   }) : [];
   
-  // Sort songs based on selected sort option
   const sortedSongs = [...filteredSongs].sort((a, b) => {
     if (sortBy === 'title') return a.title.localeCompare(b.title);
     if (sortBy === 'artist') return a.artist.localeCompare(b.artist);
@@ -93,11 +90,9 @@ const Music: React.FC = () => {
     return 0;
   });
 
-  // Handle download
   const handleDownload = async (song: Song, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      // Create an anchor element and set the href to the audio file
       const link = document.createElement('a');
       link.href = song.audio_url;
       link.download = `${song.title} - ${song.artist}.mp3`;
@@ -105,7 +100,6 @@ const Music: React.FC = () => {
       link.click();
       document.body.removeChild(link);
       
-      // Update download count in Supabase
       const { error } = await supabase
         .from('songs')
         .update({ download_count: (song.download_count || 0) + 1 })
@@ -113,7 +107,6 @@ const Music: React.FC = () => {
         
       if (error) throw error;
       
-      // Update local state
       refetch();
       
       toast.success(`Downloading ${song.title}`);
@@ -123,7 +116,6 @@ const Music: React.FC = () => {
     }
   };
   
-  // Edit song functionality
   const handleEditClick = (song: Song, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingSong(song);
@@ -153,7 +145,6 @@ const Music: React.FC = () => {
       refetch();
       setEditingSong(null);
       
-      // Update selectedSong if it was the one being edited
       if (selectedSong && selectedSong.id === editingSong.id) {
         setSelectedSong({
           ...selectedSong,
@@ -169,16 +160,13 @@ const Music: React.FC = () => {
     }
   };
   
-  // Functions for playlist navigation
   const playNextSong = () => {
     if (!selectedSong || !sortedSongs.length) return;
     
     const currentIndex = sortedSongs.findIndex(song => song.id === selectedSong.id);
     let nextIndex;
     
-    // If shuffle is enabled, play a random song (we'll simulate shuffle here)
     if (isShuffleEnabled) {
-      // Get a random index different from the current one
       let randomIndex;
       do {
         randomIndex = Math.floor(Math.random() * sortedSongs.length);
@@ -186,7 +174,6 @@ const Music: React.FC = () => {
       
       nextIndex = randomIndex;
     } else {
-      // Otherwise, proceed to the next song or loop back to the first
       nextIndex = (currentIndex + 1) % sortedSongs.length;
     }
     
@@ -202,10 +189,8 @@ const Music: React.FC = () => {
     setSelectedSong(sortedSongs[previousIndex]);
   };
   
-  // State for shuffle functionality
   const [isShuffleEnabled, setIsShuffleEnabled] = useState(false);
   
-  // Toggle shuffle function to be passed to music player
   const toggleShuffle = () => {
     setIsShuffleEnabled(!isShuffleEnabled);
     toast.info(isShuffleEnabled ? 'Shuffle disabled' : 'Shuffle enabled');
@@ -218,7 +203,6 @@ const Music: React.FC = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12 relative overflow-hidden">
-        {/* Animated background */}
         <div className="absolute inset-0 -z-10 overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 to-secondary/5"></div>
           <motion.div 
@@ -267,7 +251,6 @@ const Music: React.FC = () => {
           </motion.p>
         </div>
         
-        {/* Music Player */}
         <motion.div 
           className="mb-16"
           initial={{ opacity: 0, y: 20 }}
@@ -305,7 +288,6 @@ const Music: React.FC = () => {
           )}
         </motion.div>
         
-        {/* Search and Filters */}
         <motion.div 
           className="mb-8 flex flex-col md:flex-row gap-4 justify-between"
           initial={{ opacity: 0, y: 20 }}
@@ -355,7 +337,6 @@ const Music: React.FC = () => {
           </div>
         </motion.div>
         
-        {/* Song List */}
         <motion.div
           className="space-y-4"
           initial={{ opacity: 0 }}
@@ -439,7 +420,6 @@ const Music: React.FC = () => {
         </motion.div>
       </div>
       
-      {/* Edit Song Dialog - We're keeping this, but it can only be accessed from Admin page now */}
       <Dialog open={!!editingSong} onOpenChange={(open) => !open && setEditingSong(null)}>
         <DialogContent>
           <DialogHeader>

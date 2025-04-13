@@ -32,7 +32,11 @@ const SongOfTheWeek: React.FC = () => {
             setError('Failed to load featured song.');
             // If error, fallback to regular song of the week
           } else if (songData) {
-            setSong(songData);
+            // Ensure download_count exists in the data
+            setSong({
+              ...songData,
+              download_count: songData.download_count || 0
+            });
             setLoading(false);
             return;
           }
@@ -63,10 +67,19 @@ const SongOfTheWeek: React.FC = () => {
           } else {
             // Randomly select one song
             const randomIndex = Math.floor(Math.random() * fallbackSongs.length);
-            setSong(fallbackSongs[randomIndex]);
+            const selectedSong = fallbackSongs[randomIndex];
+            // Ensure download_count exists in the data
+            setSong({
+              ...selectedSong,
+              download_count: selectedSong.download_count || 0
+            });
           }
         } else if (sotw && sotw.song) {
-          setSong(sotw.song);
+          // Ensure download_count exists in the data
+          setSong({
+            ...sotw.song,
+            download_count: sotw.song.download_count || 0
+          });
         } else {
           setError('No featured song available.');
         }
@@ -156,11 +169,16 @@ const SongOfTheWeek: React.FC = () => {
                   {/* Music Player */}
                   <div className="mt-auto">
                     <MusicPlayer 
-                      audioUrl={song.audio_url} 
-                      title={song.title}
-                      artist={song.artist}
-                      allowDownload={true}
-                      songId={song.id}
+                      song={{
+                        id: song.id,
+                        title: song.title,
+                        artist: song.artist,
+                        coverUrl: song.cover_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80',
+                        audioUrl: song.audio_url,
+                        downloadCount: song.download_count
+                      }}
+                      onPlayNext={() => {}}
+                      onPlayPrevious={() => {}}
                     />
                   </div>
                 </div>
