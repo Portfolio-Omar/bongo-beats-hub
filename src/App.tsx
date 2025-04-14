@@ -1,50 +1,40 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/context/AuthContext";
-import { ThemeProvider } from "@/context/ThemeContext";
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Index from '@/pages/Index';
+import Music from '@/pages/Music';
+import Admin from '@/pages/Admin';
+import Blog from '@/pages/Blog';
+import Feedback from '@/pages/Feedback';
+import Contact from '@/pages/Contact';
+import VideoMusic from '@/pages/VideoMusic';
+import Polls from '@/pages/Polls';
+import Settings from '@/pages/Settings';
+import NotFound from '@/pages/NotFound';
+import MobileMenu from '@/pages/MobileMenu';
+import SaleNotification from '@/components/ui-custom/SaleNotification';
+import { Toaster } from '@/components/ui/sonner';
 
-import Index from "./pages/Index";
-import Music from "./pages/Music";
-import Contact from "./pages/Contact";
-import Admin from "./pages/Admin";
-import Feedback from "./pages/Feedback";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
-import MobileMenu from "./pages/MobileMenu";
-import Blog from "./pages/Blog";
-import VideoMusic from "./pages/VideoMusic"; // Add import for VideoMusic page
-
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <ThemeProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/music" element={<Music />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/feedback" element={<Feedback />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/menu" element={<MobileMenu />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/videos" element={<VideoMusic />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </ThemeProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <>
+      <SaleNotification />
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/music" element={<Music />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/blog" element={<Blog />} />
+        <Route path="/feedback" element={<Feedback />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/video-music" element={<VideoMusic />} />
+        <Route path="/polls" element={<Polls />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/mobile-menu" element={<MobileMenu />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <Toaster />
+    </>
+  );
+}
 
 export default App;
