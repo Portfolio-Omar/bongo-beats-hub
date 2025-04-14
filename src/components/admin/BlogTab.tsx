@@ -4,37 +4,62 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { FileText, Plus, Trash2, Eye, Upload, Image } from 'lucide-react';
+import { FileText, Plus, Trash2, Eye, EyeOff, Calendar, Image } from 'lucide-react';
 import { format } from 'date-fns';
+import RichTextEditor from '../blog/RichTextEditor';
+import ImageUpload from '../blog/ImageUpload';
+import TagInput from '../blog/TagInput';
+import MarkdownPreview from '../blog/MarkdownPreview';
+import CategorySelector from '../blog/CategorySelector';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface BlogType {
   id: string;
   title: string;
   content: string;
+  rich_content?: any;
   date: string;
   status: 'draft' | 'published';
-  featured_image_url?: string;
-  slug?: string;
+  featured_image_url?: string | null;
+  slug?: string | null;
+  tags?: string[] | null;
+  category?: string | null;
 }
 
 const BlogTab: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<string>('editor');
   const [newBlog, setNewBlog] = useState<Partial<BlogType>>({ 
     title: '', 
     content: '', 
-    status: 'draft' 
+    status: 'draft',
+    tags: [],
   });
   const [blogs, setBlogs] = useState<BlogType[]>([]);
   const [loadingBlogs, setLoadingBlogs] = useState(false);
-  const [featuredImage, setFeaturedImage] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [categories] = useState(['History', 'Artists', 'Culture', 'Media', 'General']);
-  const [selectedCategory, setSelectedCategory] = useState('General');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   
+  // Generate slug from title
+  const generateSlug = (title: string): string => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
   // Fetch blogs
   const fetchBlogs = async () => {
     setLoadingBlogs(true);
@@ -62,27 +87,6 @@ const BlogTab: React.FC = () => {
     fetchBlogs();
   }, []);
   
-  // Handle image file change
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      // Check file size (2MB limit)
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error('Image is too large. Maximum size is 2MB.');
-        return;
-      }
-      setFeaturedImage(file);
-    }
-  };
-  
-  // Generate slug from title
-  const generateSlug = (title: string): string => {
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  };
-  
   // Handle blog create/publish
   const handleSaveBlog = async (status: 'draft' | 'published') => {
     if (!newBlog.title || !newBlog.content) {
@@ -105,34 +109,8 @@ const BlogTab: React.FC = () => {
         });
       }, 300);
       
-      // Generate slug
+      // Generate slug if not provided
       const slug = generateSlug(newBlog.title);
-      
-      // Upload featured image if provided
-      let imageUrl = null;
-      if (featuredImage) {
-        const fileName = `${Date.now()}-${featuredImage.name}`;
-        const { error: uploadError } = await supabase
-          .storage
-          .from('blog-images')
-          .upload(fileName, featuredImage, {
-            cacheControl: '3600',
-            upsert: false
-          });
-          
-        if (uploadError) {
-          console.error('Error uploading image:', uploadError);
-          toast.error('Failed to upload image');
-          throw uploadError;
-        }
-        
-        const { data: imageData } = supabase
-          .storage
-          .from('blog-images')
-          .getPublicUrl(fileName);
-          
-        imageUrl = imageData.publicUrl;
-      }
       
       // Save blog data
       const { data, error } = await supabase
@@ -142,8 +120,9 @@ const BlogTab: React.FC = () => {
           content: newBlog.content,
           date: format(new Date(), 'yyyy-MM-dd'),
           status: status,
-          featured_image_url: imageUrl,
-          slug: slug
+          featured_image_url: newBlog.featured_image_url || null,
+          slug: slug,
+          tags: newBlog.tags || [],
         })
         .select();
         
@@ -153,16 +132,25 @@ const BlogTab: React.FC = () => {
         throw error;
       }
       
+      if (data && data[0] && selectedCategory) {
+        // Save category relation
+        await supabase
+          .from('blog_category_relations')
+          .insert({
+            blog_id: data[0].id,
+            category_id: selectedCategory
+          });
+      }
+      
       // Set progress to 100% and clear interval
       clearInterval(progressInterval);
       setUploadProgress(100);
       
       // Reset form after success
       setTimeout(() => {
-        setNewBlog({ title: '', content: '', status: 'draft' });
-        setFeaturedImage(null);
+        setNewBlog({ title: '', content: '', status: 'draft', tags: [] });
+        setSelectedCategory(null);
         setUploadProgress(0);
-        setSelectedCategory('General');
         fetchBlogs();
         toast.success(`Blog ${status === 'published' ? 'published' : 'saved as draft'} successfully`);
       }, 500);
@@ -175,7 +163,7 @@ const BlogTab: React.FC = () => {
     }
   };
   
-  // Delete blog mutation
+  // Delete blog
   const handleDeleteBlog = async (id: string) => {
     try {
       // Get the blog to find if it has a featured image
@@ -185,14 +173,20 @@ const BlogTab: React.FC = () => {
         .eq('id', id)
         .single();
         
-      // Delete from storage if image exists
-      if (blog?.featured_image_url) {
+      // Delete from storage if image exists and contains blog-images
+      if (blog?.featured_image_url && blog.featured_image_url.includes('blog-images')) {
         const imagePath = blog.featured_image_url.split('/').pop();
         if (imagePath) {
           await supabase.storage.from('blog-images').remove([imagePath]);
         }
       }
       
+      // Delete category relations
+      await supabase
+        .from('blog_category_relations')
+        .delete()
+        .eq('blog_id', id);
+        
       // Delete the blog record
       const { error } = await supabase
         .from('blogs')
@@ -203,6 +197,7 @@ const BlogTab: React.FC = () => {
         throw error;
       }
       
+      setShowDeleteConfirm(null);
       fetchBlogs();
       toast.success('Blog deleted successfully');
     } catch (error) {
@@ -231,6 +226,19 @@ const BlogTab: React.FC = () => {
     }
   };
   
+  const formatDate = (dateString: string) => {
+    try {
+      // If date is in format YYYY-MM-DD
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        const [year, month, day] = dateString.split('-').map(Number);
+        return format(new Date(year, month - 1, day), 'MMM d, yyyy');
+      }
+      return dateString;
+    } catch (e) {
+      return dateString;
+    }
+  };
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
       {/* Blog Form */}
@@ -243,79 +251,102 @@ const BlogTab: React.FC = () => {
           <CardDescription>Write and publish blog articles</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="blog-title">Title *</Label>
-              <Input
-                id="blog-title"
-                placeholder="Blog title"
-                value={newBlog.title}
-                onChange={(e) => setNewBlog({ ...newBlog, title: e.target.value })}
-              />
-            </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid grid-cols-2 mb-4">
+              <TabsTrigger value="editor">Editor</TabsTrigger>
+              <TabsTrigger value="preview">Preview</TabsTrigger>
+            </TabsList>
             
-            <div className="space-y-2">
-              <Label htmlFor="blog-category">Category</Label>
-              <Select 
-                value={selectedCategory} 
-                onValueChange={setSelectedCategory}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(category => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="blog-image">Featured Image (Optional, Max 2MB)</Label>
-              <div className="flex items-center justify-center w-full">
-                <label
-                  htmlFor="blog-image"
-                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-secondary/50 hover:bg-secondary border-border"
-                >
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Image className="w-8 h-8 mb-2 text-muted-foreground" />
-                    <p className="mb-2 text-sm text-muted-foreground">
-                      <span className="font-semibold">Click to upload</span> or drag and drop
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      JPG, PNG, or WEBP (MAX. 2MB)
-                    </p>
-                  </div>
-                  <Input
-                    id="blog-image"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageChange}
-                  />
-                </label>
+            <TabsContent value="editor" className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="blog-title">Title *</Label>
+                <Input
+                  id="blog-title"
+                  placeholder="Blog title"
+                  value={newBlog.title || ''}
+                  onChange={(e) => setNewBlog({ ...newBlog, title: e.target.value })}
+                />
               </div>
-              {featuredImage && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Selected image: {featuredImage.name} ({(featuredImage.size / (1024 * 1024)).toFixed(2)} MB)
-                </p>
-              )}
-            </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="blog-category">Category</Label>
+                <CategorySelector 
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={setSelectedCategory}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Featured Image (Optional, Max 2MB)</Label>
+                <ImageUpload
+                  imageUrl={newBlog.featured_image_url || null}
+                  onImageChange={(url) => setNewBlog({ ...newBlog, featured_image_url: url })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Tags</Label>
+                <TagInput
+                  tags={newBlog.tags || []}
+                  onChange={(tags) => setNewBlog({ ...newBlog, tags })}
+                  placeholder="Add tags and press Enter"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="blog-content">Content *</Label>
+                <RichTextEditor
+                  value={newBlog.content || ''}
+                  onChange={(value) => setNewBlog({ ...newBlog, content: value })}
+                />
+              </div>
+            </TabsContent>
             
-            <div className="space-y-2">
-              <Label htmlFor="blog-content">Content *</Label>
-              <Textarea
-                id="blog-content"
-                placeholder="Write your blog content here..."
-                value={newBlog.content}
-                onChange={(e) => setNewBlog({ ...newBlog, content: e.target.value })}
-                rows={10}
-              />
-            </div>
-          </div>
+            <TabsContent value="preview">
+              <div className="border rounded-md p-4">
+                {newBlog.title ? (
+                  <h1 className="text-2xl font-bold mb-2">{newBlog.title}</h1>
+                ) : (
+                  <div className="h-8 bg-muted/50 rounded w-2/3 mb-2"></div>
+                )}
+                
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                  <Calendar size={14} />
+                  <span>{format(new Date(), 'MMM d, yyyy')}</span>
+                  
+                  {newBlog.tags && newBlog.tags.length > 0 && (
+                    <div className="flex gap-1 ml-2">
+                      {newBlog.tags.map((tag, i) => (
+                        <span key={i} className="bg-secondary text-xs px-2 py-0.5 rounded-full">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                {newBlog.featured_image_url && (
+                  <div className="mb-4">
+                    <img
+                      src={newBlog.featured_image_url}
+                      alt="Featured"
+                      className="w-full h-48 object-cover rounded-md"
+                    />
+                  </div>
+                )}
+                
+                {newBlog.content ? (
+                  <MarkdownPreview content={newBlog.content} />
+                ) : (
+                  <div className="space-y-2">
+                    <div className="h-4 bg-muted/50 rounded w-full"></div>
+                    <div className="h-4 bg-muted/50 rounded w-5/6"></div>
+                    <div className="h-4 bg-muted/50 rounded w-4/6"></div>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
         </CardContent>
         <CardFooter className="flex flex-col">
           {uploadProgress > 0 && uploadProgress < 100 && (
@@ -327,7 +358,7 @@ const BlogTab: React.FC = () => {
                 ></div>
               </div>
               <p className="text-xs text-center mt-1 text-muted-foreground">
-                Uploading: {uploadProgress}%
+                Saving: {uploadProgress}%
               </p>
             </div>
           )}
@@ -390,7 +421,7 @@ const BlogTab: React.FC = () => {
                       <tr key={blog.id} className="border-b hover:bg-secondary/50">
                         <td className="p-4">
                           <div className="flex items-center space-x-3">
-                            {blog.featured_image_url && (
+                            {blog.featured_image_url ? (
                               <div className="h-10 w-10 rounded overflow-hidden bg-secondary">
                                 <img 
                                   src={blog.featured_image_url} 
@@ -398,16 +429,20 @@ const BlogTab: React.FC = () => {
                                   className="h-full w-full object-cover"
                                 />
                               </div>
+                            ) : (
+                              <div className="h-10 w-10 rounded bg-secondary flex items-center justify-center">
+                                <Image className="h-5 w-5 text-muted-foreground" />
+                              </div>
                             )}
-                            <span className={`${blog.featured_image_url ? '' : 'ml-0'}`}>{blog.title}</span>
+                            <span className="font-medium">{blog.title}</span>
                           </div>
                         </td>
-                        <td className="p-4 hidden md:table-cell">{blog.date}</td>
+                        <td className="p-4 hidden md:table-cell">{formatDate(blog.date)}</td>
                         <td className="p-4">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                             blog.status === 'published' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
                           }`}>
                             {blog.status.charAt(0).toUpperCase() + blog.status.slice(1)}
                           </span>
@@ -418,6 +453,7 @@ const BlogTab: React.FC = () => {
                               variant="ghost"
                               size="icon"
                               onClick={() => handlePublishBlog(blog.id)}
+                              title="Publish"
                             >
                               <Eye className="h-4 w-4 text-primary" />
                             </Button>
@@ -425,7 +461,8 @@ const BlogTab: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDeleteBlog(blog.id)}
+                            onClick={() => setShowDeleteConfirm(blog.id)}
+                            title="Delete"
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -445,6 +482,29 @@ const BlogTab: React.FC = () => {
           )}
         </CardContent>
       </Card>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!showDeleteConfirm} onOpenChange={(open) => !open && setShowDeleteConfirm(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Blog</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this blog? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(null)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => showDeleteConfirm && handleDeleteBlog(showDeleteConfirm)}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

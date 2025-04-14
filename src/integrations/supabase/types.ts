@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      blog_categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      blog_category_relations: {
+        Row: {
+          blog_id: string
+          category_id: string
+        }
+        Insert: {
+          blog_id: string
+          category_id: string
+        }
+        Update: {
+          blog_id?: string
+          category_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_category_relations_blog_id_fkey"
+            columns: ["blog_id"]
+            isOneToOne: false
+            referencedRelation: "blogs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_category_relations_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "blog_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blogs: {
         Row: {
           content: string
@@ -16,8 +67,10 @@ export type Database = {
           date: string
           featured_image_url: string | null
           id: string
+          rich_content: Json | null
           slug: string | null
           status: string
+          tags: string[] | null
           title: string
         }
         Insert: {
@@ -26,8 +79,10 @@ export type Database = {
           date: string
           featured_image_url?: string | null
           id?: string
+          rich_content?: Json | null
           slug?: string | null
           status: string
+          tags?: string[] | null
           title: string
         }
         Update: {
@@ -36,8 +91,10 @@ export type Database = {
           date?: string
           featured_image_url?: string | null
           id?: string
+          rich_content?: Json | null
           slug?: string | null
           status?: string
+          tags?: string[] | null
           title?: string
         }
         Relationships: []
