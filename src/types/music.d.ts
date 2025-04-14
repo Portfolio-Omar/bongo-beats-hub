@@ -3,20 +3,26 @@ export interface Song {
   id: string;
   title: string;
   artist: string;
+  genre: string;
+  year: string;
+  duration: string;
   audio_url: string;
-  cover_url: string | null;
-  genre: string | null;
-  year: string | null;
-  duration: string | null;
-  published: boolean;
+  cover_url: string;
   created_at: string;
+  published: boolean;
   download_count: number;
 }
 
-export interface SongOfTheWeek {
+export interface Genre {
   id: string;
-  song_id: string;
-  feature_date: string;
-  active: boolean;
-  song: Song;
+  name: string;
+  slug: string;
+}
+
+export interface Artist {
+  id: string;
+  name: string;
+  bio?: string;
+  image_url?: string;
+  created_at: string;
 }

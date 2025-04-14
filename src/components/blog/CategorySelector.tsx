@@ -48,6 +48,8 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
         setCategories(data || []);
       } catch (error) {
         console.error('Error fetching categories:', error);
+        // Initialize with empty array to prevent undefined is not iterable error
+        setCategories([]);
       } finally {
         setLoading(false);
       }
@@ -83,7 +85,8 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
           <CommandInput placeholder="Search categories..." />
           <CommandEmpty>No category found.</CommandEmpty>
           <CommandGroup>
-            {categories.map((category) => (
+            {/* Make sure we're iterating over a valid array */}
+            {Array.isArray(categories) && categories.map((category) => (
               <CommandItem
                 key={category.id}
                 value={category.name}
