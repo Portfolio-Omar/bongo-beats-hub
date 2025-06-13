@@ -15,7 +15,6 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import MobileMenu from "./pages/MobileMenu";
 import Blog from "./pages/Blog";
-import VideoMusic from "./pages/VideoMusic";
 
 const queryClient = new QueryClient();
 
@@ -35,7 +34,6 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/menu" element={<MobileMenu />} />
             <Route path="/blog" element={<Blog />} />
-            <Route path="/videos" element={<VideoMusic />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

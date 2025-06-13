@@ -6,14 +6,13 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import SetSongOfWeek from '@/components/admin/SetSongOfWeek';
 import FeedbackTab from '@/components/admin/FeedbackTab';
 import BlogTab from '@/components/admin/BlogTab';
-import VideoMusicTab from '@/components/admin/VideoMusicTab';
 import BatchUploadSongs from '@/components/admin/BatchUploadSongs';
+import SongsManagementTab from '@/components/admin/SongsManagementTab';
 import { motion } from 'framer-motion';
 import { 
-  Music, Video, FileText, MessageSquare, 
+  Music, FileText, MessageSquare, 
   Upload, Lock, LogOut 
 } from 'lucide-react';
 
@@ -128,10 +127,6 @@ const Admin: React.FC = () => {
                       <Music className="h-4 w-4" />
                       <span>Songs</span>
                     </TabsTrigger>
-                    <TabsTrigger value="videos" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
-                      <Video className="h-4 w-4" />
-                      <span>Music Videos</span>
-                    </TabsTrigger>
                     <TabsTrigger value="blog" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
                       <FileText className="h-4 w-4" />
                       <span>Blog Posts</span>
@@ -154,17 +149,7 @@ const Admin: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5 }}
                     >
-                      <SetSongOfWeek />
-                    </motion.div>
-                  </TabsContent>
-                  
-                  <TabsContent value="videos" className="mt-0">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5 }}
-                    >
-                      <VideoMusicTab />
+                      <SongsManagementTab />
                     </motion.div>
                   </TabsContent>
                   

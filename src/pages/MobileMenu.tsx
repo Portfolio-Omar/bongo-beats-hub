@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -7,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { 
   Home, Music, ArrowLeft, Phone, Shield, MessageSquare, 
-  Settings, Moon, Sun, Video, BookOpen 
+  Settings, Moon, Sun, BookOpen 
 } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 
@@ -19,7 +18,6 @@ const MobileMenu = () => {
   const menuItems = [
     { name: 'Home', path: '/', icon: <Home className="h-5 w-5 mr-3" /> },
     { name: 'Music', path: '/music', icon: <Music className="h-5 w-5 mr-3" /> },
-    { name: 'Videos', path: '/videos', icon: <Video className="h-5 w-5 mr-3" /> },
     { name: 'Blog', path: '/blog', icon: <BookOpen className="h-5 w-5 mr-3" /> },
     { name: 'Contact', path: '/contact', icon: <Phone className="h-5 w-5 mr-3" /> },
     { name: 'Settings', path: '/settings', icon: <Settings className="h-5 w-5 mr-3" /> },
