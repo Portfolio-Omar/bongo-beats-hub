@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import Layout from '@/components/layout/Layout';
+
 import Hero from '@/components/ui-custom/Hero';
 import SongOfTheWeek from '@/components/ui-custom/SongOfTheWeek';
 import AdminPopup from '@/components/admin/AdminPopup';
@@ -56,11 +56,11 @@ const Index: React.FC = () => {
   }, []);
   
   return (
-    <Layout>
+    <>
       <Hero />
       <SongOfTheWeek />
       {isAuthenticated && <AdminPopup delay={20000} />}
-    </Layout>
+    </>
   );
 };
 

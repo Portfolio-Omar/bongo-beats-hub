@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
+import Layout from "@/components/layout/Layout";
+import PersistentAudioPlayer from "@/components/ui-custom/PersistentAudioPlayer";
 
 import Index from "./pages/Index";
 import Music from "./pages/Music";
@@ -25,17 +27,20 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/music" element={<Music />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/feedback" element={<Feedback />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/menu" element={<MobileMenu />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/music" element={<Music />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/feedback" element={<Feedback />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/menu" element={<MobileMenu />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Layout>
+          <PersistentAudioPlayer />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>

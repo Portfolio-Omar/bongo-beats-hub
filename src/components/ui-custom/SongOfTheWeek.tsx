@@ -32,11 +32,7 @@ const SongOfTheWeek: React.FC = () => {
             setError('Failed to load featured song.');
             // If error, fallback to regular song of the week
           } else if (songData) {
-            // Ensure download_count exists in the data
-            setSong({
-              ...songData,
-              download_count: songData.download_count || 0
-            });
+            setSong(songData);
             setLoading(false);
             return;
           }
@@ -68,18 +64,10 @@ const SongOfTheWeek: React.FC = () => {
             // Randomly select one song
             const randomIndex = Math.floor(Math.random() * fallbackSongs.length);
             const selectedSong = fallbackSongs[randomIndex];
-            // Ensure download_count exists in the data
-            setSong({
-              ...selectedSong,
-              download_count: selectedSong.download_count || 0
-            });
+            setSong(selectedSong);
           }
         } else if (sotw && sotw.song) {
-          // Ensure download_count exists in the data
-          setSong({
-            ...sotw.song,
-            download_count: sotw.song.download_count || 0
-          });
+          setSong(sotw.song);
         } else {
           setError('No featured song available.');
         }
@@ -175,7 +163,7 @@ const SongOfTheWeek: React.FC = () => {
                         artist: song.artist,
                         coverUrl: song.cover_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80',
                         audioUrl: song.audio_url,
-                        downloadCount: song.download_count
+                        downloadCount: song.download_count || 0
                       }}
                       onPlayNext={() => {}}
                       onPlayPrevious={() => {}}

@@ -82,13 +82,13 @@
 /* Custom Utilities */
 @layer components {
   .music-card {
-    @apply relative overflow-hidden rounded-lg bg-card p-6 shadow-md transition-all duration-300 hover:shadow-lg dark:bg-card/80;
+    @apply relative overflow-hidden rounded-lg bg-card p-4 sm:p-6 shadow-md transition-all duration-300 hover:shadow-lg dark:bg-card/80;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .glass-panel {
-    @apply relative overflow-hidden rounded-xl border border-white/20 bg-white/10 p-6 shadow-lg backdrop-blur-lg dark:bg-black/20 dark:border-white/10;
+    @apply relative overflow-hidden rounded-xl border border-white/20 bg-white/10 p-4 sm:p-6 shadow-lg backdrop-blur-lg dark:bg-black/20 dark:border-white/10;
   }
 
   .text-gradient {
@@ -105,5 +105,44 @@
 
   .grid-auto-fit {
     @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
+  /* Responsive typography */
+  .responsive-text-4xl {
+    @apply text-2xl sm:text-3xl lg:text-4xl;
+  }
+
+  .responsive-text-3xl {
+    @apply text-xl sm:text-2xl lg:text-3xl;
+  }
+
+  .responsive-text-2xl {
+    @apply text-lg sm:text-xl lg:text-2xl;
+  }
+
+  .responsive-text-xl {
+    @apply text-base sm:text-lg lg:text-xl;
+  }
+
+  /* Responsive containers */
+  .responsive-container {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .responsive-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6;
+  }
+
+  /* Mobile-first spacing */
+  .responsive-py {
+    @apply py-4 sm:py-6 lg:py-8;
+  }
+
+  .responsive-px {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  .responsive-mb {
+    @apply mb-4 sm:mb-6 lg:mb-8;
   }
 }
