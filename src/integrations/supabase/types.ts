@@ -355,6 +355,48 @@ export type Database = {
           },
         ]
       }
+      song_requests: {
+        Row: {
+          admin_notes: string | null
+          artist_name: string
+          audio_url: string
+          created_at: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          song_name: string
+          status: string
+          submitted_by_email: string | null
+          submitted_by_name: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          artist_name: string
+          audio_url: string
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          song_name: string
+          status?: string
+          submitted_by_email?: string | null
+          submitted_by_name?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          artist_name?: string
+          audio_url?: string
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          song_name?: string
+          status?: string
+          submitted_by_email?: string | null
+          submitted_by_name?: string | null
+        }
+        Relationships: []
+      }
       song_view_stats: {
         Row: {
           id: string

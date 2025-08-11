@@ -1,12 +1,18 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
+  user: User | null;
+  session: Session | null;
   isAuthenticated: boolean;
+  isAdminAuthenticated: boolean;
+  signUp: (email: string, password: string) => Promise<{ error?: any }>;
+  signIn: (email: string, password: string) => Promise<{ error?: any }>;
+  signOut: () => Promise<void>;
   authenticateAdmin: (pin: string) => Promise<boolean>;
-  logout: () => void;
+  logoutAdmin: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,19 +26,80 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
 
   useEffect(() => {
-    // Check if user is already authenticated
-    const authStatus = localStorage.getItem('isAuthenticated');
-    if (authStatus === 'true') {
-      setIsAuthenticated(true);
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    // Check admin auth status
+    const adminAuthStatus = localStorage.getItem('isAdminAuthenticated');
+    if (adminAuthStatus === 'true') {
+      setIsAdminAuthenticated(true);
     }
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  const signUp = async (email: string, password: string) => {
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl
+      }
+    });
+    
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Check your email for the confirmation link!');
+    }
+    
+    return { error };
+  };
+
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Successfully signed in!');
+    }
+    
+    return { error };
+  };
+
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Successfully signed out!');
+    }
+  };
 
   const authenticateAdmin = async (pin: string): Promise<boolean> => {
     try {
-      // Use Supabase function to check admin PIN
       const { data, error } = await supabase.rpc('admin_login', { pin });
       
       if (error) {
@@ -42,13 +109,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (data) {
-        setIsAuthenticated(true);
-        localStorage.setItem('isAuthenticated', 'true');
-        toast.success('Successfully logged in');
+        setIsAdminAuthenticated(true);
+        localStorage.setItem('isAdminAuthenticated', 'true');
+        toast.success('Successfully logged in as admin');
         return true;
       }
       
-      toast.error('Invalid PIN');
+      toast.error('Invalid admin PIN');
       return false;
     } catch (error) {
       console.error('Authentication error:', error);
@@ -57,14 +124,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    setIsAuthenticated(false);
-    localStorage.removeItem('isAuthenticated');
-    toast.info('Logged out successfully');
+  const logoutAdmin = () => {
+    setIsAdminAuthenticated(false);
+    localStorage.removeItem('isAdminAuthenticated');
+    toast.info('Admin logged out successfully');
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, authenticateAdmin, logout }}>
+    <AuthContext.Provider value={{ 
+      user,
+      session,
+      isAuthenticated: !!user,
+      isAdminAuthenticated,
+      signUp,
+      signIn,
+      signOut,
+      authenticateAdmin,
+      logoutAdmin
+    }}>
       {children}
     </AuthContext.Provider>
   );

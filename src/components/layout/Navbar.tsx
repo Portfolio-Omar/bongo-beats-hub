@@ -13,7 +13,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { 
   Menu, Phone, Home, Music, Settings, Moon, Sun, 
-  MessageSquare, BookOpen, Shield 
+  MessageSquare, BookOpen, Shield, User, LogOut 
 } from 'lucide-react';
 
 const navItems = [
@@ -27,7 +27,7 @@ const navItems = [
 ];
 
 const Navbar: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -71,6 +71,33 @@ const Navbar: React.FC = () => {
             {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             <span className="sr-only">Toggle theme</span>
           </Button>
+
+          {/* Auth Section - Desktop */}
+          <div className="hidden md:flex items-center gap-2">
+            {user ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground max-w-[120px] truncate">
+                  {user.email}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={signOut}
+                  className="flex items-center gap-1"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <Link to="/auth">
+                <Button variant="ghost" size="sm" className="flex items-center gap-1">
+                  <User className="h-4 w-4" />
+                  Sign In
+                </Button>
+              </Link>
+            )}
+          </div>
           
           {/* Mobile Navigation */}
           <div className="flex md:hidden">

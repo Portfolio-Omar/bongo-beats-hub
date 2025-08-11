@@ -3,12 +3,13 @@ import React, { useEffect } from 'react';
 
 import Hero from '@/components/ui-custom/Hero';
 import SongOfTheWeek from '@/components/ui-custom/SongOfTheWeek';
+import PublicUpload from '@/components/ui-custom/PublicUpload';
 import AdminPopup from '@/components/admin/AdminPopup';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
 const Index: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAdminAuthenticated } = useAuth();
   
   useEffect(() => {
     // This effect runs only once when the page loads
@@ -59,7 +60,8 @@ const Index: React.FC = () => {
     <>
       <Hero />
       <SongOfTheWeek />
-      {isAuthenticated && <AdminPopup delay={20000} />}
+      <PublicUpload />
+      {isAdminAuthenticated && <AdminPopup delay={20000} />}
     </>
   );
 };

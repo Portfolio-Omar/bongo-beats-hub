@@ -10,6 +10,7 @@ import FeedbackTab from '@/components/admin/FeedbackTab';
 import BlogTab from '@/components/admin/BlogTab';
 import BatchUploadSongs from '@/components/admin/BatchUploadSongs';
 import SongsManagementTab from '@/components/admin/SongsManagementTab';
+import RequestedSongsTab from '@/components/admin/RequestedSongsTab';
 import { motion } from 'framer-motion';
 import { 
   Music, FileText, MessageSquare, 
@@ -17,7 +18,7 @@ import {
 } from 'lucide-react';
 
 const Admin: React.FC = () => {
-  const { isAuthenticated, authenticateAdmin, logout } = useAuth();
+  const { isAdminAuthenticated, authenticateAdmin, logoutAdmin } = useAuth();
   const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
@@ -55,7 +56,7 @@ const Admin: React.FC = () => {
   return (
     <Layout>
       <div className="container py-12">
-        {!isAuthenticated ? (
+        {!isAdminAuthenticated ? (
           <motion.div 
             className="max-w-md mx-auto bg-card p-8 rounded-xl shadow-md border border-border/40"
             initial={{ opacity: 0, y: 20 }}
@@ -108,7 +109,7 @@ const Admin: React.FC = () => {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Admin Dashboard</h1>
               <Button 
                 variant="outline" 
-                onClick={logout}
+                onClick={logoutAdmin}
                 className="flex items-center gap-2 hover:bg-destructive/10 hover:text-destructive transition-colors"
               >
                 <LogOut className="h-4 w-4" />
@@ -126,6 +127,10 @@ const Admin: React.FC = () => {
                     <TabsTrigger value="songs" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
                       <Music className="h-4 w-4" />
                       <span>Songs</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="requests" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
+                      <Upload className="h-4 w-4" />
+                      <span>Requested Songs</span>
                     </TabsTrigger>
                     <TabsTrigger value="blog" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
                       <FileText className="h-4 w-4" />
@@ -150,6 +155,16 @@ const Admin: React.FC = () => {
                       transition={{ duration: 0.5 }}
                     >
                       <SongsManagementTab />
+                    </motion.div>
+                  </TabsContent>
+                  
+                  <TabsContent value="requests" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <RequestedSongsTab />
                     </motion.div>
                   </TabsContent>
                   

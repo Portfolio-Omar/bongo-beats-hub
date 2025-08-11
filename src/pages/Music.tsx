@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAudio } from "@/context/AudioContext";
+import { useAuth } from "@/context/AuthContext";
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Download, Play, Search, Filter, Edit, Save, X } from 'lucide-react';
@@ -23,6 +24,7 @@ const Music = () => {
   const [editedSong, setEditedSong] = useState<Partial<Song>>({});
   const { toast } = useToast();
   const { playSong } = useAudio();
+  const { user, isAdminAuthenticated } = useAuth();
 
   const { data: songs, isLoading, refetch } = useQuery({
     queryKey: ['songs'],
@@ -67,6 +69,17 @@ const Music = () => {
 
   const handleDownload = async (song: Song, e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // Check if user is authenticated
+    if (!user) {
+      toast({
+        title: "Sign up required",
+        description: "Please sign up to download songs",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       // Update download count in database
       const { error } = await supabase
@@ -273,17 +286,20 @@ const Music = () => {
                         size="icon"
                         className="h-8 w-8"
                         onClick={(e) => handleDownload(song, e)}
+                        title={!user ? "Sign up to download" : "Download song"}
                       >
                         <Download className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => handleEditClick(song, e)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      {isAdminAuthenticated && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => handleEditClick(song, e)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                   
