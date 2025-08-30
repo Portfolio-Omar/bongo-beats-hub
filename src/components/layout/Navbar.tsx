@@ -41,25 +41,25 @@ const Navbar: React.FC = () => {
           </Link>
         </div>
         
-        <NavigationMenu className="hidden md:flex">
-          <NavigationMenuList>
+        <nav className="hidden md:flex">
+          <div className="flex items-center space-x-6">
             {navItems.map((item) => (
-              <NavigationMenuItem key={item.name}>
-                <Link to={item.path}>
-                  <NavigationMenuLink
-                    className={cn(
-                      "group inline-flex h-9 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50",
-                      location.pathname === item.path && "bg-accent/50 text-accent-foreground"
-                    )}
-                  >
-                    {item.icon}
-                    {item.name}
-                  </NavigationMenuLink>
-                </Link>
-              </NavigationMenuItem>
+              <Link
+                key={item.name}
+                to={item.path}
+                className={cn(
+                  "flex items-center text-sm font-medium transition-colors hover:text-primary",
+                  location.pathname === item.path 
+                    ? "text-primary" 
+                    : "text-muted-foreground"
+                )}
+              >
+                {item.icon}
+                {item.name}
+              </Link>
             ))}
-          </NavigationMenuList>
-        </NavigationMenu>
+          </div>
+        </nav>
         
         <div className="flex items-center gap-2">
           <Button 

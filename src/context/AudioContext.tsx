@@ -53,11 +53,22 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     
     if (audioRef.current) {
+      // Stop current playback
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      
+      // Set new source
       audioRef.current.src = song.audio_url;
+      audioRef.current.crossOrigin = 'anonymous';
       audioRef.current.load();
+      
+      // Play the new song
       audioRef.current.play().then(() => {
         setIsPlaying(true);
-      }).catch(console.error);
+      }).catch((error) => {
+        console.error('Error playing song:', error);
+        setIsPlaying(false);
+      });
     }
   }, []);
 

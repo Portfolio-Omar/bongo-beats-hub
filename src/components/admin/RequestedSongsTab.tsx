@@ -132,12 +132,36 @@ const RequestedSongsTab = () => {
     }
   });
 
-  const handlePlayAudio = (audioUrl: string) => {
-    const audio = new Audio(audioUrl);
-    audio.play().catch(error => {
+  const handlePlayAudio = async (request: SongRequest) => {
+    // Set the selected request for access in the audio function
+    const tempRequest = request;
+    
+    try {
+      // Stop any currently playing audio
+      const existingAudio = document.querySelector('audio');
+      if (existingAudio) {
+        existingAudio.pause();
+        existingAudio.currentTime = 0;
+      }
+      
+      // Create and play new audio
+      const audio = new Audio(request.audio_url);
+      audio.crossOrigin = 'anonymous';
+      
+      // Add event listeners for better debugging
+      audio.addEventListener('loadstart', () => console.log('Audio loading started'));
+      audio.addEventListener('canplay', () => console.log('Audio can start playing'));
+      audio.addEventListener('error', (e) => {
+        console.error('Audio error:', e);
+        toast.error('Failed to load audio file');
+      });
+      
+      await audio.play();
+      toast.success(`Playing "${request.song_name}" by ${request.artist_name}`);
+    } catch (error) {
       console.error('Error playing audio:', error);
-      toast.error('Failed to play audio');
-    });
+      toast.error('Failed to play audio. The file might be corrupted or inaccessible.');
+    }
   };
 
   const handleReview = (request: SongRequest, action: 'approve' | 'reject') => {
@@ -251,7 +275,7 @@ const RequestedSongsTab = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handlePlayAudio(request.audio_url)}
+                      onClick={() => handlePlayAudio(request)}
                     >
                       <Play className="h-4 w-4 mr-1" />
                       Play
