@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import Layout from "@/components/layout/Layout";
-import PersistentAudioPlayer from "@/components/ui-custom/PersistentAudioPlayer";
+import EnhancedAudioPlayer from "@/components/ui-custom/EnhancedAudioPlayer";
 
 import Index from "./pages/Index";
 import Music from "./pages/Music";
@@ -42,7 +42,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
-          <PersistentAudioPlayer />
+          <EnhancedAudioPlayer />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>

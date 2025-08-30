@@ -306,16 +306,6 @@ const Music = () => {
                         >
                           <Download className="h-4 w-4" />
                         </Button>
-                        {isAdminAuthenticated && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={(e) => handleEditClick(song, e)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
                       </div>
                     </div>
                     
@@ -383,16 +373,6 @@ const Music = () => {
                       >
                         <Download className="h-4 w-4" />
                       </Button>
-                      {isAdminAuthenticated && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={(e) => handleEditClick(song, e)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </CardContent>
