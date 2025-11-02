@@ -103,13 +103,13 @@ const SongOfTheWeek: React.FC = () => {
   }
 
   return (
-    <section className="relative py-24 overflow-hidden">
+    <section className="relative py-24 overflow-hidden bg-gradient-to-b from-card to-background">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+      <div className="absolute inset-0 bg-gradient-to-br from-gold/5 via-transparent to-gold/10" />
       
       {/* Floating orbs */}
       <motion.div 
-        className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl"
+        className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl"
         animate={{ 
           scale: [1, 1.2, 1],
           opacity: [0.3, 0.5, 0.3]
@@ -117,7 +117,7 @@ const SongOfTheWeek: React.FC = () => {
         transition={{ duration: 8, repeat: Infinity }}
       />
       <motion.div 
-        className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-accent/10 rounded-full blur-3xl"
+        className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-gold/20 rounded-full blur-3xl"
         animate={{ 
           scale: [1.2, 1, 1.2],
           opacity: [0.5, 0.3, 0.5]
@@ -133,17 +133,17 @@ const SongOfTheWeek: React.FC = () => {
           className="text-center mb-12"
         >
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium text-sm mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold/10 text-gold-foreground font-medium text-sm mb-6 border border-gold/30"
             whileHover={{ scale: 1.05 }}
           >
-            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-            Featured This Week
+            <div className="w-2 h-2 bg-gold rounded-full animate-pulse" />
+            Throwback of the Week
           </motion.div>
-          <h2 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-4">
-            Song of the Week
+          <h2 className="text-4xl md:text-6xl font-heading font-bold bg-gradient-to-r from-gold to-yellow-600 bg-clip-text text-transparent mb-4">
+            🎵 This one used to shut down every club in Sinza
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Discover our hand-picked selection of the finest Bongo music
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto italic">
+            "Because auto-tune wasn't needed for real emotions"
           </p>
         </motion.div>
 
@@ -153,13 +153,13 @@ const SongOfTheWeek: React.FC = () => {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="max-w-5xl mx-auto"
         >
-          <Card className="overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-background/80 to-background/60 backdrop-blur-xl">
+          <Card className="overflow-hidden border border-gold/30 shadow-2xl bg-gradient-to-br from-background/80 to-background/60 backdrop-blur-xl">
             <CardContent className="p-0">
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-0">
                 {/* Cover Art Section - Enhanced */}
                 <div className="lg:col-span-2 relative h-80 lg:h-auto overflow-hidden group">
                   <motion.div 
-                    className="absolute inset-0 bg-gradient-to-br from-primary/30 via-transparent to-accent/30"
+                    className="absolute inset-0 bg-gradient-to-br from-gold/30 via-transparent to-gold/20"
                     animate={{ opacity: [0.3, 0.5, 0.3] }}
                     transition={{ duration: 4, repeat: Infinity }}
                   />
@@ -192,7 +192,7 @@ const SongOfTheWeek: React.FC = () => {
                     >
                       <Button
                         size="lg"
-                        className="rounded-full w-16 h-16 shadow-2xl"
+                        className="rounded-full w-16 h-16 shadow-2xl bg-gold hover:bg-gold/90 text-gold-foreground"
                         onClick={() => {}}
                       >
                         <Play className="h-6 w-6 ml-1" />
@@ -226,7 +226,7 @@ const SongOfTheWeek: React.FC = () => {
                         {song.genre && (
                           <motion.div
                             whileHover={{ scale: 1.05 }}
-                            className="px-4 py-2 rounded-full bg-primary/10 text-primary font-medium"
+                            className="px-4 py-2 rounded-full bg-gold/10 text-gold-foreground font-medium border border-gold/30"
                           >
                             {song.genre}
                           </motion.div>
@@ -234,7 +234,7 @@ const SongOfTheWeek: React.FC = () => {
                         {song.year && (
                           <motion.div
                             whileHover={{ scale: 1.05 }}
-                            className="px-4 py-2 rounded-full bg-accent/10 text-accent-foreground font-medium"
+                            className="px-4 py-2 rounded-full bg-gold/5 text-foreground font-medium border border-gold/30"
                           >
                             {song.year}
                           </motion.div>

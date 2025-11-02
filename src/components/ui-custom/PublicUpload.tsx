@@ -123,13 +123,13 @@ const PublicUpload = () => {
   };
 
   return (
-    <section className="relative py-24 overflow-hidden">
+    <section className="relative py-24 overflow-hidden bg-gradient-to-b from-background to-card">
       {/* Animated background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-background to-primary/5" />
+      <div className="absolute inset-0 bg-gradient-to-br from-gold/5 via-background to-gold/10" />
       
       {/* Floating music notes */}
       <motion.div 
-        className="absolute top-1/3 left-1/4 text-primary/20 text-4xl"
+        className="absolute top-1/3 left-1/4 text-gold/30 text-4xl"
         animate={{ 
           y: [-20, 20, -20],
           rotate: [0, 10, 0]
@@ -139,7 +139,7 @@ const PublicUpload = () => {
         ♪
       </motion.div>
       <motion.div 
-        className="absolute bottom-1/3 right-1/4 text-accent/20 text-3xl"
+        className="absolute bottom-1/3 right-1/4 text-gold/30 text-3xl"
         animate={{ 
           y: [20, -20, 20],
           rotate: [0, -10, 0]
@@ -158,13 +158,13 @@ const PublicUpload = () => {
           className="text-center mb-12"
         >
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent-foreground font-medium text-sm mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold/10 text-gold-foreground font-medium text-sm mb-6 border border-gold/30"
             whileHover={{ scale: 1.05 }}
           >
             <Upload className="w-4 h-4" />
             Community Contribution
           </motion.div>
-          <h2 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent mb-4">
+          <h2 className="text-4xl md:text-6xl font-heading font-bold bg-gradient-to-r from-gold to-yellow-600 bg-clip-text text-transparent mb-4">
             Share Your Bongo Music
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
@@ -180,13 +180,13 @@ const PublicUpload = () => {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="max-w-4xl mx-auto"
         >
-          <Card className="overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-background/90 to-background/70 backdrop-blur-xl">
+          <Card className="overflow-hidden border border-gold/30 shadow-2xl bg-gradient-to-br from-background/90 to-background/70 backdrop-blur-xl">
             <CardHeader className="text-center pb-8">
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4"
+                className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center mb-4"
               >
-                <Music className="h-8 w-8 text-white" />
+                <Music className="h-8 w-8 text-gold-foreground" />
               </motion.div>
               <CardTitle className="text-2xl font-bold">Upload Song Request</CardTitle>
               <CardDescription className="text-base">
@@ -274,7 +274,7 @@ const PublicUpload = () => {
                         type="file"
                         accept="audio/*"
                         onChange={handleFileChange}
-                        className="h-16 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gradient-to-r file:from-primary file:to-accent file:text-white hover:file:from-primary/90 hover:file:to-accent/90 cursor-pointer"
+                        className="h-16 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gradient-to-r file:from-gold file:to-yellow-600 file:text-gold-foreground hover:file:from-gold/90 hover:file:to-yellow-600/90 cursor-pointer"
                         required
                       />
                       <Upload className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
@@ -306,7 +306,7 @@ const PublicUpload = () => {
                     <Button
                       type="submit"
                       size="lg"
-                      className="w-full h-14 text-lg font-medium bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg"
+                      className="w-full h-14 text-lg font-heading font-medium bg-gradient-to-r from-gold to-yellow-600 hover:from-gold/90 hover:to-yellow-600/90 shadow-lg text-gold-foreground"
                       disabled={isUploading}
                     >
                       {isUploading ? (
