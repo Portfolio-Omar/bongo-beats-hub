@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -67,9 +67,11 @@ export type Database = {
       }
       blogs: {
         Row: {
+          author: string | null
           content: string
           created_at: string
           date: string
+          excerpt: string | null
           featured_image_url: string | null
           id: string
           rich_content: Json | null
@@ -79,9 +81,11 @@ export type Database = {
           title: string
         }
         Insert: {
+          author?: string | null
           content: string
           created_at?: string
           date: string
+          excerpt?: string | null
           featured_image_url?: string | null
           id?: string
           rich_content?: Json | null
@@ -91,9 +95,11 @@ export type Database = {
           title: string
         }
         Update: {
+          author?: string | null
           content?: string
           created_at?: string
           date?: string
+          excerpt?: string | null
           featured_image_url?: string | null
           id?: string
           rich_content?: Json | null
@@ -103,6 +109,35 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      favorites: {
+        Row: {
+          created_at: string | null
+          id: string
+          song_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          song_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          song_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       feedback: {
         Row: {
@@ -468,74 +503,57 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      admin_login: {
-        Args: { pin: string }
-        Returns: boolean
-      }
-      check_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      admin_login: { Args: { pin: string }; Returns: boolean }
+      check_admin: { Args: never; Returns: boolean }
       check_song_exists: {
-        Args: { _title: string; _artist: string }
+        Args: { _artist: string; _title: string }
         Returns: boolean
       }
-      generate_slug: {
-        Args: { title: string }
-        Returns: string
-      }
-      gtrgm_compress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_decompress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_in: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_options: {
-        Args: { "": unknown }
-        Returns: undefined
-      }
-      gtrgm_out: {
-        Args: { "": unknown }
-        Returns: unknown
+      generate_slug: { Args: { title: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
       increment_song_view: {
         Args: { _song_id: string; _view_date?: string }
         Returns: undefined
       }
-      increment_video_view: {
-        Args: { _video_id: string }
-        Returns: undefined
-      }
-      is_admin: {
-        Args: { pin: string }
-        Returns: boolean
-      }
-      set_limit: {
-        Args: { "": number }
-        Returns: number
-      }
-      show_limit: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      show_trgm: {
-        Args: { "": string }
-        Returns: string[]
-      }
+      increment_video_view: { Args: { _video_id: string }; Returns: undefined }
+      is_admin: { Args: { pin: string }; Returns: boolean }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -662,6 +680,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const

@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Song } from '@/types/music';
 
 const Index: React.FC = () => {
-  const { isAdminAuthenticated } = useAuth();
+  const { isAdmin } = useAuth();
   const { playSong } = useAudio();
 
   const { data: featuredSongs } = useQuery({
@@ -311,7 +311,7 @@ const Index: React.FC = () => {
         </div>
       </section>
 
-      {isAdminAuthenticated && <AdminPopup delay={20000} />}
+      {isAdmin && <AdminPopup delay={20000} />}
     </div>
   );
 };

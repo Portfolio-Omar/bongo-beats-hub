@@ -157,15 +157,15 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const handleEnded = useCallback(() => {
-    if (isRepeating) {
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play();
-      }
-    } else {
+    if (isRepeating && audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(console.error);
+    } else if (playlist.length > 0) {
       playNext();
+    } else {
+      setIsPlaying(false);
     }
-  }, [isRepeating, playNext]);
+  }, [isRepeating, playlist, playNext]);
 
   return (
     <AudioContext.Provider value={{

@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import FeedbackTab from '@/components/admin/FeedbackTab';
 import BlogTab from '@/components/admin/BlogTab';
@@ -14,28 +13,22 @@ import RequestedSongsTab from '@/components/admin/RequestedSongsTab';
 import { motion } from 'framer-motion';
 import { 
   Music, FileText, MessageSquare, 
-  Upload, Lock, LogOut 
+  Upload, Lock
 } from 'lucide-react';
 
 const Admin: React.FC = () => {
-  const { isAdminAuthenticated, authenticateAdmin, logoutAdmin } = useAuth();
-  const [password, setPassword] = useState('');
+  const { isAdmin, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
-  const handleLogin = async () => {
-    try {
-      const success = await authenticateAdmin(password);
-      if (success) {
-        toast.success('Admin access granted');
-      } else {
-        toast.error('Incorrect password');
-      }
-      setPassword('');
-    } catch (error) {
-      console.error('Login error:', error);
-      toast.error('Login failed. Please try again.');
-      setPassword('');
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/auth');
+      toast.error('Please sign in to access admin panel');
+    } else if (!isAdmin) {
+      navigate('/');
+      toast.error('You do not have admin access');
     }
-  };
+  }, [isAuthenticated, isAdmin, navigate]);
 
   // Animation variants
   const containerVariants = {
@@ -56,7 +49,7 @@ const Admin: React.FC = () => {
   return (
     <Layout>
       <div className="container py-12">
-        {!isAdminAuthenticated ? (
+        {!isAuthenticated || !isAdmin ? (
           <motion.div 
             className="max-w-md mx-auto bg-card p-8 rounded-xl shadow-md border border-border/40"
             initial={{ opacity: 0, y: 20 }}
@@ -71,29 +64,14 @@ const Admin: React.FC = () => {
             >
               <Lock className="h-8 w-8 text-primary" />
             </motion.div>
-            <h2 className="text-2xl font-semibold mb-6 text-center text-gradient bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Admin Login</h2>
-            <div className="space-y-4">
-              <div>
-                <Input
-                  type="password"
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleLogin();
-                    }
-                  }}
-                  className="transition-all duration-300 focus:ring-2 focus:ring-primary/50"
-                />
-              </div>
-              <Button 
-                className="w-full transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90" 
-                onClick={handleLogin}
-              >
-                Login
-              </Button>
-            </div>
+            <h2 className="text-2xl font-semibold mb-6 text-center">
+              {!isAuthenticated ? 'Sign In Required' : 'Admin Access Only'}
+            </h2>
+            <p className="text-center text-muted-foreground">
+              {!isAuthenticated 
+                ? 'Please sign in to continue'
+                : 'You do not have administrator privileges'}
+            </p>
           </motion.div>
         ) : (
           <motion.div 
@@ -107,14 +85,6 @@ const Admin: React.FC = () => {
               variants={itemVariants}
             >
               <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Admin Dashboard</h1>
-              <Button 
-                variant="outline" 
-                onClick={logoutAdmin}
-                className="flex items-center gap-2 hover:bg-destructive/10 hover:text-destructive transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </Button>
             </motion.div>
             
             <motion.div 

@@ -7,12 +7,11 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAuthenticated: boolean;
-  isAdminAuthenticated: boolean;
+  isAdmin: boolean;
   signUp: (email: string, password: string) => Promise<{ error?: any }>;
   signIn: (email: string, password: string) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
-  authenticateAdmin: (pin: string) => Promise<boolean>;
-  logoutAdmin: () => void;
+  checkAdminRole: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,28 +27,36 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Check admin role when user logs in
+        if (session?.user) {
+          setTimeout(() => {
+            checkAdminRole();
+          }, 0);
+        } else {
+          setIsAdmin(false);
+        }
       }
     );
 
-    // THEN check for existing session
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user) {
+        setTimeout(() => {
+          checkAdminRole();
+        }, 0);
+      }
     });
-
-    // Check admin auth status
-    const adminAuthStatus = localStorage.getItem('isAdminAuthenticated');
-    if (adminAuthStatus === 'true') {
-      setIsAdminAuthenticated(true);
-    }
 
     return () => subscription.unsubscribe();
   }, []);
@@ -98,49 +105,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const authenticateAdmin = async (pin: string): Promise<boolean> => {
+  const checkAdminRole = async (): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.rpc('admin_login', { pin });
-      
-      if (error) {
-        console.error('Authentication error:', error);
-        toast.error('Authentication failed: ' + error.message);
+      if (!user?.id) {
+        setIsAdmin(false);
         return false;
       }
-      
-      if (data) {
-        setIsAdminAuthenticated(true);
-        localStorage.setItem('isAdminAuthenticated', 'true');
-        toast.success('Successfully logged in as admin');
-        return true;
+
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking admin role:', error);
+        setIsAdmin(false);
+        return false;
       }
-      
-      toast.error('Invalid admin PIN');
-      return false;
+
+      const hasAdminRole = !!data;
+      setIsAdmin(hasAdminRole);
+      return hasAdminRole;
     } catch (error) {
-      console.error('Authentication error:', error);
-      toast.error('Authentication failed. Please try again.');
+      console.error('Error checking admin role:', error);
+      setIsAdmin(false);
       return false;
     }
   };
 
-  const logoutAdmin = () => {
-    setIsAdminAuthenticated(false);
-    localStorage.removeItem('isAdminAuthenticated');
-    toast.info('Admin logged out successfully');
-  };
-
   return (
-    <AuthContext.Provider value={{ 
+    <AuthContext.Provider value={{
       user,
       session,
       isAuthenticated: !!user,
-      isAdminAuthenticated,
+      isAdmin,
       signUp,
       signIn,
       signOut,
-      authenticateAdmin,
-      logoutAdmin
+      checkAdminRole
     }}>
       {children}
     </AuthContext.Provider>

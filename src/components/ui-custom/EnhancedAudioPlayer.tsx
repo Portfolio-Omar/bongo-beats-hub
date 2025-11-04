@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAudio } from '@/context/AudioContext';
+import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +12,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const EnhancedAudioPlayer: React.FC = () => {
   const {
@@ -32,8 +34,69 @@ const EnhancedAudioPlayer: React.FC = () => {
     seekTo
   } = useAudio();
 
-  const [isExpanded, setIsExpanded] = React.useState(false);
-  const [isLiked, setIsLiked] = React.useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (currentSong && user) {
+      checkIfLiked();
+    }
+  }, [currentSong, user]);
+
+  const checkIfLiked = async () => {
+    if (!currentSong || !user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('song_id', currentSong.id)
+        .single();
+
+      setIsLiked(!!data);
+    } catch (error) {
+      // Not in favorites
+      setIsLiked(false);
+    }
+  };
+
+  const toggleFavorite = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please sign in to add favorites');
+      navigate('/auth');
+      return;
+    }
+
+    if (!currentSong || !user) return;
+
+    try {
+      if (isLiked) {
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('song_id', currentSong.id);
+
+        if (error) throw error;
+        setIsLiked(false);
+        toast.success('Removed from favorites');
+      } else {
+        const { error } = await supabase
+          .from('favorites')
+          .insert([{ user_id: user.id, song_id: currentSong.id }]);
+
+        if (error) throw error;
+        setIsLiked(true);
+        toast.success('Added to favorites');
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast.error('Failed to update favorites');
+    }
+  };
 
   if (!currentSong) return null;
 
