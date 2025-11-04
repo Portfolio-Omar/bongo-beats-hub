@@ -7,14 +7,12 @@ import { Play, Music2, Headphones, Heart, Sparkles, Mic2, Radio } from 'lucide-r
 import { motion } from 'framer-motion';
 import SongOfTheWeek from '@/components/ui-custom/SongOfTheWeek';
 import PublicUpload from '@/components/ui-custom/PublicUpload';
-import AdminPopup from '@/components/admin/AdminPopup';
 import { useAuth } from '@/context/AuthContext';
 import { useAudio } from '@/context/AudioContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Song } from '@/types/music';
 
 const Index: React.FC = () => {
-  const { isAdmin } = useAuth();
   const { playSong } = useAudio();
 
   const { data: featuredSongs } = useQuery({
@@ -311,7 +309,6 @@ const Index: React.FC = () => {
         </div>
       </section>
 
-      {isAdmin && <AdminPopup delay={20000} />}
     </div>
   );
 };

@@ -17,18 +17,7 @@ import {
 } from 'lucide-react';
 
 const Admin: React.FC = () => {
-  const { isAdmin, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/auth');
-      toast.error('Please sign in to access admin panel');
-    } else if (!isAdmin) {
-      navigate('/');
-      toast.error('You do not have admin access');
-    }
-  }, [isAuthenticated, isAdmin, navigate]);
+  const { isAuthenticated } = useAuth();
 
   // Animation variants
   const containerVariants = {
@@ -49,7 +38,7 @@ const Admin: React.FC = () => {
   return (
     <Layout>
       <div className="container py-12">
-        {!isAuthenticated || !isAdmin ? (
+        {!isAuthenticated ? (
           <motion.div 
             className="max-w-md mx-auto bg-card p-8 rounded-xl shadow-md border border-border/40"
             initial={{ opacity: 0, y: 20 }}
@@ -65,12 +54,10 @@ const Admin: React.FC = () => {
               <Lock className="h-8 w-8 text-primary" />
             </motion.div>
             <h2 className="text-2xl font-semibold mb-6 text-center">
-              {!isAuthenticated ? 'Sign In Required' : 'Admin Access Only'}
+              Sign In Required
             </h2>
             <p className="text-center text-muted-foreground">
-              {!isAuthenticated 
-                ? 'Please sign in to continue'
-                : 'You do not have administrator privileges'}
+              Please sign in to continue
             </p>
           </motion.div>
         ) : (

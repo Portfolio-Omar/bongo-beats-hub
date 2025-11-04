@@ -125,17 +125,10 @@ const EnhancedAudioPlayer: React.FC = () => {
       link.download = `${currentSong.artist} - ${currentSong.title}.mp3`;
       link.click();
 
-      toast({
-        title: "Download started",
-        description: `${currentSong.title} by ${currentSong.artist}`,
-      });
+      toast.success(`Download started: ${currentSong.title} by ${currentSong.artist}`);
     } catch (error) {
       console.error('Error downloading song:', error);
-      toast({
-        title: "Download failed",
-        description: "Unable to download the song",
-        variant: "destructive",
-      });
+      toast.error("Unable to download the song");
     }
   };
 
@@ -152,10 +145,7 @@ const EnhancedAudioPlayer: React.FC = () => {
       }
     } else if (currentSong) {
       navigator.clipboard.writeText(window.location.href);
-      toast({
-        title: "Link copied",
-        description: "Song link copied to clipboard",
-      });
+      toast.success("Song link copied to clipboard");
     }
   };
 
@@ -272,7 +262,7 @@ const EnhancedAudioPlayer: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => setIsLiked(!isLiked)}
+                        onClick={toggleFavorite}
                         className="h-12 w-12 rounded-full"
                       >
                         <Heart className={`h-5 w-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
