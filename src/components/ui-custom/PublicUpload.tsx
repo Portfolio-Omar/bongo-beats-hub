@@ -75,7 +75,7 @@ const PublicUpload = () => {
       // Get public URL for the uploaded file
       const { data: { publicUrl } } = supabase.storage
         .from('song-requests')
-        .getPublicUrl(fileName);
+        .getPublicUrl(uploadData.path);
 
       // Insert song request record
       const { error: insertError } = await supabase

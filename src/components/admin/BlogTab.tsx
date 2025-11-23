@@ -226,17 +226,15 @@ const BlogTab: React.FC = () => {
     }
   };
   
-  const formatDate = (dateString: string) => {
-    try {
-      // If date is in format YYYY-MM-DD
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        const [year, month, day] = dateString.split('-').map(Number);
-        return format(new Date(year, month - 1, day), 'MMM d, yyyy');
-      }
-      return dateString;
-    } catch (e) {
-      return dateString;
-    }
+  const handleSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['blogs'] });
+    setIsDialogOpen(false);
+    setEditingBlog(null);
+  };
+
+  const handleEdit = (blog: any) => {
+    setEditingBlog(blog);
+    setIsDialogOpen(true);
   };
   
   return (
