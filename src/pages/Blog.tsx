@@ -102,14 +102,9 @@ const Blog: React.FC = () => {
           >
             Blog & Articles
           </motion.h1>
-          <motion.p 
-            className="text-muted-foreground max-w-2xl mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            Dive into stories, histories, and insights about East African music and culture.
-          </motion.p>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              Dive into stories, histories, and insights about East African music and culture
+            </p>
         </div>
         
         {/* Search and Filters */}

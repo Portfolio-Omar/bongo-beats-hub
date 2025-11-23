@@ -132,35 +132,17 @@ const RequestedSongsTab = () => {
     }
   });
 
-  const handlePlayAudio = async (request: SongRequest) => {
-    // Set the selected request for access in the audio function
-    const tempRequest = request;
-    
+  const handlePlayAudio = (request: SongRequest) => {
     try {
-      // Stop any currently playing audio
-      const existingAudio = document.querySelector('audio');
-      if (existingAudio) {
-        existingAudio.pause();
-        existingAudio.currentTime = 0;
-      }
-      
-      // Create and play new audio
       const audio = new Audio(request.audio_url);
-      audio.crossOrigin = 'anonymous';
-      
-      // Add event listeners for better debugging
-      audio.addEventListener('loadstart', () => console.log('Audio loading started'));
-      audio.addEventListener('canplay', () => console.log('Audio can start playing'));
-      audio.addEventListener('error', (e) => {
-        console.error('Audio error:', e);
-        toast.error('Failed to load audio file');
+      audio.play().catch(error => {
+        console.error('Audio playback error:', error);
+        toast.error('Unable to play audio file');
       });
-      
-      await audio.play();
-      toast.success(`Playing "${request.song_name}" by ${request.artist_name}`);
+      toast.success(`Playing: ${request.song_name}`);
     } catch (error) {
-      console.error('Error playing audio:', error);
-      toast.error('Failed to play audio. The file might be corrupted or inaccessible.');
+      console.error('Error loading audio:', error);
+      toast.error('Failed to load audio file');
     }
   };
 

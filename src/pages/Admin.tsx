@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import FeedbackTab from '@/components/admin/FeedbackTab';
-import BlogTab from '@/components/admin/BlogTab';
+import ModernBlogTab from '@/components/admin/ModernBlogTab';
 import BatchUploadSongs from '@/components/admin/BatchUploadSongs';
 import SongsManagementTab from '@/components/admin/SongsManagementTab';
 import RequestedSongsTab from '@/components/admin/RequestedSongsTab';
@@ -131,7 +131,7 @@ const Admin: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5 }}
                     >
-                      <BlogTab />
+                      <ModernBlogTab />
                     </motion.div>
                   </TabsContent>
                   
