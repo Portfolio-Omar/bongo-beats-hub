@@ -226,16 +226,6 @@ const BlogTab: React.FC = () => {
     }
   };
   
-  const handleSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ['blogs'] });
-    setIsDialogOpen(false);
-    setEditingBlog(null);
-  };
-
-  const handleEdit = (blog: any) => {
-    setEditingBlog(blog);
-    setIsDialogOpen(true);
-  };
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -435,7 +425,7 @@ const BlogTab: React.FC = () => {
                             <span className="font-medium">{blog.title}</span>
                           </div>
                         </td>
-                        <td className="p-4 hidden md:table-cell">{formatDate(blog.date)}</td>
+                        <td className="p-4 hidden md:table-cell">{format(new Date(blog.date), 'MMM d, yyyy')}</td>
                         <td className="p-4">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                             blog.status === 'published' 

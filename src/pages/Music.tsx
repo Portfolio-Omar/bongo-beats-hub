@@ -8,9 +8,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useAudio } from "@/context/AudioContext";
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Download, Play, Search, Grid, List, Music2, Disc } from 'lucide-react';
+import { Download, Play, Search, Grid, List, Music2, Disc, BarChart3 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Song } from '@/types/music';
+import BackgroundSlideshow from '@/components/ui-custom/BackgroundSlideshow';
+import AddToPlaylistMenu from '@/components/playlists/AddToPlaylistMenu';
 
 const Music = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -94,8 +96,21 @@ const Music = () => {
     }
   };
 
-  const handlePlaySong = (song: Song) => {
+  const handlePlaySong = async (song: Song) => {
     playSong(song, sortedSongs);
+    
+    // Track play statistics
+    try {
+      const { error } = await supabase.rpc('increment_song_view', { 
+        _song_id: song.id 
+      });
+      
+      if (error) {
+        console.error('Error tracking play:', error);
+      }
+    } catch (error) {
+      console.error('Error tracking play:', error);
+    }
   };
 
   if (isLoading) {
@@ -115,7 +130,8 @@ const Music = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-card to-background pb-32">
+    <div className="min-h-screen pb-32 relative">
+      <BackgroundSlideshow />
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-gold/20 via-gold/10 to-gold/20 border-b border-gold/30">
         <div className="container mx-auto px-4 py-12">
@@ -277,15 +293,18 @@ const Music = () => {
                           )}
                         </div>
                         
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
-                          onClick={(e) => handleDownload(song, e)}
-                          title="Download song"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <AddToPlaylistMenu songId={song.id} />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
+                            onClick={(e) => handleDownload(song, e)}
+                            title="Download song"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                       
                       {song.download_count && song.download_count > 0 && (
@@ -357,6 +376,7 @@ const Music = () => {
                             {song.download_count}
                           </div>
                         )}
+                        <AddToPlaylistMenu songId={song.id} />
                         <Button
                           variant="ghost"
                           size="icon"
