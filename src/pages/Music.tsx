@@ -12,7 +12,6 @@ import { Download, Play, Search, Grid, List, Music2, Disc, BarChart3 } from 'luc
 import { motion } from 'framer-motion';
 import { Song } from '@/types/music';
 import BackgroundSlideshow from '@/components/ui-custom/BackgroundSlideshow';
-import AddToPlaylistMenu from '@/components/playlists/AddToPlaylistMenu';
 
 const Music = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -293,18 +292,15 @@ const Music = () => {
                           )}
                         </div>
                         
-                        <div className="flex gap-1">
-                          <AddToPlaylistMenu songId={song.id} />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
-                            onClick={(e) => handleDownload(song, e)}
-                            title="Download song"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
+                          onClick={(e) => handleDownload(song, e)}
+                          title="Download song"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
                       </div>
                       
                       {song.download_count && song.download_count > 0 && (
@@ -376,7 +372,6 @@ const Music = () => {
                             {song.download_count}
                           </div>
                         )}
-                        <AddToPlaylistMenu songId={song.id} />
                         <Button
                           variant="ghost"
                           size="icon"
