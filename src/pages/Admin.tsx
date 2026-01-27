@@ -1,19 +1,17 @@
-
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import FeedbackTab from '@/components/admin/FeedbackTab';
 import ModernBlogTab from '@/components/admin/ModernBlogTab';
 import BatchUploadSongs from '@/components/admin/BatchUploadSongs';
 import SongsManagementTab from '@/components/admin/SongsManagementTab';
 import RequestedSongsTab from '@/components/admin/RequestedSongsTab';
+import StatisticsDashboard from '@/components/admin/StatisticsDashboard';
 import { motion } from 'framer-motion';
 import { 
   Music, FileText, MessageSquare, 
-  Upload, Lock
+  Upload, Lock, BarChart3
 } from 'lucide-react';
 
 const Admin: React.FC = () => {
@@ -80,7 +78,11 @@ const Admin: React.FC = () => {
             >
               <Tabs defaultValue="songs" className="bg-background rounded-md">
                 <div className="overflow-x-auto pb-2 pt-4 px-4">
-                  <TabsList className="h-12 bg-muted/80 backdrop-blur-sm">
+                  <TabsList className="h-12 bg-muted/80 backdrop-blur-sm flex-wrap">
+                    <TabsTrigger value="statistics" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
+                      <BarChart3 className="h-4 w-4" />
+                      <span>Statistics</span>
+                    </TabsTrigger>
                     <TabsTrigger value="songs" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
                       <Music className="h-4 w-4" />
                       <span>Songs</span>
@@ -105,6 +107,16 @@ const Admin: React.FC = () => {
                 </div>
                 
                 <div className="p-4">
+                  <TabsContent value="statistics" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <StatisticsDashboard />
+                    </motion.div>
+                  </TabsContent>
+                  
                   <TabsContent value="songs" className="mt-0">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
