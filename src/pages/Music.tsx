@@ -8,10 +8,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useAudio } from "@/context/AudioContext";
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Download, Play, Search, Grid, List, Music2, Disc, BarChart3 } from 'lucide-react';
+import { Download, Play, Search, Grid, List, Music2, Disc } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Song } from '@/types/music';
 import BackgroundSlideshow from '@/components/ui-custom/BackgroundSlideshow';
+import ShareSongButton from '@/components/ui-custom/ShareSongButton';
+import AddToPlaylistMenu from '@/components/playlists/AddToPlaylistMenu';
+import SongRecommendations from '@/components/ui-custom/SongRecommendations';
 
 const Music = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -292,15 +295,19 @@ const Music = () => {
                           )}
                         </div>
                         
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
-                          onClick={(e) => handleDownload(song, e)}
-                          title="Download song"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <ShareSongButton song={song} className="h-8 w-8" />
+                          <AddToPlaylistMenu songId={song.id} className="h-8 w-8" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
+                            onClick={(e) => handleDownload(song, e)}
+                            title="Download song"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                       
                       {song.download_count && song.download_count > 0 && (
@@ -372,6 +379,8 @@ const Music = () => {
                             {song.download_count}
                           </div>
                         )}
+                        <ShareSongButton song={song} />
+                        <AddToPlaylistMenu songId={song.id} />
                         <Button
                           variant="ghost"
                           size="icon"
@@ -401,6 +410,16 @@ const Music = () => {
             <p className="text-muted-foreground">Try adjusting your search or filters</p>
           </motion.div>
         )}
+
+        {/* Recommendations Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-12"
+        >
+          <SongRecommendations />
+        </motion.div>
       </div>
     </div>
   );
