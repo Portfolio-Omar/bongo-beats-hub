@@ -4,11 +4,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
+import { AudioProvider } from "@/context/AudioContext";
 import Layout from "@/components/layout/Layout";
 import EnhancedAudioPlayer from "@/components/ui-custom/EnhancedAudioPlayer";
+import AIChatbot from "@/components/chat/AIChatbot";
 
 import Index from "./pages/Index";
 import Music from "./pages/Music";
+import Player from "./pages/Player";
 import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
@@ -26,30 +29,39 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Layout>
+        <AudioProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/music" element={<Music />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/feedback" element={<Feedback />} />
-              <Route path="/favorites" element={<Favorites />} />
-              <Route path="/playlists" element={<Playlists />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/menu" element={<MobileMenu />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="*" element={<NotFound />} />
+              <Route path="/player" element={<Player />} />
+              <Route path="*" element={
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/music" element={<Music />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/feedback" element={<Feedback />} />
+                    <Route path="/favorites" element={<Favorites />} />
+                    <Route path="/playlists" element={<Playlists />} />
+                    <Route path="/admin" element={<Admin />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/menu" element={<MobileMenu />} />
+                    <Route path="/blog" element={<Blog />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Layout>
+              } />
             </Routes>
-          </Layout>
-          <EnhancedAudioPlayer />
-        </BrowserRouter>
+            <EnhancedAudioPlayer />
+            <AIChatbot />
+          </BrowserRouter>
+        </AudioProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
 
 export default App;
+
