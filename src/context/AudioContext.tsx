@@ -21,6 +21,9 @@ interface AudioContextType {
   toggleRepeat: () => void;
   seekTo: (time: number) => void;
   audioRef: React.RefObject<HTMLAudioElement>;
+  setPlaylist: (songs: Song[]) => void;
+  addToQueue: (song: Song) => void;
+  removeFromQueue: (songId: string) => void;
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
@@ -144,6 +147,17 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
+  const addToQueue = useCallback((song: Song) => {
+    setPlaylist(prev => {
+      if (prev.some(s => s.id === song.id)) return prev;
+      return [...prev, song];
+    });
+  }, []);
+
+  const removeFromQueue = useCallback((songId: string) => {
+    setPlaylist(prev => prev.filter(s => s.id !== songId));
+  }, []);
+
   const handleTimeUpdate = useCallback(() => {
     if (audioRef.current) {
       setCurrentTime(audioRef.current.currentTime);
@@ -187,7 +201,10 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       toggleShuffle,
       toggleRepeat,
       seekTo,
-      audioRef
+      audioRef,
+      setPlaylist,
+      addToQueue,
+      removeFromQueue,
     }}>
       {children}
       <audio

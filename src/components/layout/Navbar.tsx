@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { Menu, Home, Music, Settings, Moon, Sun, MessageSquare, BookOpen, Shield, User, LogOut, Heart, ListMusic } from 'lucide-react';
+import { Menu, Home, Music, Settings, Moon, Sun, MessageSquare, BookOpen, Shield, User, LogOut, ListMusic, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
@@ -13,7 +13,6 @@ const navItems = [
   { name: 'Home', path: '/', icon: <Home className="h-4 w-4" /> },
   { name: 'Music', path: '/music', icon: <Music className="h-4 w-4" /> },
   { name: 'Playlists', path: '/playlists', icon: <ListMusic className="h-4 w-4" /> },
-  { name: 'Favorites', path: '/favorites', icon: <Heart className="h-4 w-4" /> },
   { name: 'Blog', path: '/blog', icon: <BookOpen className="h-4 w-4" /> },
   { name: 'Feedback', path: '/feedback', icon: <MessageSquare className="h-4 w-4" /> },
 ];
@@ -184,6 +183,20 @@ const Navbar: React.FC = () => {
                         );
                       })}
                     </div>
+
+                    {/* Favorites link */}
+                    <Link to="/favorites" onClick={() => setMobileMenuOpen(false)}>
+                      <Button
+                        variant="ghost"
+                        className={cn(
+                          "w-full justify-start gap-3 h-12",
+                          location.pathname === '/favorites' && "bg-gold/10 text-gold"
+                        )}
+                      >
+                        <Heart className="h-5 w-5" />
+                        <span className="text-base">Favorites</span>
+                      </Button>
+                    </Link>
 
                     {/* User Section */}
                     {user ? (
