@@ -226,7 +226,7 @@ const Player: React.FC = () => {
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center">
-                  <Disc className="w-24 h-24 text-primary/50" />
+                  <img src={logo} alt="Bongo Old Skool" className="w-24 h-24 rounded-full object-cover opacity-50" />
                 </div>
               )}
               {/* Vinyl center */}
