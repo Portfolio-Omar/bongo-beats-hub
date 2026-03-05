@@ -100,6 +100,11 @@ const Player: React.FC = () => {
 
   const handleDownload = async () => {
     if (!currentSong) return;
+    if (!isAuthenticated) {
+      toast.error('Please sign in to download songs');
+      navigate('/auth');
+      return;
+    }
     try {
       await supabase.from('songs').update({ download_count: (currentSong.download_count || 0) + 1 }).eq('id', currentSong.id);
       const link = document.createElement('a');
