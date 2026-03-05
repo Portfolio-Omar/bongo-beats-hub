@@ -389,7 +389,6 @@ const Player: React.FC = () => {
                 >
                   {isAuthenticated ? <Download className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
                 </Button>
-                </Button>
               </motion.div>
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                 <Button
