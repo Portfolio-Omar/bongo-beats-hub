@@ -387,7 +387,8 @@ const Player: React.FC = () => {
                   onClick={handleDownload}
                   className="h-10 w-10 rounded-full"
                 >
-                  <Download className="h-5 w-5" />
+                  {isAuthenticated ? <Download className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+                </Button>
                 </Button>
               </motion.div>
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>

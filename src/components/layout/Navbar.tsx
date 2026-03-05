@@ -19,10 +19,9 @@ const navItems = [
 ];
 
 const Navbar: React.FC = () => {
-  const { user, isAuthenticated, signOut } = useAuth();
+  const { isAuthenticated, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
-  const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
