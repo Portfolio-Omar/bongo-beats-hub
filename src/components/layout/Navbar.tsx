@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { Menu, Home, Music, Settings, Moon, Sun, MessageSquare, BookOpen, User, LogOut, ListMusic, Heart, LogIn } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';

@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, 
   Repeat, Shuffle, Download, Share, Heart, ChevronDown,
-  Music, Disc, ListMusic, X, GripVertical, Lock
+  Music, ListMusic, X, GripVertical, Lock
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
