@@ -9,12 +9,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, 
   Repeat, Shuffle, Download, Share, Heart, ChevronDown,
-  Music, Disc, ListMusic, X, GripVertical
+  Music, ListMusic, X, GripVertical, Lock
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Song } from '@/types/music';
+import logo from '@/assets/logo.png';
 
 const Player: React.FC = () => {
   const navigate = useNavigate();
@@ -99,6 +100,11 @@ const Player: React.FC = () => {
 
   const handleDownload = async () => {
     if (!currentSong) return;
+    if (!isAuthenticated) {
+      toast.error('Please sign in to download songs');
+      navigate('/auth');
+      return;
+    }
     try {
       await supabase.from('songs').update({ download_count: (currentSong.download_count || 0) + 1 }).eq('id', currentSong.id);
       const link = document.createElement('a');
@@ -220,7 +226,7 @@ const Player: React.FC = () => {
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center">
-                  <Disc className="w-24 h-24 text-primary/50" />
+                  <img src={logo} alt="Bongo Old Skool" className="w-24 h-24 rounded-full object-cover opacity-50" />
                 </div>
               )}
               {/* Vinyl center */}
@@ -381,7 +387,7 @@ const Player: React.FC = () => {
                   onClick={handleDownload}
                   className="h-10 w-10 rounded-full"
                 >
-                  <Download className="h-5 w-5" />
+                  {isAuthenticated ? <Download className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
                 </Button>
               </motion.div>
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
