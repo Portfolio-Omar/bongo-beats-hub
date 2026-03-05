@@ -20,7 +20,7 @@ const Music = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('title');
   const [filterGenre, setFilterGenre] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const { toast } = useToast();
   const { playSong, currentSong, isPlaying } = useAudio();
 
