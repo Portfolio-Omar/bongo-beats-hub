@@ -6,7 +6,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Menu, Home, Music, Settings, Moon, Sun, MessageSquare, BookOpen, User, LogOut, ListMusic, Heart, LogIn } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import logo from '@/assets/logo.png';
 
