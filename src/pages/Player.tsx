@@ -537,6 +537,26 @@ const Player: React.FC = () => {
               </ScrollArea>
             </motion.div>
           )}
+
+          {/* Comments Panel */}
+          {showComments && (
+            <motion.div
+              initial={{ x: 300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 300, opacity: 0 }}
+              className="w-full lg:w-96 bg-card/50 backdrop-blur-xl border-l border-border/50 flex flex-col"
+            >
+              <div className="flex items-center justify-between p-4 border-b border-border/50">
+                <h2 className="font-semibold">Comments</h2>
+                <Button variant="ghost" size="icon" onClick={() => setShowComments(false)} className="lg:hidden">
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              <ScrollArea className="flex-1 p-4">
+                <SongComments songId={currentSong.id} />
+              </ScrollArea>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
     </motion.div>
