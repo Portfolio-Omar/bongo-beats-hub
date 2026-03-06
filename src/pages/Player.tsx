@@ -9,13 +9,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, 
   Repeat, Shuffle, Download, Share, Heart, ChevronDown,
-  Music, ListMusic, X, GripVertical, Lock
+  Music, ListMusic, X, GripVertical, Lock, MessageCircle
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Song } from '@/types/music';
 import logo from '@/assets/logo.png';
+import ThemeSelector, { PlayerTheme } from '@/components/player/ThemeSelector';
+import SongRating from '@/components/community/SongRating';
+import SongComments from '@/components/community/SongComments';
 
 const Player: React.FC = () => {
   const navigate = useNavigate();
