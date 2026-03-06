@@ -171,25 +171,31 @@ const Player: React.FC = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-gradient-to-b from-background via-background to-background/95"
+      className="fixed inset-0 z-50"
     >
-      {/* Animated background */}
+      {/* Theme background */}
       <div className="absolute inset-0 overflow-hidden">
-        {currentSong.cover_url && (
-          <motion.div
-            className="absolute inset-0"
-            initial={{ scale: 1.1, opacity: 0 }}
-            animate={{ scale: 1, opacity: 0.15 }}
-            transition={{ duration: 0.5 }}
-          >
-            <img
-              src={currentSong.cover_url}
-              alt=""
-              className="w-full h-full object-cover blur-3xl"
-            />
-          </motion.div>
+        {playerTheme ? (
+          <>
+            <img src={playerTheme.wallpaper_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0" style={{ background: playerTheme.overlay_color }} />
+          </>
+        ) : customWallpaper ? (
+          <>
+            <img src={customWallpaper} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/50" />
+          </>
+        ) : (
+          <>
+            {currentSong.cover_url && (
+              <motion.div className="absolute inset-0" initial={{ scale: 1.1, opacity: 0 }} animate={{ scale: 1, opacity: 0.15 }} transition={{ duration: 0.5 }}>
+                <img src={currentSong.cover_url} alt="" className="w-full h-full object-cover blur-3xl" />
+              </motion.div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-background/95" />
+          </>
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/30" />
       </div>
 
       {/* Header */}
