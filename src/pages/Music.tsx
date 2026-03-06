@@ -298,6 +298,13 @@ const Music = () => {
         {/* Recommendations */}
         <SongRecommendations />
       </div>
+
+      {/* Artist Profile Dialog */}
+      <Dialog open={!!selectedArtist} onOpenChange={() => setSelectedArtist(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          {selectedArtist && <ArtistProfile artistName={selectedArtist} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
