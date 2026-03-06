@@ -209,14 +209,31 @@ const Player: React.FC = () => {
           <ChevronDown className="h-6 w-6" />
         </Button>
         <p className="text-sm text-muted-foreground">Now Playing</p>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowQueue(!showQueue)}
-          className={`rounded-full ${showQueue ? 'bg-primary/10 text-primary' : ''}`}
-        >
-          <ListMusic className="h-5 w-5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <ThemeSelector
+            currentTheme={playerTheme}
+            onThemeChange={(theme, custom) => {
+              setPlayerTheme(theme);
+              setCustomWallpaper(custom || null);
+            }}
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => { setShowComments(!showComments); setShowQueue(false); }}
+            className={`rounded-full ${showComments ? 'bg-primary/10 text-primary' : ''}`}
+          >
+            <MessageCircle className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => { setShowQueue(!showQueue); setShowComments(false); }}
+            className={`rounded-full ${showQueue ? 'bg-primary/10 text-primary' : ''}`}
+          >
+            <ListMusic className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
       <div className="relative z-10 flex flex-col lg:flex-row h-[calc(100vh-80px)] overflow-hidden">
