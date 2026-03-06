@@ -257,11 +257,16 @@ const Music = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-sm truncate">{song.title}</h3>
-                        <p className="text-xs text-muted-foreground truncate">{song.artist}</p>
+                        <button onClick={() => setSelectedArtist(song.artist)} className="text-xs text-muted-foreground truncate hover:text-primary transition-colors">
+                          {song.artist}
+                        </button>
                       </div>
                       <div className="hidden sm:flex gap-1.5 items-center">
                         {song.genre && <Badge variant="secondary" className="text-[10px] bg-gold/10 text-gold border-gold/30 px-1.5 py-0">{song.genre}</Badge>}
                         {song.year && <Badge variant="outline" className="text-[10px] border-gold/30 px-1.5 py-0">{song.year}</Badge>}
+                      </div>
+                      <div className="hidden sm:block">
+                        <SongRating songId={song.id} compact />
                       </div>
                       <div className="flex items-center gap-0.5">
                         {song.download_count && song.download_count > 0 && (
