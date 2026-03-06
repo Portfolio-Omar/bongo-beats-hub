@@ -29,6 +29,8 @@ const Music = () => {
   const [filterGenre, setFilterGenre] = useState('');
   const [filterYear, setFilterYear] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [selectedArtist, setSelectedArtist] = useState<string | null>(null);
+  const [expandedSongId, setExpandedSongId] = useState<string | null>(null);
   const { toast } = useToast();
   const { playSong, currentSong, isPlaying } = useAudio();
   const { isAuthenticated } = useAuth();
