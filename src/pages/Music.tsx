@@ -211,21 +211,22 @@ const Music = () => {
                     <div className="p-4">
                       <h3 className="font-heading font-semibold text-lg mb-1 line-clamp-1">{song.title}</h3>
                       <p className="text-muted-foreground mb-3 line-clamp-1">{song.artist}</p>
-                      <div className="flex items-center justify-between">
-                        <div className="flex gap-2">
-                          {song.genre && <Badge variant="secondary" className="text-xs bg-gold/10 text-gold border-gold/30">{song.genre}</Badge>}
-                          {song.year && <Badge variant="outline" className="text-xs border-gold/30">{song.year}</Badge>}
+                        <div className="flex items-center justify-between">
+                          <div className="flex gap-2">
+                            {song.genre && <Badge variant="secondary" className="text-xs bg-gold/10 text-gold border-gold/30">{song.genre}</Badge>}
+                            {song.year && <Badge variant="outline" className="text-xs border-gold/30">{song.year}</Badge>}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <ShareSongButton song={song} className="h-8 w-8" />
+                            <AddToPlaylistMenu songId={song.id} className="h-8 w-8" />
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
+                              onClick={(e) => handleDownload(song, e)} title={isAuthenticated ? "Download" : "Sign in to download"}>
+                              {isAuthenticated ? <Download className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <ShareSongButton song={song} className="h-8 w-8" />
-                          <AddToPlaylistMenu songId={song.id} className="h-8 w-8" />
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
-                            onClick={(e) => handleDownload(song, e)} title={isAuthenticated ? "Download" : "Sign in to download"}>
-                            {isAuthenticated ? <Download className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-                          </Button>
-                        </div>
+                        <SongRating songId={song.id} compact />
                       </div>
-                    </div>
                   </CardContent>
                 </Card>
               ) : (
