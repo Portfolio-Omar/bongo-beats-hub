@@ -14,7 +14,7 @@ interface ArtistProfileProps {
   onClose?: () => void;
 }
 
-const ArtistProfile: React.FC<ArtistProfileProps> = ({ artistName, onClose }) => {
+const ArtistProfile: React.FC<ArtistProfileProps> = ({ artistName }) => {
   const { playSong } = useAudio();
 
   const { data: songs } = useQuery({
