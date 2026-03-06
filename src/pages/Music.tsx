@@ -9,13 +9,17 @@ import { useAudio } from "@/context/AudioContext";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Download, Play, Search, Grid, List, Music2, Disc, Lock } from 'lucide-react';
+import { Download, Play, Search, Grid, List, Music2, Disc, Lock, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Song } from '@/types/music';
 import BackgroundSlideshow from '@/components/ui-custom/BackgroundSlideshow';
 import ShareSongButton from '@/components/ui-custom/ShareSongButton';
 import AddToPlaylistMenu from '@/components/playlists/AddToPlaylistMenu';
 import SongRecommendations from '@/components/ui-custom/SongRecommendations';
+import SongRating from '@/components/community/SongRating';
+import SongComments from '@/components/community/SongComments';
+import ArtistProfile from '@/components/community/ArtistProfile';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import { toast as sonnerToast } from 'sonner';
 
