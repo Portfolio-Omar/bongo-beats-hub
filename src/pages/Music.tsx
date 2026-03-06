@@ -16,6 +16,9 @@ import BackgroundSlideshow from '@/components/ui-custom/BackgroundSlideshow';
 import ShareSongButton from '@/components/ui-custom/ShareSongButton';
 import AddToPlaylistMenu from '@/components/playlists/AddToPlaylistMenu';
 import SongRecommendations from '@/components/ui-custom/SongRecommendations';
+import SongRating from '@/components/community/SongRating';
+import ArtistProfile from '@/components/community/ArtistProfile';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import { toast as sonnerToast } from 'sonner';
 
@@ -25,6 +28,7 @@ const Music = () => {
   const [filterGenre, setFilterGenre] = useState('');
   const [filterYear, setFilterYear] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [selectedArtist, setSelectedArtist] = useState<string | null>(null);
   const { toast } = useToast();
   const { playSong, currentSong, isPlaying } = useAudio();
   const { isAuthenticated } = useAuth();
@@ -205,21 +209,22 @@ const Music = () => {
                     <div className="p-4">
                       <h3 className="font-heading font-semibold text-lg mb-1 line-clamp-1">{song.title}</h3>
                       <p className="text-muted-foreground mb-3 line-clamp-1">{song.artist}</p>
-                      <div className="flex items-center justify-between">
-                        <div className="flex gap-2">
-                          {song.genre && <Badge variant="secondary" className="text-xs bg-gold/10 text-gold border-gold/30">{song.genre}</Badge>}
-                          {song.year && <Badge variant="outline" className="text-xs border-gold/30">{song.year}</Badge>}
+                        <div className="flex items-center justify-between">
+                          <div className="flex gap-2">
+                            {song.genre && <Badge variant="secondary" className="text-xs bg-gold/10 text-gold border-gold/30">{song.genre}</Badge>}
+                            {song.year && <Badge variant="outline" className="text-xs border-gold/30">{song.year}</Badge>}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <ShareSongButton song={song} className="h-8 w-8" />
+                            <AddToPlaylistMenu songId={song.id} className="h-8 w-8" />
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
+                              onClick={(e) => handleDownload(song, e)} title={isAuthenticated ? "Download" : "Sign in to download"}>
+                              {isAuthenticated ? <Download className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <ShareSongButton song={song} className="h-8 w-8" />
-                          <AddToPlaylistMenu songId={song.id} className="h-8 w-8" />
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gold/10 hover:text-gold"
-                            onClick={(e) => handleDownload(song, e)} title={isAuthenticated ? "Download" : "Sign in to download"}>
-                            {isAuthenticated ? <Download className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-                          </Button>
-                        </div>
+                        <SongRating songId={song.id} compact />
                       </div>
-                    </div>
                   </CardContent>
                 </Card>
               ) : (
@@ -250,11 +255,16 @@ const Music = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-sm truncate">{song.title}</h3>
-                        <p className="text-xs text-muted-foreground truncate">{song.artist}</p>
+                        <button onClick={() => setSelectedArtist(song.artist)} className="text-xs text-muted-foreground truncate hover:text-primary transition-colors">
+                          {song.artist}
+                        </button>
                       </div>
                       <div className="hidden sm:flex gap-1.5 items-center">
                         {song.genre && <Badge variant="secondary" className="text-[10px] bg-gold/10 text-gold border-gold/30 px-1.5 py-0">{song.genre}</Badge>}
                         {song.year && <Badge variant="outline" className="text-[10px] border-gold/30 px-1.5 py-0">{song.year}</Badge>}
+                      </div>
+                      <div className="hidden sm:block">
+                        <SongRating songId={song.id} compact />
                       </div>
                       <div className="flex items-center gap-0.5">
                         {song.download_count && song.download_count > 0 && (
@@ -286,6 +296,13 @@ const Music = () => {
         {/* Recommendations */}
         <SongRecommendations />
       </div>
+
+      {/* Artist Profile Dialog */}
+      <Dialog open={!!selectedArtist} onOpenChange={() => setSelectedArtist(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          {selectedArtist && <ArtistProfile artistName={selectedArtist} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

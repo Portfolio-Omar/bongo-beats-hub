@@ -9,13 +9,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, 
   Repeat, Shuffle, Download, Share, Heart, ChevronDown,
-  Music, ListMusic, X, GripVertical, Lock
+  Music, ListMusic, X, GripVertical, Lock, MessageCircle
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Song } from '@/types/music';
 import logo from '@/assets/logo.png';
+import ThemeSelector, { PlayerTheme } from '@/components/player/ThemeSelector';
+import SongRating from '@/components/community/SongRating';
+import SongComments from '@/components/community/SongComments';
 
 const Player: React.FC = () => {
   const navigate = useNavigate();
@@ -44,6 +47,9 @@ const Player: React.FC = () => {
 
   const [isLiked, setIsLiked] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [playerTheme, setPlayerTheme] = useState<PlayerTheme | null>(null);
+  const [customWallpaper, setCustomWallpaper] = useState<string | null>(null);
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -165,25 +171,31 @@ const Player: React.FC = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-gradient-to-b from-background via-background to-background/95"
+      className="fixed inset-0 z-50"
     >
-      {/* Animated background */}
+      {/* Theme background */}
       <div className="absolute inset-0 overflow-hidden">
-        {currentSong.cover_url && (
-          <motion.div
-            className="absolute inset-0"
-            initial={{ scale: 1.1, opacity: 0 }}
-            animate={{ scale: 1, opacity: 0.15 }}
-            transition={{ duration: 0.5 }}
-          >
-            <img
-              src={currentSong.cover_url}
-              alt=""
-              className="w-full h-full object-cover blur-3xl"
-            />
-          </motion.div>
+        {playerTheme ? (
+          <>
+            <img src={playerTheme.wallpaper_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0" style={{ background: playerTheme.overlay_color }} />
+          </>
+        ) : customWallpaper ? (
+          <>
+            <img src={customWallpaper} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/50" />
+          </>
+        ) : (
+          <>
+            {currentSong.cover_url && (
+              <motion.div className="absolute inset-0" initial={{ scale: 1.1, opacity: 0 }} animate={{ scale: 1, opacity: 0.15 }} transition={{ duration: 0.5 }}>
+                <img src={currentSong.cover_url} alt="" className="w-full h-full object-cover blur-3xl" />
+              </motion.div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-background/95" />
+          </>
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/30" />
       </div>
 
       {/* Header */}
@@ -197,14 +209,31 @@ const Player: React.FC = () => {
           <ChevronDown className="h-6 w-6" />
         </Button>
         <p className="text-sm text-muted-foreground">Now Playing</p>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowQueue(!showQueue)}
-          className={`rounded-full ${showQueue ? 'bg-primary/10 text-primary' : ''}`}
-        >
-          <ListMusic className="h-5 w-5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <ThemeSelector
+            currentTheme={playerTheme}
+            onThemeChange={(theme, custom) => {
+              setPlayerTheme(theme);
+              setCustomWallpaper(custom || null);
+            }}
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => { setShowComments(!showComments); setShowQueue(false); }}
+            className={`rounded-full ${showComments ? 'bg-primary/10 text-primary' : ''}`}
+          >
+            <MessageCircle className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => { setShowQueue(!showQueue); setShowComments(false); }}
+            className={`rounded-full ${showQueue ? 'bg-primary/10 text-primary' : ''}`}
+          >
+            <ListMusic className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
       <div className="relative z-10 flex flex-col lg:flex-row h-[calc(100vh-80px)] overflow-hidden">
@@ -264,6 +293,9 @@ const Player: React.FC = () => {
               {currentSong.year && (
                 <Badge variant="outline">{currentSong.year}</Badge>
               )}
+            </div>
+            <div className="mt-3">
+              <SongRating songId={currentSong.id} />
             </div>
           </div>
 
@@ -502,6 +534,26 @@ const Player: React.FC = () => {
                     </div>
                   )}
                 </div>
+              </ScrollArea>
+            </motion.div>
+          )}
+
+          {/* Comments Panel */}
+          {showComments && (
+            <motion.div
+              initial={{ x: 300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 300, opacity: 0 }}
+              className="w-full lg:w-96 bg-card/50 backdrop-blur-xl border-l border-border/50 flex flex-col"
+            >
+              <div className="flex items-center justify-between p-4 border-b border-border/50">
+                <h2 className="font-semibold">Comments</h2>
+                <Button variant="ghost" size="icon" onClick={() => setShowComments(false)} className="lg:hidden">
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              <ScrollArea className="flex-1 p-4">
+                <SongComments songId={currentSong.id} />
               </ScrollArea>
             </motion.div>
           )}
