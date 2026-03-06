@@ -232,6 +232,39 @@ export type Database = {
         }
         Relationships: []
       }
+      player_themes: {
+        Row: {
+          accent_color: string | null
+          created_at: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          overlay_color: string | null
+          sort_order: number | null
+          wallpaper_url: string
+        }
+        Insert: {
+          accent_color?: string | null
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          overlay_color?: string | null
+          sort_order?: number | null
+          wallpaper_url: string
+        }
+        Update: {
+          accent_color?: string | null
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          overlay_color?: string | null
+          sort_order?: number | null
+          wallpaper_url?: string
+        }
+        Relationships: []
+      }
       playlist_songs: {
         Row: {
           added_at: string | null
@@ -418,6 +451,38 @@ export type Database = {
           },
         ]
       }
+      song_ratings: {
+        Row: {
+          created_at: string | null
+          id: string
+          rating: number
+          song_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          rating: number
+          song_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          rating?: number
+          song_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_ratings_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       song_reactions: {
         Row: {
           created_at: string | null
@@ -583,6 +648,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_theme_preferences: {
+        Row: {
+          created_at: string | null
+          custom_wallpaper_url: string | null
+          id: string
+          theme_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          custom_wallpaper_url?: string | null
+          id?: string
+          theme_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          custom_wallpaper_url?: string | null
+          id?: string
+          theme_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_theme_preferences_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "player_themes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
