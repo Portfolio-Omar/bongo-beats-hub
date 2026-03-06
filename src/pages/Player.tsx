@@ -294,6 +294,9 @@ const Player: React.FC = () => {
                 <Badge variant="outline">{currentSong.year}</Badge>
               )}
             </div>
+            <div className="mt-3">
+              <SongRating songId={currentSong.id} />
+            </div>
           </div>
 
           {/* Progress Bar */}
