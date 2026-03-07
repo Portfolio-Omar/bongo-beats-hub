@@ -51,6 +51,7 @@ const App = () => (
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/menu" element={<MobileMenu />} />
                     <Route path="/blog" element={<Blog />} />
+                    <Route path="/monetization" element={<Monetization />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>
