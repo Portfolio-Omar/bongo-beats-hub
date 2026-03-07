@@ -166,6 +166,50 @@ export type Database = {
         }
         Relationships: []
       }
+      listening_history: {
+        Row: {
+          completed: boolean
+          created_at: string
+          id: string
+          play_duration_seconds: number
+          reward_amount: number
+          reward_given: boolean
+          song_duration_seconds: number
+          song_id: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          play_duration_seconds?: number
+          reward_amount?: number
+          reward_given?: boolean
+          song_duration_seconds?: number
+          song_id: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          play_duration_seconds?: number
+          reward_amount?: number
+          reward_given?: boolean
+          song_duration_seconds?: number
+          song_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listening_history_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           created_at: string
@@ -387,6 +431,30 @@ export type Database = {
           start_date?: string
           status?: string
           title?: string
+        }
+        Relationships: []
+      }
+      share_boosts: {
+        Row: {
+          boost_expiry: string
+          created_at: string
+          id: string
+          share_date: string
+          user_id: string
+        }
+        Insert: {
+          boost_expiry?: string
+          created_at?: string
+          id?: string
+          share_date?: string
+          user_id: string
+        }
+        Update: {
+          boost_expiry?: string
+          created_at?: string
+          id?: string
+          share_date?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -628,6 +696,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_earnings: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          last_listen_date: string | null
+          songs_listened_today: number
+          total_earned: number
+          total_withdrawn: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          last_listen_date?: string | null
+          songs_listened_today?: number
+          total_earned?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          last_listen_date?: string | null
+          songs_listened_today?: number
+          total_earned?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -681,6 +785,42 @@ export type Database = {
           },
         ]
       }
+      withdrawals: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          created_at: string
+          id: string
+          payment_details: string | null
+          payment_method: string
+          processed_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          created_at?: string
+          id?: string
+          payment_details?: string | null
+          payment_method?: string
+          processed_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          payment_details?: string | null
+          payment_method?: string
+          processed_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -706,6 +846,15 @@ export type Database = {
       }
       increment_video_view: { Args: { _video_id: string }; Returns: undefined }
       is_admin: { Args: { pin: string }; Returns: boolean }
+      process_listen_reward: {
+        Args: {
+          _play_duration: number
+          _song_duration: number
+          _song_id: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
