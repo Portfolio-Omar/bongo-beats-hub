@@ -171,6 +171,16 @@ const Admin: React.FC = () => {
                       <BatchUploadSongs />
                     </motion.div>
                   </TabsContent>
+                  
+                  <TabsContent value="monetization" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <MonetizationTab />
+                    </motion.div>
+                  </TabsContent>
                 </div>
               </Tabs>
             </motion.div>
