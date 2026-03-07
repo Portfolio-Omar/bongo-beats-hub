@@ -104,6 +104,10 @@ const Admin: React.FC = () => {
                       <Upload className="h-4 w-4" />
                       <span>Upload Songs</span>
                     </TabsTrigger>
+                    <TabsTrigger value="monetization" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
+                      <Wallet className="h-4 w-4" />
+                      <span>Monetization</span>
+                    </TabsTrigger>
                   </TabsList>
                 </div>
                 
