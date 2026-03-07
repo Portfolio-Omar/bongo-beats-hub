@@ -58,6 +58,7 @@ const App = () => (
               } />
             </Routes>
             <EnhancedAudioPlayer />
+            <ListeningRewardTracker />
             <AIChatbot />
           </BrowserRouter>
         </AudioProvider>
