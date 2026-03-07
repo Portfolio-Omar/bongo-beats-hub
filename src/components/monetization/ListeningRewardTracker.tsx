@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useListeningReward } from '@/hooks/useListeningReward';
 import { useAudio } from '@/context/AudioContext';
 
