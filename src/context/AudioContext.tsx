@@ -171,6 +171,17 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const handleEnded = useCallback(() => {
+    // Dispatch custom event for reward system
+    if (currentSong && audioRef.current) {
+      window.dispatchEvent(new CustomEvent('song-ended', {
+        detail: {
+          song: currentSong,
+          playDuration: audioRef.current.currentTime,
+          songDuration: audioRef.current.duration
+        }
+      }));
+    }
+    
     if (isRepeating && audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(console.error);
@@ -179,7 +190,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } else {
       setIsPlaying(false);
     }
-  }, [isRepeating, playlist, playNext]);
+  }, [isRepeating, playlist, playNext, currentSong]);
 
   return (
     <AudioContext.Provider value={{

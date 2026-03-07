@@ -8,10 +8,11 @@ import BatchUploadSongs from '@/components/admin/BatchUploadSongs';
 import SongsManagementTab from '@/components/admin/SongsManagementTab';
 import RequestedSongsTab from '@/components/admin/RequestedSongsTab';
 import StatisticsDashboard from '@/components/admin/StatisticsDashboard';
+import MonetizationTab from '@/components/admin/MonetizationTab';
 import { motion } from 'framer-motion';
 import { 
   Music, FileText, MessageSquare, 
-  Upload, Lock, BarChart3
+  Upload, Lock, BarChart3, Wallet
 } from 'lucide-react';
 
 const Admin: React.FC = () => {
@@ -103,6 +104,10 @@ const Admin: React.FC = () => {
                       <Upload className="h-4 w-4" />
                       <span>Upload Songs</span>
                     </TabsTrigger>
+                    <TabsTrigger value="monetization" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
+                      <Wallet className="h-4 w-4" />
+                      <span>Monetization</span>
+                    </TabsTrigger>
                   </TabsList>
                 </div>
                 
@@ -164,6 +169,16 @@ const Admin: React.FC = () => {
                       transition={{ duration: 0.5 }}
                     >
                       <BatchUploadSongs />
+                    </motion.div>
+                  </TabsContent>
+                  
+                  <TabsContent value="monetization" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <MonetizationTab />
                     </motion.div>
                   </TabsContent>
                 </div>
