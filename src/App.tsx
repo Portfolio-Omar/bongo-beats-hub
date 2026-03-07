@@ -22,6 +22,8 @@ import MobileMenu from "./pages/MobileMenu";
 import Blog from "./pages/Blog";
 import Favorites from "./pages/Favorites";
 import Playlists from "./pages/Playlists";
+import Monetization from "./pages/Monetization";
+import ListeningRewardTracker from "./components/monetization/ListeningRewardTracker";
 
 const queryClient = new QueryClient();
 
