@@ -8,10 +8,11 @@ import BatchUploadSongs from '@/components/admin/BatchUploadSongs';
 import SongsManagementTab from '@/components/admin/SongsManagementTab';
 import RequestedSongsTab from '@/components/admin/RequestedSongsTab';
 import StatisticsDashboard from '@/components/admin/StatisticsDashboard';
+import MonetizationTab from '@/components/admin/MonetizationTab';
 import { motion } from 'framer-motion';
 import { 
   Music, FileText, MessageSquare, 
-  Upload, Lock, BarChart3
+  Upload, Lock, BarChart3, Wallet
 } from 'lucide-react';
 
 const Admin: React.FC = () => {
