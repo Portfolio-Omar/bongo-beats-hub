@@ -86,7 +86,7 @@ const Index: React.FC = () => {
           </motion.div>
 
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.6, delay: 0.2 }}>
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-heading font-bold mb-6 bg-gradient-to-r from-gold via-yellow-500 to-gold bg-clip-text text-transparent">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-heading font-bold mb-6 bg-gradient-to-r from-gold via-yellow-500 to-gold bg-clip-text text-transparent">
               Welcome to Bongo Old Skool!
             </h1>
           </motion.div>
