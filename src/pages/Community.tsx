@@ -237,7 +237,7 @@ const Community: React.FC = () => {
             <Link to="/auth">Sign In</Link>
           </Button>
         </div>
-      </Layout>
+      </>
     );
   }
 
