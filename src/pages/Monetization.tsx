@@ -13,8 +13,9 @@ import { toast } from 'sonner';
 import { 
   Wallet, TrendingUp, Music, Zap, Clock, Share2, 
   ArrowDownToLine, CreditCard, Smartphone, Building2,
-  Shield, AlertTriangle, CheckCircle2, Rocket
+  Shield, AlertTriangle, CheckCircle2, Rocket, Info
 } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useNavigate } from 'react-router-dom';
 import BoosterShop from '@/components/monetization/BoosterShop';
 import DailyBonusCard from '@/components/monetization/DailyBonusCard';
