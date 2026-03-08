@@ -58,6 +58,9 @@ const Community: React.FC = () => {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const touchStartX = useRef<number>(0);
   const [swipingMessageId, setSwipingMessageId] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const presenceChannelRef = useRef<any>(null);
 
   useEffect(() => {
     fetchMessages();
