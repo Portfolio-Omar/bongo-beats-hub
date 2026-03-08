@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { Play, Tv, AlertTriangle, Video } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const MAX_ADS_PER_DAY = 3;
 const REWARD_PER_AD = 2;
