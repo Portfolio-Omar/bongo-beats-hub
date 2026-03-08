@@ -384,34 +384,31 @@ const Player: React.FC = () => {
             </motion.div>
           </div>
 
-          {/* Bass Boost Controls */}
-          <div className="w-full max-w-md mb-4">
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-card/30 backdrop-blur-sm border border-border/30">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleBassBoost}
-                className={`h-9 w-9 rounded-full flex-shrink-0 ${bassBoost.enabled ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}
+          {/* Audio FX Panel (EQ + Bass + Volume Booster) */}
+          <AnimatePresence>
+            {showFXPanel && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="w-full flex justify-center mb-4"
               >
-                <AudioLines className="h-4 w-4" />
-              </Button>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium">Bass Boost</span>
-                  <span className="text-[10px] text-muted-foreground font-mono">
-                    {bassBoost.enabled ? `+${bassBoost.gain}dB` : 'Off'}
-                  </span>
-                </div>
-                <Slider
-                  value={[bassBoost.gain]}
-                  onValueChange={(v) => setBassGain(v[0])}
-                  max={12}
-                  step={0.5}
-                  className="w-full"
-                  disabled={!bassBoost.enabled}
-                />
-              </div>
-            </div>
+                <AudioFXPanel audioElement={audioRef.current} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* FX toggle button */}
+          <div className="w-full max-w-md mb-4 flex justify-center">
+            <Button
+              variant={showFXPanel ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setShowFXPanel(!showFXPanel)}
+              className="rounded-full gap-2 h-8 px-4"
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              <span className="text-xs">{showFXPanel ? 'Hide EQ & FX' : 'EQ & Audio FX'}</span>
+            </Button>
           </div>
 
           {/* Volume & Actions */}
