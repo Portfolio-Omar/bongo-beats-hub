@@ -20,6 +20,7 @@ import ThemeSelector, { PlayerTheme } from '@/components/player/ThemeSelector';
 import SongRating from '@/components/community/SongRating';
 import SongComments from '@/components/community/SongComments';
 import AudioFXPanel from '@/components/ui-custom/AudioFXPanel';
+import AudioVisualizer from '@/components/ui-custom/AudioVisualizer';
 
 const Player: React.FC = () => {
   const navigate = useNavigate();
