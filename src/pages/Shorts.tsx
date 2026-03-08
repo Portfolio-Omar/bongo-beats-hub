@@ -1,16 +1,21 @@
-import React, { useState, useEffect, useRefom '@/integrations/supabase/client';
+import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Share2, Play, Pause, VolumeVolume2, VoluVolume2, VoluVolume2, VolumeX, Plus, Upload, Loader2t { toast } from 'sonner';
+import { Heart, MessageCircle, Share2, Play, Volume2, VolumeX, Plus, Upload, Loader2, Send, ChevronUp, ChevronDown } from 'lucide-react';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, Som '@/components/ui/sheScrollArea } from '@/components/ui/scroll-area';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Link } from 'react-router-doitle: string;
+
+interface Short {
+  id: string;
   description: string | null;
   video_url: string;
   thumbnail_url: string | null;
