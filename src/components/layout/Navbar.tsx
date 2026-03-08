@@ -54,6 +54,9 @@ const Navbar: React.FC = () => {
 
             {isAuthenticated ? (
               <div className="hidden md:flex items-center gap-2">
+                <Link to="/profile">
+                  <Button variant="ghost" size="icon" className="rounded-full h-9 w-9"><User className="h-4 w-4" /></Button>
+                </Link>
                 <Link to="/favorites">
                   <Button variant="ghost" size="icon" className="rounded-full h-9 w-9"><Heart className="h-4 w-4" /></Button>
                 </Link>
