@@ -612,6 +612,39 @@ export type Database = {
           },
         ]
       }
+      referrals: {
+        Row: {
+          bonus_amount: number
+          bonus_paid: boolean
+          created_at: string
+          id: string
+          referral_code: string
+          referred_id: string
+          referred_songs_count: number
+          referrer_id: string
+        }
+        Insert: {
+          bonus_amount?: number
+          bonus_paid?: boolean
+          created_at?: string
+          id?: string
+          referral_code: string
+          referred_id: string
+          referred_songs_count?: number
+          referrer_id: string
+        }
+        Update: {
+          bonus_amount?: number
+          bonus_paid?: boolean
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_id?: string
+          referred_songs_count?: number
+          referrer_id?: string
+        }
+        Relationships: []
+      }
       share_boosts: {
         Row: {
           boost_expiry: string
@@ -880,6 +913,7 @@ export type Database = {
           created_at: string
           id: string
           last_listen_date: string | null
+          referral_code: string | null
           songs_listened_today: number
           total_earned: number
           total_withdrawn: number
@@ -891,6 +925,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_listen_date?: string | null
+          referral_code?: string | null
           songs_listened_today?: number
           total_earned?: number
           total_withdrawn?: number
@@ -902,6 +937,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_listen_date?: string | null
+          referral_code?: string | null
           songs_listened_today?: number
           total_earned?: number
           total_withdrawn?: number
