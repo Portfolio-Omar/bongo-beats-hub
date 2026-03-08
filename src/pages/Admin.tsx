@@ -189,8 +189,8 @@ const Admin: React.FC = () => {
         
         <div className="p-1 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-lg">
           <Tabs defaultValue="songs" className="bg-background rounded-md">
-            <div className="overflow-x-auto pb-2 pt-4 px-4">
-              <TabsList className="h-12 bg-muted/80 backdrop-blur-sm flex-wrap">
+            <div className="overflow-x-auto pb-2 pt-4 px-2 sm:px-4 -mx-1">
+              <TabsList className="h-auto min-h-[48px] bg-muted/80 backdrop-blur-sm flex flex-wrap gap-1 p-1">
                 <TabsTrigger value="statistics" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                   <BarChart3 className="h-4 w-4" /><span>Statistics</span>
                 </TabsTrigger>

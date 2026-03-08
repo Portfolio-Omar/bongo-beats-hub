@@ -108,15 +108,15 @@ const Music = () => {
       <BackgroundSlideshow />
       {/* Header */}
       <div className="bg-gradient-to-r from-gold/20 via-gold/10 to-gold/20 border-b border-gold/30">
-        <div className="container mx-auto px-4 py-12">
+        <div className="container mx-auto px-4 py-8 sm:py-12">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <div className="flex items-center gap-3 mb-4">
-              <Music2 className="w-12 h-12 text-gold" />
-              <h1 className="text-5xl md:text-6xl font-heading font-bold bg-gradient-to-r from-gold to-yellow-600 bg-clip-text text-transparent">
+            <div className="flex items-center gap-2 sm:gap-3 mb-4">
+              <Music2 className="w-8 h-8 sm:w-12 sm:h-12 text-gold flex-shrink-0" />
+              <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-heading font-bold bg-gradient-to-r from-gold to-yellow-600 bg-clip-text text-transparent">
                 Bongo Old Skool Vibes
               </h1>
             </div>
-            <motion.p className="text-lg text-muted-foreground font-display italic"
+            <motion.p className="text-sm sm:text-lg text-muted-foreground font-display italic"
               animate={{ opacity: [0.7, 1, 0.7] }} transition={{ duration: 3, repeat: Infinity }}>
               Vintage beats, modern feels. Every lyric hits different in 2025.
             </motion.p>

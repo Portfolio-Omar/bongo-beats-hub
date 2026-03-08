@@ -107,8 +107,8 @@ const Leaderboard: React.FC = () => {
   return (
     <div className="container px-4 py-6 sm:py-8 space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Trophy className="h-8 w-8 text-yellow-500" />
+        <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+          <Trophy className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-500" />
           <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Leaderboard</span>
         </h1>
         <p className="text-muted-foreground mt-1">Top listeners and earners on the platform</p>

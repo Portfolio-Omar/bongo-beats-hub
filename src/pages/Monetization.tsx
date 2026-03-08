@@ -372,10 +372,10 @@ const Monetization: React.FC = () => {
           <Card>
             <CardHeader><CardTitle>Lifetime Stats</CardTitle></CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div><p className="text-2xl font-bold text-primary">KSh {(earnings?.total_earned || 0).toFixed(1)}</p><p className="text-xs text-muted-foreground">Total Earned</p></div>
-                <div><p className="text-2xl font-bold">KSh {(earnings?.total_withdrawn || 0).toFixed(1)}</p><p className="text-xs text-muted-foreground">Total Withdrawn</p></div>
-                <div><p className="text-2xl font-bold text-green-600">KSh {(earnings?.balance || 0).toFixed(1)}</p><p className="text-xs text-muted-foreground">Available</p></div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                <div><p className="text-xl sm:text-2xl font-bold text-primary">KSh {(earnings?.total_earned || 0).toFixed(1)}</p><p className="text-xs text-muted-foreground">Total Earned</p></div>
+                <div><p className="text-xl sm:text-2xl font-bold">KSh {(earnings?.total_withdrawn || 0).toFixed(1)}</p><p className="text-xs text-muted-foreground">Total Withdrawn</p></div>
+                <div><p className="text-xl sm:text-2xl font-bold text-green-600">KSh {(earnings?.balance || 0).toFixed(1)}</p><p className="text-xs text-muted-foreground">Available</p></div>
               </div>
             </CardContent>
           </Card>

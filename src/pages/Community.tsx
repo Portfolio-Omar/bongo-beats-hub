@@ -312,7 +312,7 @@ const Community: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-3xl h-[calc(100vh-180px)] flex flex-col">
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6 max-w-3xl h-[calc(100vh-140px)] sm:h-[calc(100vh-180px)] flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-3 pb-4 border-b border-border mb-4">
         <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">

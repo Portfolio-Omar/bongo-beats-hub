@@ -158,7 +158,7 @@ const Profile: React.FC = () => {
   if (loading) return <div className="container py-20 text-center text-muted-foreground">Loading...</div>;
 
   return (
-    <div className="container py-8 max-w-2xl space-y-6">
+    <div className="container px-4 py-6 sm:py-8 max-w-2xl space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <User className="h-8 w-8 text-primary" />
