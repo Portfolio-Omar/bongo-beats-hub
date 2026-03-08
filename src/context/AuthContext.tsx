@@ -8,6 +8,7 @@ interface AuthContextType {
   session: Session | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isSuspended: boolean;
   signUp: (email: string, password: string) => Promise<{ error?: any }>;
   signIn: (email: string, password: string) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
