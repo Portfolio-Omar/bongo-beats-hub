@@ -313,7 +313,7 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
             <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-6 flex flex-col items-center gap-3">
               <img src={logoImg} alt="Bongo Old Skool" className="h-16 w-16 rounded-full object-cover" />
               <span className="text-white font-bold text-xl tracking-wide">Bongo Old Skool</span>
-              <span className="text-white/60 text-xs">bongo-beats-hub.lovable.app</span>
+              <a href="https://oldskoool.netlify.app" target="_blank" rel="noopener noreferrer" className="text-blue-400 text-xs hover:underline">oldskoool.netlify.app</a>
             </div>
           </motion.div>
         )}
