@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.daily-leaderboard]
 verify_jwt = false
+
+[functions.fetch-lyrics]
+verify_jwt = false
