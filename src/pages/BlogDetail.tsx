@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import BlogComments from '@/components/blog/BlogComments';
 import BlogShareButtons from '@/components/blog/BlogShareButtons';
+import BlogReactions from '@/components/blog/BlogReactions';
 
 interface BlogPost {
   id: string;
