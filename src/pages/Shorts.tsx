@@ -183,6 +183,9 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [showWatermark, setShowWatermark] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showDoubleTapHeart, setShowDoubleTapHeart] = useState(false);
+  const [heartPosition, setHeartPosition] = useState({ x: 0, y: 0 });
+  const lastTapRef = useRef(0);
   const viewTracked = useRef(false);
 
   // Track view when video becomes active
