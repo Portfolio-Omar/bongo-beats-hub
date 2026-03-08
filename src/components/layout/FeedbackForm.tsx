@@ -45,6 +45,7 @@ const FeedbackForm: React.FC = () => {
       if (error) throw error;
       
       toast.success('Thank you for your feedback!');
+      sendEmail('admin_feedback', undefined, { name, email, feedback });
       
       // Reset form
       setName('');

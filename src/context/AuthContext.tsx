@@ -94,6 +94,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error(error.message);
     } else {
       toast.success('Check your email for the confirmation link!');
+      // Send welcome email to user
+      const userName = email.split('@')[0];
+      sendEmail('welcome', email, { name: userName });
+      // Notify admin
+      sendEmail('admin_new_signup', undefined, { email, name: userName });
     }
     
     return { error };
