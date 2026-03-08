@@ -14,9 +14,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface UserWithRole {
+  id: string;
   user_id: string;
   role: string;
-  email?: string;
 }
 
 const SecurityTab: React.FC = () => {
