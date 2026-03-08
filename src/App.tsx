@@ -27,6 +27,7 @@ import Playlists from "./pages/Playlists";
 import Monetization from "./pages/Monetization";
 import Leaderboard from "./pages/Leaderboard";
 import ListeningRewardTracker from "./components/monetization/ListeningRewardTracker";
+import SecurityTracker from "./components/SecurityTracker";
 
 const queryClient = new QueryClient();
 
