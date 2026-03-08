@@ -182,6 +182,7 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
   const [commentCount] = useState(short.comment_count || 0);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [showWatermark, setShowWatermark] = useState(false);
+  const [progress, setProgress] = useState(0);
   const viewTracked = useRef(false);
 
   // Track view when video becomes active
