@@ -214,6 +214,9 @@ const Admin: React.FC = () => {
                 <TabsTrigger value="promotions" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                   <Megaphone className="h-4 w-4" /><span>Promotions</span>
                 </TabsTrigger>
+                <TabsTrigger value="payments" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                  <Wallet className="h-4 w-4" /><span>Payments</span>
+                </TabsTrigger>
                 <TabsTrigger value="security" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                   <Shield className="h-4 w-4" /><span>Security</span>
                 </TabsTrigger>
