@@ -70,6 +70,7 @@ const AdRewardCard: React.FC<AdRewardCardProps> = ({ isRegistered = false }) => 
 
   const startAd = () => {
     if (!user) { toast.error('Please sign in'); return; }
+    if (!isRegistered) { toast.error('Pay KSh 150 registration fee to unlock ad rewards'); return; }
     if (adsWatched >= MAX_ADS_PER_DAY) { toast.error('Daily ad limit reached (3/day)'); return; }
     if (!tabVisible) { toast.error('Please keep this tab active to watch ads'); return; }
     if (adVideos.length === 0) { toast.error('No ads available right now'); return; }
