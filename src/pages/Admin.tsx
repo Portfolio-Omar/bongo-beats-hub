@@ -258,6 +258,9 @@ const Admin: React.FC = () => {
               <TabsContent value="security" className="mt-0">
                 <TabErrorBoundary name="Security"><SecurityTab /></TabErrorBoundary>
               </TabsContent>
+              <TabsContent value="shorts" className="mt-0">
+                <TabErrorBoundary name="Shorts"><ShortsManagementTab /></TabErrorBoundary>
+              </TabsContent>
             </div>
           </Tabs>
         </div>

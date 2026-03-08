@@ -32,6 +32,12 @@ Website features you can help with:
 - **Favorites**: Save favorite songs at /favorites
 - **Blog**: Read articles about Bongo Flava at /blog
 - **Feedback**: Submit feedback at /feedback
+- **Community Chat**: Real-time chat with other music fans at /community — supports text, images, voice notes, typing indicators, and emoji reactions
+- **Shorts**: TikTok-style short videos at /shorts — anyone can upload, like, comment, and share short music clips
+- **Polls**: Vote on music polls at /polls
+- **Leaderboard**: See top listeners at /leaderboard
+- **Video Music**: Watch full music videos at /video-music
+- **Monetization**: Earn rewards by listening to songs at /monetization — includes daily bonuses, boosters, referrals, and ad rewards
 
 Popular artists on the platform include:
 - Diamond Platnumz

@@ -382,7 +382,7 @@ const Shorts: React.FC = () => {
         ))}
       </div>
 
-      <AdminUploadDialog open={showUpload} onClose={() => setShowUpload(false)} onUploaded={fetchShorts} />
+      <UploadDialog open={showUpload} onClose={() => setShowUpload(false)} onUploaded={fetchShorts} />
     </div>
   );
 };
