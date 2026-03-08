@@ -394,7 +394,7 @@ const Player: React.FC = () => {
                 exit={{ height: 0, opacity: 0 }}
                 className="w-full flex justify-center mb-4"
               >
-                <AudioFXPanel audioElement={audioRef.current} />
+                <AudioFXPanel />
               </motion.div>
             )}
           </AnimatePresence>
