@@ -109,6 +109,10 @@ const Admin: React.FC = () => {
                       <Wallet className="h-4 w-4" />
                       <span>Monetization</span>
                     </TabsTrigger>
+                    <TabsTrigger value="promotions" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
+                      <Megaphone className="h-4 w-4" />
+                      <span>Promotions & Boosters</span>
+                    </TabsTrigger>
                   </TabsList>
                 </div>
                 
