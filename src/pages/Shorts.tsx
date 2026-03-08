@@ -366,9 +366,13 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
         </div>
       </div>
 
+      {/* Progress bar */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20">
+        <div className="h-full bg-primary transition-[width] duration-200 ease-linear" style={{ width: `${progress}%` }} />
+      </div>
+
       <CommentsSheet shortId={short.id} open={commentsOpen} onClose={() => setCommentsOpen(false)} />
     </div>
-  );
 };
 
 // ─── Main Shorts Page ───
