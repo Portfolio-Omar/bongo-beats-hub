@@ -17,7 +17,11 @@ interface AdVideo {
   thumbnail_url: string | null;
 }
 
-const AdRewardCard: React.FC = () => {
+interface AdRewardCardProps {
+  isRegistered?: boolean;
+}
+
+const AdRewardCard: React.FC<AdRewardCardProps> = ({ isRegistered = false }) => {
   const { user } = useAuth();
   const [adsWatched, setAdsWatched] = useState(0);
   const [watching, setWatching] = useState(false);
