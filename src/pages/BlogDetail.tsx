@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import BlogComments from '@/components/blog/BlogComments';
 import BlogShareButtons from '@/components/blog/BlogShareButtons';
+import BlogReactions from '@/components/blog/BlogReactions';
 
 interface BlogPost {
   id: string;
@@ -137,8 +138,9 @@ const BlogDetail: React.FC = () => {
           dangerouslySetInnerHTML={{ __html: blog.content }}
         />
 
-        {/* Share Buttons */}
-        <div className="mb-10 pb-6 border-b border-border">
+        {/* Reactions & Share Buttons */}
+        <div className="mb-10 pb-6 border-b border-border space-y-4">
+          <BlogReactions blogId={blog.id} />
           <BlogShareButtons title={blog.title} slug={blog.slug || blog.id} />
         </div>
 

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
-import { Menu, Home, Music, Settings, Moon, Sun, MessageSquare, BookOpen, User, LogOut, ListMusic, Heart, LogIn, Wallet, Trophy, Shield } from 'lucide-react';
+import { Menu, Home, Music, Settings, Moon, Sun, MessageSquare, BookOpen, User, LogOut, ListMusic, Heart, LogIn, Wallet, Trophy, Shield, Users } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import logo from '@/assets/logo.png';
 
@@ -18,6 +18,7 @@ const Navbar: React.FC = () => {
     { name: 'Home', path: '/', icon: <Home className="h-4 w-4" /> },
     { name: 'Music', path: '/music', icon: <Music className="h-4 w-4" /> },
     { name: 'Playlists', path: '/playlists', icon: <ListMusic className="h-4 w-4" /> },
+    { name: 'Community', path: '/community', icon: <Users className="h-4 w-4" /> },
     { name: 'Earn', path: '/monetization', icon: <Wallet className="h-4 w-4" /> },
     { name: 'Leaderboard', path: '/leaderboard', icon: <Trophy className="h-4 w-4" /> },
     { name: 'Blog', path: '/blog', icon: <BookOpen className="h-4 w-4" /> },
