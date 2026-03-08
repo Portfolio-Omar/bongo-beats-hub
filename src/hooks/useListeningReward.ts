@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Song } from '@/types/music';
+import { sendEmail } from '@/lib/send-email';
 
 export const useListeningReward = () => {
   const { user, isAuthenticated } = useAuth();
@@ -62,6 +63,27 @@ export const useListeningReward = () => {
           duration: 3000,
           position: 'bottom-left'
         });
+
+        // Milestone email notifications
+        const songsToday = result.songs_today;
+        const milestones = [10, 50, 100];
+        if (milestones.includes(songsToday)) {
+          const milestoneKey = `milestone-${songsToday}-${new Date().toDateString()}`;
+          if (!rewardedSongs.current.has(milestoneKey)) {
+            rewardedSongs.current.add(milestoneKey);
+            const descriptions: Record<number, string> = {
+              10: 'You listened to 10 songs today! Keep the vibe going!',
+              50: 'Amazing! 50 songs today - you are a true Bongo Flava fan!',
+              100: 'Incredible! 100 songs today - you are a legend!'
+            };
+            sendEmail('reward_milestone', undefined, {
+              user_id: user.id,
+              name: user.user_metadata?.full_name || user.email?.split('@')[0],
+              milestone: `${songsToday} Songs Today!`,
+              description: descriptions[songsToday]
+            });
+          }
+        }
       }
     } catch (err) {
       console.error('Reward processing error:', err);
