@@ -96,6 +96,7 @@ const PaymentVerificationTab: React.FC = () => {
   };
 
   const handleReject = async (paymentId: string) => {
+    const payment = payments.find(p => p.id === paymentId);
     const { error } = await supabase
       .from('registration_payments')
       .update({
@@ -108,6 +109,10 @@ const PaymentVerificationTab: React.FC = () => {
       toast.error('Failed to reject');
     } else {
       toast.success('Payment rejected');
+      if (payment) {
+        const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', payment.user_id).maybeSingle();
+        sendEmail('payment_rejected', undefined, { name: profile?.full_name || 'User', mpesa_code: payment.mpesa_code, notes: notes[paymentId] });
+      }
       fetchPayments();
     }
   };

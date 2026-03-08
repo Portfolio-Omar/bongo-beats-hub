@@ -136,7 +136,12 @@ const Profile: React.FC = () => {
     } else {
       toast.success('Payment submitted! Waiting for admin verification.');
       setPaymentStatus('pending');
+      const code = mpesaCode.trim().toUpperCase();
       setMpesaCode('');
+      // Email user
+      sendEmail('payment_submitted', user.email!, { name: fullName || user.email?.split('@')[0], mpesa_code: code, amount: 150 });
+      // Email admin
+      sendEmail('admin_payment_submitted', undefined, { name: fullName || user.email, email: user.email, mpesa_code: code, amount: 150 });
     }
     setSubmittingPayment(false);
   };
