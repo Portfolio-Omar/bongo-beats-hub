@@ -664,6 +664,8 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
   );
 };
 
+type SortOption = 'recent' | 'most_viewed' | 'most_liked';
+
 // ─── Main Shorts Page ───
 const Shorts: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
@@ -671,15 +673,27 @@ const Shorts: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showUpload, setShowUpload] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('recent');
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { fetchShorts(); }, [user]);
+  useEffect(() => { fetchShorts(); }, [user, sortBy]);
 
   const fetchShorts = async () => {
     setLoading(true);
-    const { data } = await supabase.from('shorts').select('*').eq('published', true).order('created_at', { ascending: false });
+    let query = supabase.from('shorts').select('*').eq('published', true);
+    if (sortBy === 'most_viewed') {
+      query = query.order('view_count', { ascending: false });
+    } else if (sortBy === 'most_liked') {
+      query = query.order('like_count', { ascending: false });
+    } else {
+      query = query.order('created_at', { ascending: false });
+    }
+    const { data } = await query;
     if (data) setShorts(data as Short[]);
     setLoading(false);
+    // Reset scroll to top on sort change
+    if (containerRef.current) containerRef.current.scrollTo({ top: 0 });
+    setActiveIndex(0);
   };
 
   const handleScroll = () => {
