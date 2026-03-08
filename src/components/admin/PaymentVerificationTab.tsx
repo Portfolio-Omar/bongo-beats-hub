@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { CheckCircle, XCircle, Clock, Search } from 'lucide-react';
+import { sendEmail } from '@/lib/send-email';
 
 interface Payment {
   id: string;
