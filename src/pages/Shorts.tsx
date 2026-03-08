@@ -1,19 +1,18 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Share2, Play, Pause, Volume2, VolumeX, Plus, Upload, Loader2, X, Send, ChevronUp, ChevronDown } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Play, Volume2, VolumeX, Plus, Upload, Loader2, Send, ChevronUp, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Link } from 'react-router-dom';
 
 interface Short {
   id: string;
@@ -38,8 +37,8 @@ interface ShortComment {
   created_at: string;
 }
 
-// ─── Admin Upload Dialog ───
-const AdminUploadDialog: React.FC<{ open: boolean; onClose: () => void; onUploaded: () => void }> = ({ open, onClose, onUploaded }) => {
+// ─── Upload Dialog (available to all authenticated users) ───
+const UploadDialog: React.FC<{ open: boolean; onClose: () => void; onUploaded: () => void }> = ({ open, onClose, onUploaded }) => {
   const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -292,15 +291,10 @@ const Shorts: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [showUpload, setShowUpload] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     fetchShorts();
-    if (user) {
-      supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' }).then(({ data }) => {
-        if (data) setIsAdmin(true);
-      });
-    }
   }, [user]);
 
   const fetchShorts = async () => {
@@ -338,20 +332,20 @@ const Shorts: React.FC = () => {
       <div className="h-screen flex flex-col items-center justify-center bg-black text-white gap-4">
         <Play className="h-16 w-16 opacity-50" />
         <p className="text-lg">No shorts yet</p>
-        {isAdmin && (
+        {isAuthenticated && (
           <Button onClick={() => setShowUpload(true)} variant="secondary">
             <Plus className="h-4 w-4 mr-2" /> Upload First Short
           </Button>
         )}
-        <AdminUploadDialog open={showUpload} onClose={() => setShowUpload(false)} onUploaded={fetchShorts} />
+        <UploadDialog open={showUpload} onClose={() => setShowUpload(false)} onUploaded={fetchShorts} />
       </div>
     );
   }
 
   return (
     <div className="h-[calc(100vh-64px)] relative bg-black">
-      {/* Admin upload button */}
-      {isAdmin && (
+      {/* Upload button for all authenticated users */}
+      {isAuthenticated && (
         <Button
           onClick={() => setShowUpload(true)}
           size="icon"
@@ -387,7 +381,7 @@ const Shorts: React.FC = () => {
         ))}
       </div>
 
-      <AdminUploadDialog open={showUpload} onClose={() => setShowUpload(false)} onUploaded={fetchShorts} />
+      <UploadDialog open={showUpload} onClose={() => setShowUpload(false)} onUploaded={fetchShorts} />
     </div>
   );
 };
