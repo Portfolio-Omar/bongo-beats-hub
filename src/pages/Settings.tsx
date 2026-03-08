@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-import { Moon, Sun, Shield, ArrowLeft } from 'lucide-react';
+import { Moon, Sun, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
