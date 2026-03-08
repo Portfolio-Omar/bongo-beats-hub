@@ -23,6 +23,7 @@ import Blog from "./pages/Blog";
 import Favorites from "./pages/Favorites";
 import Playlists from "./pages/Playlists";
 import Monetization from "./pages/Monetization";
+import Leaderboard from "./pages/Leaderboard";
 import ListeningRewardTracker from "./components/monetization/ListeningRewardTracker";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
                     <Route path="/menu" element={<MobileMenu />} />
                     <Route path="/blog" element={<Blog />} />
                     <Route path="/monetization" element={<Monetization />} />
+                    <Route path="/leaderboard" element={<Leaderboard />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>

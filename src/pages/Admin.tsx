@@ -9,10 +9,11 @@ import SongsManagementTab from '@/components/admin/SongsManagementTab';
 import RequestedSongsTab from '@/components/admin/RequestedSongsTab';
 import StatisticsDashboard from '@/components/admin/StatisticsDashboard';
 import MonetizationTab from '@/components/admin/MonetizationTab';
+import PromotionsTab from '@/components/admin/PromotionsTab';
 import { motion } from 'framer-motion';
 import { 
   Music, FileText, MessageSquare, 
-  Upload, Lock, BarChart3, Wallet
+  Upload, Lock, BarChart3, Wallet, Megaphone
 } from 'lucide-react';
 
 const Admin: React.FC = () => {
@@ -108,6 +109,10 @@ const Admin: React.FC = () => {
                       <Wallet className="h-4 w-4" />
                       <span>Monetization</span>
                     </TabsTrigger>
+                    <TabsTrigger value="promotions" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
+                      <Megaphone className="h-4 w-4" />
+                      <span>Promotions & Boosters</span>
+                    </TabsTrigger>
                   </TabsList>
                 </div>
                 
@@ -179,6 +184,16 @@ const Admin: React.FC = () => {
                       transition={{ duration: 0.5 }}
                     >
                       <MonetizationTab />
+                    </motion.div>
+                  </TabsContent>
+                  
+                  <TabsContent value="promotions" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <PromotionsTab />
                     </motion.div>
                   </TabsContent>
                 </div>
