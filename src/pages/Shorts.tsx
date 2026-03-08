@@ -345,8 +345,8 @@ const Shorts: React.FC = () => {
 
   return (
     <div className="h-[calc(100vh-64px)] relative bg-black">
-      {/* Admin upload button */}
-      {isAdmin && (
+      {/* Upload button for all authenticated users */}
+      {isAuthenticated && (
         <Button
           onClick={() => setShowUpload(true)}
           size="icon"
