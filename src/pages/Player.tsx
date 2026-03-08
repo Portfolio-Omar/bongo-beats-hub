@@ -26,27 +26,12 @@ import AudioVisualizer from '@/components/ui-custom/AudioVisualizer';
 const Player: React.FC = () => {
   const navigate = useNavigate();
   const {
-    currentSong,
-    isPlaying,
-    playlist,
-    currentTime,
-    duration,
-    volume,
-    isMuted,
-    isShuffled,
-    isRepeating,
-    togglePlayPause,
-    playNext,
-    playPrevious,
-    setVolume,
-    toggleMute,
-    toggleShuffle,
-    toggleRepeat,
-    seekTo,
-    playSong,
-    setPlaylist,
-    removeFromQueue,
-    audioRef,
+    currentSong, isPlaying, playlist, currentTime, duration, volume, isMuted,
+    isShuffled, isRepeating, togglePlayPause, playNext, playPrevious,
+    setVolume, toggleMute, toggleShuffle, toggleRepeat, seekTo,
+    playSong, setPlaylist, removeFromQueue,
+    crossfadeEnabled, crossfadeDuration, toggleCrossfade, setCrossfadeDuration,
+    sleepTimer, setSleepTimer, cancelSleepTimer,
   } = useAudio();
 
   const [isLiked, setIsLiked] = useState(false);
