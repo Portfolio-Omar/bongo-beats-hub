@@ -251,6 +251,7 @@ const Monetization: React.FC = () => {
             </Card>
           </div>
 
+          <ReferralCard />
           <PromotedSongs />
         </TabsContent>
 
