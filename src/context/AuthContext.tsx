@@ -54,9 +54,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           setTimeout(() => {
             checkAdminRole();
+            checkSuspension(session.user.id);
           }, 0);
         } else {
           setIsAdmin(false);
+          setIsSuspended(false);
         }
       }
     );
