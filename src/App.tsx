@@ -63,6 +63,7 @@ const App = () => (
                     <Route path="/leaderboard" element={<Leaderboard />} />
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/community" element={<Community />} />
+                    <Route path="/shorts" element={<Shorts />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>
