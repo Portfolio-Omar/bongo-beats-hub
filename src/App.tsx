@@ -53,6 +53,7 @@ const App = () => (
                     <Route path="/menu" element={<MobileMenu />} />
                     <Route path="/blog" element={<Blog />} />
                     <Route path="/monetization" element={<Monetization />} />
+                    <Route path="/leaderboard" element={<Leaderboard />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>

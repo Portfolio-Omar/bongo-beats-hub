@@ -186,6 +186,16 @@ const Admin: React.FC = () => {
                       <MonetizationTab />
                     </motion.div>
                   </TabsContent>
+                  
+                  <TabsContent value="promotions" className="mt-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <PromotionsTab />
+                    </motion.div>
+                  </TabsContent>
                 </div>
               </Tabs>
             </motion.div>

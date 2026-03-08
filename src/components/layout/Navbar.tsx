@@ -13,6 +13,7 @@ const navItems = [
   { name: 'Music', path: '/music', icon: <Music className="h-4 w-4" /> },
   { name: 'Playlists', path: '/playlists', icon: <ListMusic className="h-4 w-4" /> },
   { name: 'Earn', path: '/monetization', icon: <Wallet className="h-4 w-4" /> },
+  { name: 'Leaderboard', path: '/leaderboard', icon: <Trophy className="h-4 w-4" /> },
   { name: 'Blog', path: '/blog', icon: <BookOpen className="h-4 w-4" /> },
   { name: 'Feedback', path: '/feedback', icon: <MessageSquare className="h-4 w-4" /> },
 ];
