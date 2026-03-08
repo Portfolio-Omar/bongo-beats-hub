@@ -572,6 +572,22 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
         <div className="h-full bg-primary transition-[width] duration-200 ease-linear" style={{ width: `${progress}%` }} />
       </div>
 
+      {/* Swipe hint overlays */}
+      <AnimatePresence>
+        {swipeHint === 'left' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-y-0 right-0 w-20 flex items-center justify-center pointer-events-none z-20 bg-gradient-to-l from-white/10 to-transparent">
+            <Share2 className="h-8 w-8 text-white/70" />
+          </motion.div>
+        )}
+        {swipeHint === 'right' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-y-0 left-0 w-20 flex items-center justify-center pointer-events-none z-20 bg-gradient-to-r from-white/10 to-transparent">
+            <MessageCircle className="h-8 w-8 text-white/70" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <CommentsSheet shortId={short.id} open={commentsOpen} onClose={() => setCommentsOpen(false)} />
     </div>
   );
