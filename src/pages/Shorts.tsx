@@ -736,12 +736,38 @@ const Shorts: React.FC = () => {
 
   return (
     <div className="h-[calc(100vh-64px)] relative bg-black">
-      {isAuthenticated && (
-        <Button onClick={() => setShowUpload(true)} size="icon"
-          className="absolute top-4 right-4 z-30 rounded-full bg-white/20 hover:bg-white/30 text-white">
-          <Plus className="h-5 w-5" />
-        </Button>
-      )}
+      {/* Sort & Upload buttons */}
+      <div className="absolute top-4 right-4 z-30 flex items-center gap-2">
+        <div className="flex bg-white/20 backdrop-blur-sm rounded-full overflow-hidden">
+          <button
+            onClick={() => setSortBy('recent')}
+            className={cn('px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1',
+              sortBy === 'recent' ? 'bg-white/30 text-white' : 'text-white/60 hover:text-white')}
+          >
+            <Clock className="h-3 w-3" /> New
+          </button>
+          <button
+            onClick={() => setSortBy('most_viewed')}
+            className={cn('px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1',
+              sortBy === 'most_viewed' ? 'bg-white/30 text-white' : 'text-white/60 hover:text-white')}
+          >
+            <TrendingUp className="h-3 w-3" /> Views
+          </button>
+          <button
+            onClick={() => setSortBy('most_liked')}
+            className={cn('px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1',
+              sortBy === 'most_liked' ? 'bg-white/30 text-white' : 'text-white/60 hover:text-white')}
+          >
+            <ThumbsUp className="h-3 w-3" /> Likes
+          </button>
+        </div>
+        {isAuthenticated && (
+          <Button onClick={() => setShowUpload(true)} size="icon"
+            className="rounded-full bg-white/20 hover:bg-white/30 text-white">
+            <Plus className="h-5 w-5" />
+          </Button>
+        )}
+      </div>
 
       <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex flex-col gap-2">
         <Button variant="ghost" size="icon" onClick={() => scrollTo('up')} disabled={activeIndex === 0}
