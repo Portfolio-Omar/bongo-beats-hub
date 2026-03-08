@@ -255,7 +255,6 @@ const Player: React.FC = () => {
               onChange={(s) => { setVisualizerStyle(s); localStorage.setItem('visualizerStyle', s); }}
             />
           </div>
-          </div>
 
           {/* Album Art */}
           <motion.div
