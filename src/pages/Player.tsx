@@ -9,7 +9,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, 
   Repeat, Shuffle, Download, Share, Heart, ChevronDown,
-  Music, ListMusic, X, GripVertical, Lock, MessageCircle, SlidersHorizontal
+  Music, ListMusic, X, GripVertical, Lock, MessageCircle, SlidersHorizontal,
+  Timer, TimerOff, Disc3
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,31 +21,17 @@ import ThemeSelector, { PlayerTheme } from '@/components/player/ThemeSelector';
 import SongRating from '@/components/community/SongRating';
 import SongComments from '@/components/community/SongComments';
 import AudioFXPanel from '@/components/ui-custom/AudioFXPanel';
+import AudioVisualizer from '@/components/ui-custom/AudioVisualizer';
 
 const Player: React.FC = () => {
   const navigate = useNavigate();
   const {
-    currentSong,
-    isPlaying,
-    playlist,
-    currentTime,
-    duration,
-    volume,
-    isMuted,
-    isShuffled,
-    isRepeating,
-    togglePlayPause,
-    playNext,
-    playPrevious,
-    setVolume,
-    toggleMute,
-    toggleShuffle,
-    toggleRepeat,
-    seekTo,
-    playSong,
-    setPlaylist,
-    removeFromQueue,
-    audioRef,
+    currentSong, isPlaying, playlist, currentTime, duration, volume, isMuted,
+    isShuffled, isRepeating, togglePlayPause, playNext, playPrevious,
+    setVolume, toggleMute, toggleShuffle, toggleRepeat, seekTo,
+    playSong, setPlaylist, removeFromQueue,
+    crossfadeEnabled, crossfadeDuration, toggleCrossfade, setCrossfadeDuration,
+    sleepTimer, setSleepTimer, cancelSleepTimer,
   } = useAudio();
 
   const [isLiked, setIsLiked] = useState(false);
@@ -241,7 +228,12 @@ const Player: React.FC = () => {
 
       <div className="relative z-10 flex flex-col lg:flex-row h-[calc(100vh-80px)] overflow-hidden">
         {/* Main Player */}
-        <div className={`flex-1 flex flex-col items-center justify-center px-6 pb-8 ${showQueue ? 'lg:pr-0' : ''}`}>
+        <div className={`flex-1 flex flex-col items-center justify-center px-6 pb-8 ${showQueue ? 'lg:pr-0' : ''} overflow-y-auto`}>
+          {/* Visualizer behind album art */}
+          <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
+            <AudioVisualizer className="w-full h-full" style="bars" barCount={48} />
+          </div>
+
           {/* Album Art */}
           <motion.div
             className="relative w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 mb-8"
@@ -393,7 +385,7 @@ const Player: React.FC = () => {
                 exit={{ height: 0, opacity: 0 }}
                 className="w-full flex justify-center mb-4"
               >
-                <AudioFXPanel audioElement={audioRef.current} />
+                <AudioFXPanel />
               </motion.div>
             )}
           </AnimatePresence>
@@ -409,6 +401,45 @@ const Player: React.FC = () => {
               <SlidersHorizontal className="h-3.5 w-3.5" />
               <span className="text-xs">{showFXPanel ? 'Hide EQ & FX' : 'EQ & Audio FX'}</span>
             </Button>
+          </div>
+
+          {/* Crossfade & Sleep Timer */}
+          <div className="w-full max-w-md mb-4 flex flex-wrap items-center justify-center gap-2">
+            <Button variant={crossfadeEnabled ? 'default' : 'outline'} size="sm"
+              onClick={toggleCrossfade} className="rounded-full gap-2 h-7 px-3">
+              <Disc3 className="h-3 w-3" />
+              <span className="text-[10px]">Crossfade {crossfadeEnabled ? `${crossfadeDuration}s` : 'Off'}</span>
+            </Button>
+            {crossfadeEnabled && (
+              <div className="flex items-center gap-1">
+                {[2, 3, 5, 8].map(s => (
+                  <Button key={s} variant={crossfadeDuration === s ? 'default' : 'outline'} size="sm"
+                    className="h-6 w-6 p-0 text-[10px] rounded-full" onClick={() => setCrossfadeDuration(s)}>
+                    {s}
+                  </Button>
+                ))}
+              </div>
+            )}
+            <Button variant={sleepTimer.active ? 'default' : 'outline'} size="sm"
+              className="rounded-full gap-2 h-7 px-3"
+              onClick={() => {
+                if (sleepTimer.active) cancelSleepTimer();
+              }}>
+              {sleepTimer.active ? <TimerOff className="h-3 w-3" /> : <Timer className="h-3 w-3" />}
+              <span className="text-[10px]">
+                {sleepTimer.active ? `${Math.floor(sleepTimer.remaining / 60)}:${(sleepTimer.remaining % 60).toString().padStart(2, '0')}` : 'Sleep'}
+              </span>
+            </Button>
+            {!sleepTimer.active && (
+              <div className="flex items-center gap-1">
+                {[15, 30, 45, 60].map(m => (
+                  <Button key={m} variant="outline" size="sm"
+                    className="h-6 px-2 text-[10px] rounded-full" onClick={() => setSleepTimer(m)}>
+                    {m}m
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Volume & Actions */}
