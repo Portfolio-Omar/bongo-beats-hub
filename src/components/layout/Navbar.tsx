@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import logo from '@/assets/logo.png';
 
 const Navbar: React.FC = () => {
-  const { isAuthenticated, isAdmin, signOut } = useAuth();
+  const { isAuthenticated, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
