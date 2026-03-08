@@ -20,6 +20,7 @@ import BoosterShop from '@/components/monetization/BoosterShop';
 import DailyBonusCard from '@/components/monetization/DailyBonusCard';
 import AdRewardCard from '@/components/monetization/AdRewardCard';
 import PromotedSongs from '@/components/monetization/PromotedSongs';
+import ReferralCard from '@/components/monetization/ReferralCard';
 
 interface Earnings {
   balance: number;
