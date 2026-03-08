@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useReft';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Share2, Play, Pause, Volume2, VolumeX, Plus, Upload, Loader2, X, Send, ChevronUp, ChevronDown } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Play, Pause, VolumeVolume2, VolumeX, Plus, Upload, Loader2onUp, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
