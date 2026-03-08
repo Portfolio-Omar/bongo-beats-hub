@@ -181,9 +181,9 @@ const Monetization: React.FC = () => {
   const todayEarnings = (earnings?.songs_listened_today || 0) * currentRate;
 
   return (
-    <div className="container px-4 py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:space-y-6">
+    <div className="container px-4 py-6 sm:py-8 space-y-4 sm:space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">💰 Monetization Dashboard</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">💰 Monetization Dashboard</h1>
         <p className="text-muted-foreground mt-1">Earn KSh by listening to music</p>
       </motion.div>
 
@@ -192,81 +192,89 @@ const Monetization: React.FC = () => {
         <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}>
           <Card className={registrationStatus === 'pending' ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-primary/50 bg-primary/5'}>
             <CardContent className="pt-6 pb-4">
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-3 sm:gap-4">
                 {registrationStatus === 'pending' ? (
-                  <Clock className="h-8 w-8 text-yellow-500 shrink-0 mt-1" />
+                  <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-500 shrink-0 mt-1" />
                 ) : (
-                  <AlertTriangle className="h-8 w-8 text-primary shrink-0 mt-1" />
+                  <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-primary shrink-0 mt-1" />
                 )}
                 <div className="flex-1">
                   {registrationStatus === 'pending' ? (
                     <>
-                      <h3 className="font-semibold text-lg">Payment Under Review</h3>
+                      <h3 className="font-semibold text-base sm:text-lg">Payment Under Review</h3>
                       <p className="text-sm text-muted-foreground mt-1">Your M-Pesa payment is being verified by our admin team. You can stream music while you wait, but rewards will be activated once verified.</p>
                     </>
                   ) : registrationStatus === 'rejected' ? (
                     <>
-                      <h3 className="font-semibold text-lg text-destructive">Payment Rejected</h3>
+                      <h3 className="font-semibold text-base sm:text-lg text-destructive">Payment Rejected</h3>
                       <p className="text-sm text-muted-foreground mt-1">Your payment was not verified. Please submit a valid M-Pesa transaction code on your profile page.</p>
                       <Button size="sm" className="mt-3" onClick={() => navigate('/profile')}>Go to Profile</Button>
                     </>
                   ) : (
                     <>
-                      <h3 className="font-semibold text-lg">Activate Earnings – Pay KSh 150</h3>
+                      <h3 className="font-semibold text-base sm:text-lg">Activate Earnings – Pay KSh 150</h3>
                       <p className="text-sm text-muted-foreground mt-1">
                         To start earning from listening, pay a one-time registration fee of <strong>KSh 150</strong> via M-Pesa Buy Goods to <strong>4097548</strong>, then submit your transaction code on your profile. Streaming is free and always available!
                       </p>
                       <Button size="sm" className="mt-3" onClick={() => navigate('/profile')}>
-                        <CreditCard className="h-4 w-4 mr-2" /> Pay & Activate
+                        <CreditCard className="h-4 w-4 mr-2" /> Pay &amp; Activate
                       </Button>
                     </>
                   )}
-                </div>2 lg:grid-cols-4 gap-3 sm:rid-cols-4 gap-3 sm:rid-cols-4 gap-3 sm:rid-cols-4 gap-3 sm:rid-cols-4 gap-3 sm:rid-cols-4 gap-3 sm:rid-cols-2 lg:grid-cols-4 gap-4">
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="border-primary/20">
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6">
             <div className="flex items-center justify-between">
               <div>
-              xl sm:text-  <p className="textxl sm:text--sm text-muted-foregxl sm:text-round">Total Balancexl sm:text-</p>
-               xl sm:text- <p className="text-3xl font-bold text-primary">KSh {(earnings?.balance || 0).toFixed(1)}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Total Balance</p>
+                <p className="text-xl sm:text-3xl font-bold text-primary">KSh {(earnings?.balance || 0).toFixed(1)}</p>
               </div>
-              <Wallet className="h-10 w-10 text-primary/40" />
+              <Wallet className="h-8 w-8 sm:h-10 sm:w-10 text-primary/40 hidden sm:block" />
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6">
             <div className="flex items-center justify-between">
-             xl sm:text- <div>
-                <p classxl sm:text-Name="text-sm text-muted-foregrxl sm:text-ound">Today's Earnings</p>
-    xl sm:text-            <p className="text-3xl font-bold">KSh {todayEarnings.toFixed(1)}</p>
+              <div>
+                <p className="text-xs sm:text-sm text-muted-foreground">Today's Earnings</p>
+                <p className="text-xl sm:text-3xl font-bold">KSh {todayEarnings.toFixed(1)}</p>
               </div>
-              <TrendingUp className="h-10 w-10 text-green-500/40" />
+              <TrendingUp className="h-8 w-8 sm:h-10 sm:w-10 text-green-500/40 hidden sm:block" />
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6">
             <div className="flex items-center justify-between">
-      xl sm:text-        <div>
-                <p classNamexl sm:text-="text-sm text-muted-foreground">Songs Todxl sm:text-ay</p>
-                <p className="text-3xl font-bold">{earnings?.songs_listened_today || 0}</p>
+              <div>
+                <p className="text-xs sm:text-sm text-muted-foreground">Songs Today</p>
+                <p className="text-xl sm:text-3xl font-bold">{earnings?.songs_listened_today || 0}</p>
                 <p className="text-xs text-muted-foreground">/ 150 max</p>
               </div>
-              <Music className="h-10 w-10 text-blue-500/40" />
+              <Music className="h-8 w-8 sm:h-10 sm:w-10 text-blue-500/40 hidden sm:block" />
             </div>
             <Progress value={((earnings?.songs_listened_today || 0) / 150) * 100} className="mt-3 h-2" />
           </CardContent>
         </Card>
         <Card className={activeBoosterRate ? 'border-primary/50 bg-primary/5' : boostActive ? 'border-yellow-500/50 bg-yellow-500/5' : ''}>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6">
             <div className="flex items-center justify-between">
               <div>
-         xl sm:text-       <p className="text-sm text-muted-foreground">Lxl sm:text-istening Rate</p>
-                <p className="text-3xl font-bold">KSh {currentRate}</p>
-                {activeBoosterRate && <Badge className="mt-1 bg-primary/20 text-primary"><Rocket className="h-3 w-3 mr-1" /> Booster Active</Badge>}
-                {!activeBoosterRate && boostActive && <Badge className="mt-1 bg-yellow-500/20 text-yellow-700"><Zap className="h-3 w-3 mr-1" /> Boosted · {getBoostTimeLeft()}</Badge>}
+                <p className="text-xs sm:text-sm text-muted-foreground">Listening Rate</p>
+                <p className="text-xl sm:text-3xl font-bold">KSh {currentRate}</p>
+                {activeBoosterRate && <Badge className="mt-1 bg-primary/20 text-primary text-xs"><Rocket className="h-3 w-3 mr-1" /> Booster Active</Badge>}
+                {!activeBoosterRate && boostActive && <Badge className="mt-1 bg-yellow-500/20 text-yellow-700 text-xs"><Zap className="h-3 w-3 mr-1" /> Boosted · {getBoostTimeLeft()}</Badge>}
               </div>
-              <Zap className={`h-10 w-10 ${activeBoosterRate || boostActive ? 'text-primary' : 'text-muted-foreground/40'}`} />
+              <Zap className={`h-8 w-8 sm:h-10 sm:w-10 hidden sm:block ${activeBoosterRate || boostActive ? 'text-primary' : 'text-muted-foreground/40'}`} />
             </div>
           </CardContent>
         </Card>
