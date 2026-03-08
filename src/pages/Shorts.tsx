@@ -460,7 +460,12 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
   };
 
   return (
-    <div className="relative h-full w-full snap-start snap-always bg-black flex items-center justify-center">
+    <div
+      className="relative h-full w-full snap-start snap-always bg-black flex items-center justify-center"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <video
         ref={videoRef}
         src={short.video_url}
