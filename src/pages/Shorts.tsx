@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Share2, Play, Volume2, VolumeX, Plus, Upload, Loader2, Send, ChevronUp, ChevronDown, Download, Eye } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Play, Volume2, VolumeX, Plus, Upload, Loader2, Send, ChevronUp, ChevronDown, Download, Eye, TrendingUp, Clock, ThumbsUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+// select import removed - using inline buttons instead
 import logoImg from '@/assets/logo.png';
 
 interface Short {
@@ -170,6 +171,70 @@ const CommentsSheet: React.FC<{ shortId: string; open: boolean; onClose: () => v
   );
 };
 
+// ─── User Profile Sheet ───
+const UserProfileSheet: React.FC<{ uploaderName: string; open: boolean; onClose: () => void }> = ({ uploaderName, open, onClose }) => {
+  const [uploaderShorts, setUploaderShorts] = useState<Short[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!open) return;
+    const fetch = async () => {
+      setLoading(true);
+      const { data } = await supabase.from('shorts').select('*').eq('uploaded_by', uploaderName).eq('published', true).order('created_at', { ascending: false });
+      if (data) setUploaderShorts(data as Short[]);
+      setLoading(false);
+    };
+    fetch();
+  }, [uploaderName, open]);
+
+  const totalViews = uploaderShorts.reduce((s, v) => s + v.view_count, 0);
+  const totalLikes = uploaderShorts.reduce((s, v) => s + v.like_count, 0);
+
+  return (
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="bottom" className="h-[50vh] rounded-t-2xl">
+        <SheetHeader><SheetTitle>@{uploaderName}</SheetTitle></SheetHeader>
+        {loading ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+        ) : (
+          <div className="mt-3 space-y-4">
+            <div className="flex gap-6 justify-center text-center">
+              <div>
+                <p className="text-2xl font-bold">{uploaderShorts.length}</p>
+                <p className="text-xs text-muted-foreground">Shorts</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{totalViews >= 1000 ? (totalViews / 1000).toFixed(1) + 'K' : totalViews}</p>
+                <p className="text-xs text-muted-foreground">Views</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{totalLikes >= 1000 ? (totalLikes / 1000).toFixed(1) + 'K' : totalLikes}</p>
+                <p className="text-xs text-muted-foreground">Likes</p>
+              </div>
+            </div>
+            <ScrollArea className="h-[calc(100%-120px)]">
+              <div className="grid grid-cols-3 gap-1">
+                {uploaderShorts.map(s => (
+                  <div key={s.id} className="aspect-[9/16] bg-muted rounded overflow-hidden relative">
+                    {s.thumbnail_url ? (
+                      <img src={s.thumbnail_url} alt={s.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-black/50">
+                        <Play className="h-6 w-6 text-white/50" />
+                      </div>
+                    )}
+                    <span className="absolute bottom-1 left-1 text-[10px] text-white bg-black/60 px-1 rounded">{s.view_count} views</span>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+};
+
 // ─── Single Short Card ───
 const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isActive }) => {
   const { user, isAuthenticated } = useAuth();
@@ -181,6 +246,7 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
   const [viewCount, setViewCount] = useState(short.view_count);
   const [commentCount] = useState(short.comment_count || 0);
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [showWatermark, setShowWatermark] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showDoubleTapHeart, setShowDoubleTapHeart] = useState(false);
@@ -294,13 +360,17 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
 
   const handleDownload = async () => {
     try {
-      toast.info('Preparing watermarked download...');
-
-      // Create an offscreen video to capture a frame with watermark
+      toast.info('Downloading with watermark...');
+      
+      // Fetch the video as a blob to avoid CORS issues
+      const resp = await fetch(short.video_url);
+      const videoBlob = await resp.blob();
+      const blobUrl = URL.createObjectURL(videoBlob);
+      
       const video = document.createElement('video');
-      video.crossOrigin = 'anonymous';
-      video.src = short.video_url;
-      video.muted = true;
+      video.src = blobUrl;
+      video.volume = 1;
+      video.muted = false;
 
       await new Promise<void>((resolve, reject) => {
         video.onloadeddata = () => resolve();
@@ -308,30 +378,35 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
         video.load();
       });
 
-      // Use MediaRecorder to record the video with watermark overlay
       const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth || 720;
       canvas.height = video.videoHeight || 1280;
       const ctx = canvas.getContext('2d')!;
 
-      const stream = canvas.captureStream(30);
-      // Also capture audio from the video
-      let combinedStream = stream;
+      const canvasStream = canvas.captureStream(30);
+      let combinedStream: MediaStream = canvasStream;
+      
       try {
         const audioCtx = new AudioContext();
         const source = audioCtx.createMediaElementSource(video);
         const dest = audioCtx.createMediaStreamDestination();
         source.connect(dest);
         source.connect(audioCtx.destination);
-        const audioTrack = dest.stream.getAudioTracks()[0];
-        if (audioTrack) {
-          combinedStream = new MediaStream([...stream.getVideoTracks(), audioTrack]);
+        const audioTracks = dest.stream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          combinedStream = new MediaStream([
+            ...canvasStream.getVideoTracks(),
+            ...audioTracks
+          ]);
         }
       } catch {
-        // Audio capture may fail, continue without
+        // Audio capture may fail on some browsers
       }
 
-      const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus') 
+        ? 'video/webm;codecs=vp8,opus' 
+        : 'video/webm';
+      const recorder = new MediaRecorder(combinedStream, { mimeType });
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
 
@@ -346,22 +421,23 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
+          URL.revokeObjectURL(blobUrl);
           resolve();
         };
       });
 
       recorder.start();
       video.currentTime = 0;
+      video.muted = false;
       await video.play();
 
       const drawFrame = () => {
         if (video.ended || video.paused) {
-          recorder.stop();
+          if (recorder.state === 'recording') recorder.stop();
           return;
         }
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Draw persistent watermark (top-left)
         const logoSize = Math.round(canvas.width * 0.06);
         if (logoImgRef.current) {
           ctx.save();
@@ -377,7 +453,6 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
         ctx.font = `${Math.round(canvas.width * 0.02)}px sans-serif`;
         ctx.fillText('oldskoool.netlify.app', 20 + logoSize + 8, 20 + logoSize / 2 + 20);
 
-        // Draw bottom-center watermark
         const bottomText = 'Bongo Old Skool • oldskoool.netlify.app';
         ctx.font = `bold ${Math.round(canvas.width * 0.03)}px sans-serif`;
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
@@ -388,15 +463,13 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
       };
 
       drawFrame();
-
       video.onended = () => {
-        recorder.stop();
+        if (recorder.state === 'recording') recorder.stop();
       };
 
       await downloadPromise;
       toast.success('Download complete!');
     } catch {
-      // Fallback to plain download
       try {
         const response = await fetch(short.video_url);
         const blob = await response.blob();
@@ -559,7 +632,9 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
         )}
         <div className="flex items-center gap-3 mt-1">
           {short.uploaded_by && (
-            <span className="text-white/60 text-xs">@{short.uploaded_by}</span>
+            <button onClick={() => setProfileOpen(true)} className="text-white/60 text-xs hover:text-white/90 transition-colors">
+              @{short.uploaded_by}
+            </button>
           )}
           <span className="text-white/50 text-xs flex items-center gap-1">
             <Eye className="h-3 w-3" /> {formatCount(viewCount)}
@@ -589,9 +664,14 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
       </AnimatePresence>
 
       <CommentsSheet shortId={short.id} open={commentsOpen} onClose={() => setCommentsOpen(false)} />
+      {short.uploaded_by && (
+        <UserProfileSheet uploaderName={short.uploaded_by} open={profileOpen} onClose={() => setProfileOpen(false)} />
+      )}
     </div>
   );
 };
+
+type SortOption = 'recent' | 'most_viewed' | 'most_liked';
 
 // ─── Main Shorts Page ───
 const Shorts: React.FC = () => {
@@ -600,15 +680,27 @@ const Shorts: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showUpload, setShowUpload] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('recent');
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { fetchShorts(); }, [user]);
+  useEffect(() => { fetchShorts(); }, [user, sortBy]);
 
   const fetchShorts = async () => {
     setLoading(true);
-    const { data } = await supabase.from('shorts').select('*').eq('published', true).order('created_at', { ascending: false });
+    let query = supabase.from('shorts').select('*').eq('published', true);
+    if (sortBy === 'most_viewed') {
+      query = query.order('view_count', { ascending: false });
+    } else if (sortBy === 'most_liked') {
+      query = query.order('like_count', { ascending: false });
+    } else {
+      query = query.order('created_at', { ascending: false });
+    }
+    const { data } = await query;
     if (data) setShorts(data as Short[]);
     setLoading(false);
+    // Reset scroll to top on sort change
+    if (containerRef.current) containerRef.current.scrollTo({ top: 0 });
+    setActiveIndex(0);
   };
 
   const handleScroll = () => {
@@ -651,12 +743,38 @@ const Shorts: React.FC = () => {
 
   return (
     <div className="h-[calc(100vh-64px)] relative bg-black">
-      {isAuthenticated && (
-        <Button onClick={() => setShowUpload(true)} size="icon"
-          className="absolute top-4 right-4 z-30 rounded-full bg-white/20 hover:bg-white/30 text-white">
-          <Plus className="h-5 w-5" />
-        </Button>
-      )}
+      {/* Sort & Upload buttons */}
+      <div className="absolute top-4 right-4 z-30 flex items-center gap-2">
+        <div className="flex bg-white/20 backdrop-blur-sm rounded-full overflow-hidden">
+          <button
+            onClick={() => setSortBy('recent')}
+            className={cn('px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1',
+              sortBy === 'recent' ? 'bg-white/30 text-white' : 'text-white/60 hover:text-white')}
+          >
+            <Clock className="h-3 w-3" /> New
+          </button>
+          <button
+            onClick={() => setSortBy('most_viewed')}
+            className={cn('px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1',
+              sortBy === 'most_viewed' ? 'bg-white/30 text-white' : 'text-white/60 hover:text-white')}
+          >
+            <TrendingUp className="h-3 w-3" /> Views
+          </button>
+          <button
+            onClick={() => setSortBy('most_liked')}
+            className={cn('px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1',
+              sortBy === 'most_liked' ? 'bg-white/30 text-white' : 'text-white/60 hover:text-white')}
+          >
+            <ThumbsUp className="h-3 w-3" /> Likes
+          </button>
+        </div>
+        {isAuthenticated && (
+          <Button onClick={() => setShowUpload(true)} size="icon"
+            className="rounded-full bg-white/20 hover:bg-white/30 text-white">
+            <Plus className="h-5 w-5" />
+          </Button>
+        )}
+      </div>
 
       <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex flex-col gap-2">
         <Button variant="ghost" size="icon" onClick={() => scrollTo('up')} disabled={activeIndex === 0}
