@@ -315,11 +315,24 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
         loop
         muted={muted}
         playsInline
-        onClick={togglePlay}
+        onClick={handleVideoTap}
       />
 
-      {/* Play/Pause overlay */}
+      {/* Double-tap heart animation */}
       <AnimatePresence>
+        {showDoubleTapHeart && (
+          <motion.div
+            initial={{ scale: 0, opacity: 1 }}
+            animate={{ scale: 1.5, opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+            className="absolute pointer-events-none z-30"
+            style={{ left: heartPosition.x - 40, top: heartPosition.y - 40 }}
+          >
+            <Heart className="h-20 w-20 fill-red-500 text-red-500 drop-shadow-lg" />
+          </motion.div>
+        )}
+      </AnimatePresence>
         {!playing && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
