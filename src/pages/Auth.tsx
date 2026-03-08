@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, Music } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -15,14 +16,44 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, signUp, isAuthenticated } = useAuth();
+  const { signIn, signUp, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  React.useEffect(() => {
-    if (isAuthenticated) {
+  // Store referral code from URL
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      localStorage.setItem('referral_code', refCode);
+      setIsSignUp(true);
+    }
+  }, [searchParams]);
+
+  // After sign up, create referral link
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const refCode = localStorage.getItem('referral_code');
+      if (refCode) {
+        localStorage.removeItem('referral_code');
+        // Find referrer and create referral record
+        (async () => {
+          const { data: referrer } = await supabase
+            .from('user_earnings')
+            .select('user_id')
+            .eq('referral_code', refCode)
+            .maybeSingle();
+          if (referrer && referrer.user_id !== user.id) {
+            await supabase.from('referrals').insert({
+              referrer_id: referrer.user_id,
+              referred_id: user.id,
+              referral_code: refCode,
+            });
+          }
+        })();
+      }
       navigate('/');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
