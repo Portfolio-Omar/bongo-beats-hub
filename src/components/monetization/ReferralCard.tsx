@@ -17,7 +17,11 @@ interface Referral {
   created_at: string;
 }
 
-const ReferralCard: React.FC = () => {
+interface ReferralCardProps {
+  isRegistered?: boolean;
+}
+
+const ReferralCard: React.FC<ReferralCardProps> = ({ isRegistered = false }) => {
   const { user } = useAuth();
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [referrals, setReferrals] = useState<Referral[]>([]);
@@ -82,6 +86,7 @@ const ReferralCard: React.FC = () => {
         <p className="text-sm text-muted-foreground">
           Invite friends and earn <span className="font-bold text-primary">KSh 10</span> when they listen to 10 songs!
         </p>
+        {!isRegistered && <p className="text-xs text-destructive mt-1">Pay KSh 150 registration fee to earn referral bonuses</p>}
 
         {referralCode && (
           <div className="flex items-center gap-2">

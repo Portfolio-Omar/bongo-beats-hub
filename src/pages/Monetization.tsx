@@ -95,6 +95,10 @@ const Monetization: React.FC = () => {
 
   const handleShare = async () => {
     if (!user) return;
+    if (registrationStatus !== 'verified') {
+      toast.error('Pay KSh 150 registration fee to unlock sharing boost');
+      return;
+    }
     setSharing(true);
     try {
       const shareUrl = `${window.location.origin}?ref=${user.id.slice(0, 8)}`;
@@ -172,6 +176,7 @@ const Monetization: React.FC = () => {
   }
   if (loading) return <div className="container py-20 text-center text-muted-foreground">Loading...</div>;
 
+  const isRegistered = registrationStatus === 'verified';
   const currentRate = activeBoosterRate || (boostActive ? 3 : 1.5);
   const todayEarnings = (earnings?.songs_listened_today || 0) * currentRate;
 
@@ -286,7 +291,7 @@ const Monetization: React.FC = () => {
         <TabsContent value="earn" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <DailyBonusCard songsToday={earnings?.songs_listened_today || 0} />
-            <AdRewardCard />
+            <AdRewardCard isRegistered={isRegistered} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -313,12 +318,12 @@ const Monetization: React.FC = () => {
             </Card>
           </div>
 
-          <ReferralCard />
+          <ReferralCard isRegistered={isRegistered} />
           <PromotedSongs />
         </TabsContent>
 
         <TabsContent value="boosters">
-          <BoosterShop />
+          <BoosterShop isRegistered={isRegistered} />
         </TabsContent>
 
         <TabsContent value="withdraw">

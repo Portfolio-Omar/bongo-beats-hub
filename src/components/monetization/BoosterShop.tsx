@@ -26,7 +26,11 @@ interface ActiveBooster {
 
 const tierIcons = [Zap, Rocket, Shield, Crown, Star];
 
-const BoosterShop: React.FC = () => {
+interface BoosterShopProps {
+  isRegistered?: boolean;
+}
+
+const BoosterShop: React.FC<BoosterShopProps> = ({ isRegistered = false }) => {
   const { user } = useAuth();
   const [tiers, setTiers] = useState<BoosterTier[]>([]);
   const [activeBooster, setActiveBooster] = useState<ActiveBooster | null>(null);
@@ -47,6 +51,7 @@ const BoosterShop: React.FC = () => {
 
   const handlePurchase = async (tier: BoosterTier) => {
     if (!user) { toast.error('Please sign in first'); return; }
+    if (!isRegistered) { toast.error('Pay KSh 150 registration fee before purchasing boosters'); return; }
     if (activeBooster) { toast.error('You already have an active booster. Wait for it to expire.'); return; }
     
     setPurchasing(tier.id);
@@ -82,6 +87,13 @@ const BoosterShop: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      {!isRegistered && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="pt-6">
+            <p className="text-sm text-destructive font-medium">Pay KSh 150 registration fee to unlock boosters. Go to your Profile to submit payment.</p>
+          </CardContent>
+        </Card>
+      )}
       {activeBooster && (
         <Card className="border-yellow-500/50 bg-yellow-500/5">
           <CardContent className="pt-6">

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { Play, Tv, AlertTriangle, Video } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const MAX_ADS_PER_DAY = 3;
 const REWARD_PER_AD = 2;
@@ -17,7 +18,11 @@ interface AdVideo {
   thumbnail_url: string | null;
 }
 
-const AdRewardCard: React.FC = () => {
+interface AdRewardCardProps {
+  isRegistered?: boolean;
+}
+
+const AdRewardCard: React.FC<AdRewardCardProps> = ({ isRegistered = false }) => {
   const { user } = useAuth();
   const [adsWatched, setAdsWatched] = useState(0);
   const [watching, setWatching] = useState(false);
@@ -66,6 +71,7 @@ const AdRewardCard: React.FC = () => {
 
   const startAd = () => {
     if (!user) { toast.error('Please sign in'); return; }
+    if (!isRegistered) { toast.error('Pay KSh 150 registration fee to unlock ad rewards'); return; }
     if (adsWatched >= MAX_ADS_PER_DAY) { toast.error('Daily ad limit reached (3/day)'); return; }
     if (!tabVisible) { toast.error('Please keep this tab active to watch ads'); return; }
     if (adVideos.length === 0) { toast.error('No ads available right now'); return; }
@@ -138,8 +144,10 @@ const AdRewardCard: React.FC = () => {
         <div className="flex items-center gap-2 mb-3">
           <Tv className="h-5 w-5 text-primary" />
           <h3 className="font-semibold">Ad Rewards</h3>
+          {!isRegistered && <Badge variant="destructive" className="text-xs">Locked</Badge>}
         </div>
         <p className="text-sm text-muted-foreground mb-3">Watch ads to earn KSh {REWARD_PER_AD} each (max {MAX_ADS_PER_DAY}/day)</p>
+        {!isRegistered && <p className="text-xs text-destructive mb-2">Pay KSh 150 registration fee to unlock</p>}
         <Progress value={(adsWatched / MAX_ADS_PER_DAY) * 100} className="mb-2 h-2" />
         <p className="text-xs text-muted-foreground mb-3">{adsWatched}/{MAX_ADS_PER_DAY} ads watched today · KSh {adsWatched * REWARD_PER_AD} earned</p>
 
