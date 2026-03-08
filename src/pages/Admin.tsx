@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FeedbackTab from '@/components/admin/FeedbackTab';
 import ModernBlogTab from '@/components/admin/ModernBlogTab';
 import BatchUploadSongs from '@/components/admin/BatchUploadSongs';
@@ -9,44 +9,101 @@ import StatisticsDashboard from '@/components/admin/StatisticsDashboard';
 import MonetizationTab from '@/components/admin/MonetizationTab';
 import PromotionsTab from '@/components/admin/PromotionsTab';
 import SecurityTab from '@/components/admin/SecurityTab';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
   Music, FileText, MessageSquare, 
-  Upload, Lock, BarChart3, Wallet, Megaphone, Shield
+  Upload, Lock, BarChart3, Wallet, Megaphone, Shield, Timer
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const ADMIN_PASSWORD = 'Calcium@123';
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
+// Error boundary for tab content
+class TabErrorBoundary extends React.Component<
+  { children: React.ReactNode; name: string },
+  { hasError: boolean; error?: string }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error.message };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 text-center">
+          <p className="text-destructive font-medium">Error loading {this.props.name}</p>
+          <p className="text-sm text-muted-foreground mt-2">{this.state.error}</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const Admin: React.FC = () => {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [password, setPassword] = useState('');
+  const [remainingTime, setRemainingTime] = useState(SESSION_TIMEOUT_MS);
+  const lastActivityRef = useRef(Date.now());
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.1 } }
-  };
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
+  const resetActivity = useCallback(() => {
+    lastActivityRef.current = Date.now();
+  }, []);
+
+  // Session timeout logic
+  useEffect(() => {
+    if (!isUnlocked) return;
+
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach(e => window.addEventListener(e, resetActivity));
+
+    timerRef.current = setInterval(() => {
+      const elapsed = Date.now() - lastActivityRef.current;
+      const remaining = SESSION_TIMEOUT_MS - elapsed;
+      setRemainingTime(Math.max(0, remaining));
+
+      if (remaining <= 0) {
+        setIsUnlocked(false);
+        setPassword('');
+        toast.info('Admin session expired due to inactivity');
+      } else if (remaining <= 5 * 60 * 1000 && remaining > 4.95 * 60 * 1000) {
+        toast.warning('Admin session expires in 5 minutes');
+      }
+    }, 1000);
+
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetActivity));
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isUnlocked, resetActivity]);
 
   const handleUnlock = () => {
     if (password === ADMIN_PASSWORD) {
       setIsUnlocked(true);
+      lastActivityRef.current = Date.now();
+      setRemainingTime(SESSION_TIMEOUT_MS);
       toast.success('Admin access granted!');
     } else {
       toast.error('Incorrect password');
     }
   };
 
+  const formatTime = (ms: number) => {
+    const mins = Math.floor(ms / 60000);
+    const secs = Math.floor((ms % 60000) / 1000);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   if (!isUnlocked) {
     return (
       <div className="container py-12">
-        <motion.div className="max-w-md mx-auto bg-card p-8 rounded-xl shadow-md border border-border/40"
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <div className="max-w-md mx-auto bg-card p-8 rounded-xl shadow-md border border-border/40">
           <div className="mx-auto w-16 h-16 mb-4 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
             <Lock className="h-8 w-8 text-primary" />
           </div>
@@ -62,19 +119,28 @@ const Admin: React.FC = () => {
             />
             <Button className="w-full" onClick={handleUnlock}>Unlock</Button>
           </div>
-        </motion.div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="container py-12">
-      <motion.div className="space-y-6" variants={containerVariants} initial="hidden" animate="show">
-        <motion.div className="flex justify-between items-center" variants={itemVariants}>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Admin Dashboard</h1>
-        </motion.div>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            Admin Dashboard
+          </h1>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Timer className="h-4 w-4" />
+            <span>Session: {formatTime(remainingTime)}</span>
+            <Button variant="outline" size="sm" onClick={() => { setIsUnlocked(false); setPassword(''); }}>
+              Lock
+            </Button>
+          </div>
+        </div>
         
-        <motion.div className="p-1 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-lg" variants={itemVariants}>
+        <div className="p-1 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-lg">
           <Tabs defaultValue="songs" className="bg-background rounded-md">
             <div className="overflow-x-auto pb-2 pt-4 px-4">
               <TabsList className="h-12 bg-muted/80 backdrop-blur-sm flex-wrap">
@@ -100,7 +166,7 @@ const Admin: React.FC = () => {
                   <Wallet className="h-4 w-4" /><span>Monetization</span>
                 </TabsTrigger>
                 <TabsTrigger value="promotions" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                  <Megaphone className="h-4 w-4" /><span>Promotions & Boosters</span>
+                  <Megaphone className="h-4 w-4" /><span>Promotions</span>
                 </TabsTrigger>
                 <TabsTrigger value="security" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                   <Shield className="h-4 w-4" /><span>Security</span>
@@ -109,19 +175,37 @@ const Admin: React.FC = () => {
             </div>
             
             <div className="p-4">
-              <TabsContent value="statistics" className="mt-0"><StatisticsDashboard /></TabsContent>
-              <TabsContent value="songs" className="mt-0"><SongsManagementTab /></TabsContent>
-              <TabsContent value="requests" className="mt-0"><RequestedSongsTab /></TabsContent>
-              <TabsContent value="blog" className="mt-0"><ModernBlogTab /></TabsContent>
-              <TabsContent value="feedback" className="mt-0"><FeedbackTab /></TabsContent>
-              <TabsContent value="uploads" className="mt-0"><BatchUploadSongs /></TabsContent>
-              <TabsContent value="monetization" className="mt-0"><MonetizationTab /></TabsContent>
-              <TabsContent value="promotions" className="mt-0"><PromotionsTab /></TabsContent>
-              <TabsContent value="security" className="mt-0"><SecurityTab /></TabsContent>
+              <TabsContent value="statistics" className="mt-0">
+                <TabErrorBoundary name="Statistics"><StatisticsDashboard /></TabErrorBoundary>
+              </TabsContent>
+              <TabsContent value="songs" className="mt-0">
+                <TabErrorBoundary name="Songs"><SongsManagementTab /></TabErrorBoundary>
+              </TabsContent>
+              <TabsContent value="requests" className="mt-0">
+                <TabErrorBoundary name="Requests"><RequestedSongsTab /></TabErrorBoundary>
+              </TabsContent>
+              <TabsContent value="blog" className="mt-0">
+                <TabErrorBoundary name="Blog"><ModernBlogTab /></TabErrorBoundary>
+              </TabsContent>
+              <TabsContent value="feedback" className="mt-0">
+                <TabErrorBoundary name="Feedback"><FeedbackTab /></TabErrorBoundary>
+              </TabsContent>
+              <TabsContent value="uploads" className="mt-0">
+                <TabErrorBoundary name="Uploads"><BatchUploadSongs /></TabErrorBoundary>
+              </TabsContent>
+              <TabsContent value="monetization" className="mt-0">
+                <TabErrorBoundary name="Monetization"><MonetizationTab /></TabErrorBoundary>
+              </TabsContent>
+              <TabsContent value="promotions" className="mt-0">
+                <TabErrorBoundary name="Promotions"><PromotionsTab /></TabErrorBoundary>
+              </TabsContent>
+              <TabsContent value="security" className="mt-0">
+                <TabErrorBoundary name="Security"><SecurityTab /></TabErrorBoundary>
+              </TabsContent>
             </div>
           </Tabs>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 };
