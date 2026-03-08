@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Send, Mail, Phone, MapPin, MessageCircle, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
+import { sendEmail } from '@/lib/send-email';
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
