@@ -87,6 +87,13 @@ const BoosterShop: React.FC<BoosterShopProps> = ({ isRegistered = false }) => {
 
   return (
     <div className="space-y-4">
+      {!isRegistered && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="pt-6">
+            <p className="text-sm text-destructive font-medium">Pay KSh 150 registration fee to unlock boosters. Go to your Profile to submit payment.</p>
+          </CardContent>
+        </Card>
+      )}
       {activeBooster && (
         <Card className="border-yellow-500/50 bg-yellow-500/5">
           <CardContent className="pt-6">

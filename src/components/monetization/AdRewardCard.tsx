@@ -143,8 +143,10 @@ const AdRewardCard: React.FC<AdRewardCardProps> = ({ isRegistered = false }) => 
         <div className="flex items-center gap-2 mb-3">
           <Tv className="h-5 w-5 text-primary" />
           <h3 className="font-semibold">Ad Rewards</h3>
+          {!isRegistered && <Badge variant="destructive" className="text-xs">Locked</Badge>}
         </div>
         <p className="text-sm text-muted-foreground mb-3">Watch ads to earn KSh {REWARD_PER_AD} each (max {MAX_ADS_PER_DAY}/day)</p>
+        {!isRegistered && <p className="text-xs text-destructive mb-2">Pay KSh 150 registration fee to unlock</p>}
         <Progress value={(adsWatched / MAX_ADS_PER_DAY) * 100} className="mb-2 h-2" />
         <p className="text-xs text-muted-foreground mb-3">{adsWatched}/{MAX_ADS_PER_DAY} ads watched today · KSh {adsWatched * REWARD_PER_AD} earned</p>
 
