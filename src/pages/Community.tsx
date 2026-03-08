@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import { Link } from 'react-router-dom';
 import ImageViewerModal from '@/components/community/ImageViewerModal';
 import VoiceRecorder from '@/components/community/VoiceRecorder';
 import VoiceNotePlayer from '@/components/community/VoiceNotePlayer';
+import MessageReactions from '@/components/community/MessageReactions';
 
 interface Message {
   id: string;
