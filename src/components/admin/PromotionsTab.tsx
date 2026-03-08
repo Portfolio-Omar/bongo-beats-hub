@@ -185,13 +185,25 @@ const PromotionsTab: React.FC = () => {
                       </Badge>
                     </div>
                   </div>
-                <div className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={() => toggleAdVideo(ad.id, ad.is_active)}>
-                    {ad.is_active ? 'Disable' : 'Enable'}
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => deleteAdVideo(ad.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="outline" onClick={() => toggleAdVideo(ad.id, ad.is_active)}>
+                      {ad.is_active ? 'Disable' : 'Enable'}
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => deleteAdVideo(ad.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+                {/* Video Preview */}
+                <div className="rounded-md overflow-hidden bg-black">
+                  <video
+                    src={ad.video_url}
+                    controls
+                    muted
+                    preload="metadata"
+                    className="w-full max-h-40 object-contain"
+                    onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
+                  />
                 </div>
               </div>
             ))}
