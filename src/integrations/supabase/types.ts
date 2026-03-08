@@ -41,6 +41,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ad_videos: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          thumbnail_url: string | null
+          title: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          thumbnail_url?: string | null
+          title: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          thumbnail_url?: string | null
+          title?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
       blog_categories: {
         Row: {
           created_at: string | null
