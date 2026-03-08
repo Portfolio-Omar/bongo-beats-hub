@@ -234,6 +234,9 @@ const Index: React.FC = () => {
 
       <SongOfTheWeek />
 
+      {/* Recently Played */}
+      <RecentlyPlayed />
+
       {/* Promoted Songs on Homepage */}
       <section className="py-12 px-4">
         <div className="container mx-auto max-w-7xl">
