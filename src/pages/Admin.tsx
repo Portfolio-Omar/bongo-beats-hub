@@ -9,10 +9,11 @@ import SongsManagementTab from '@/components/admin/SongsManagementTab';
 import RequestedSongsTab from '@/components/admin/RequestedSongsTab';
 import StatisticsDashboard from '@/components/admin/StatisticsDashboard';
 import MonetizationTab from '@/components/admin/MonetizationTab';
+import PromotionsTab from '@/components/admin/PromotionsTab';
 import { motion } from 'framer-motion';
 import { 
   Music, FileText, MessageSquare, 
-  Upload, Lock, BarChart3, Wallet
+  Upload, Lock, BarChart3, Wallet, Megaphone
 } from 'lucide-react';
 
 const Admin: React.FC = () => {
