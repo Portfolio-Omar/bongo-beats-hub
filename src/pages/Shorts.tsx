@@ -229,10 +229,34 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
       .then(({ data }) => { if (data) setLiked(true); });
   }, [user, short.id]);
 
-  const togglePlay = () => {
-    if (!videoRef.current) return;
-    if (playing) { videoRef.current.pause(); } else { videoRef.current.play(); }
-    setPlaying(!playing);
+  const handleVideoTap = (e: React.MouseEvent) => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      // Double tap — like + heart animation
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      setHeartPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      setShowDoubleTapHeart(true);
+      setTimeout(() => setShowDoubleTapHeart(false), 900);
+
+      if (!liked && user && isAuthenticated) {
+        supabase.from('short_likes').insert({ short_id: short.id, user_id: user.id });
+        setLiked(true);
+        setLikeCount(c => c + 1);
+      }
+      lastTapRef.current = 0;
+    } else {
+      // Single tap — toggle play after delay
+      lastTapRef.current = now;
+      setTimeout(() => {
+        if (lastTapRef.current === now) {
+          if (!videoRef.current) return;
+          if (playing) { videoRef.current.pause(); } else { videoRef.current.play(); }
+          setPlaying(!playing);
+        }
+      }, DOUBLE_TAP_DELAY);
+    }
   };
 
   const toggleLike = async () => {
