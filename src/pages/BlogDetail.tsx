@@ -7,7 +7,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Calendar, Clock, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import ReactMarkdown from 'react-markdown';
 
 interface BlogPost {
   id: string;
@@ -20,7 +19,6 @@ interface BlogPost {
   status: string;
   author?: string | null;
   tags?: string[] | null;
-  rich_content?: any;
 }
 
 const BlogDetail: React.FC = () => {
@@ -35,34 +33,14 @@ const BlogDetail: React.FC = () => {
 
   const fetchBlog = async () => {
     setLoading(true);
-    // Try by slug first, then by id
-    let { data } = await supabase
-      .from('blogs')
-      .select('*')
-      .eq('slug', slug!)
-      .eq('status', 'published')
-      .maybeSingle();
-
+    let { data } = await supabase.from('blogs').select('*').eq('slug', slug!).eq('status', 'published').maybeSingle();
     if (!data) {
-      const res = await supabase
-        .from('blogs')
-        .select('*')
-        .eq('id', slug!)
-        .eq('status', 'published')
-        .maybeSingle();
+      const res = await supabase.from('blogs').select('*').eq('id', slug!).eq('status', 'published').maybeSingle();
       data = res.data;
     }
-
     if (data) {
       setBlog(data as BlogPost);
-      // Fetch related
-      const { data: related } = await supabase
-        .from('blogs')
-        .select('*')
-        .eq('status', 'published')
-        .neq('id', data.id)
-        .order('date', { ascending: false })
-        .limit(3);
+      const { data: related } = await supabase.from('blogs').select('*').eq('status', 'published').neq('id', data.id).order('date', { ascending: false }).limit(3);
       if (related) setRelatedBlogs(related as BlogPost[]);
     }
     setLoading(false);
@@ -74,7 +52,8 @@ const BlogDetail: React.FC = () => {
   };
 
   const estimateReadTime = (content: string) => {
-    const words = content.split(/\s+/).length;
+    const text = content.replace(/<[^>]*>/g, '');
+    const words = text.split(/\s+/).length;
     return Math.max(1, Math.ceil(words / 200));
   };
 
@@ -105,19 +84,16 @@ const BlogDetail: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        {/* Back button */}
         <Button variant="ghost" asChild className="mb-6">
           <Link to="/blog"><ArrowLeft className="mr-2 h-4 w-4" />Back to Articles</Link>
         </Button>
 
-        {/* Featured Image */}
         {blog.featured_image_url && (
           <div className="rounded-xl overflow-hidden mb-8 max-h-[500px]">
             <img src={blog.featured_image_url} alt={blog.title} className="w-full h-full object-cover" />
           </div>
         )}
 
-        {/* Tags */}
         {blog.tags && blog.tags.length > 0 && (
           <div className="flex gap-2 mb-4 flex-wrap">
             {blog.tags.map(tag => (
@@ -126,10 +102,8 @@ const BlogDetail: React.FC = () => {
           </div>
         )}
 
-        {/* Title */}
         <h1 className="text-3xl md:text-5xl font-heading font-bold mb-4 leading-tight">{blog.title}</h1>
 
-        {/* Meta */}
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-8 pb-6 border-b border-border">
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
@@ -147,12 +121,20 @@ const BlogDetail: React.FC = () => {
           )}
         </div>
 
-        {/* Content */}
-        <article className="prose prose-lg dark:prose-invert max-w-none mb-12">
-          <ReactMarkdown>{blog.content}</ReactMarkdown>
-        </article>
+        {/* Render HTML content from rich text editor */}
+        <article
+          className="prose prose-lg dark:prose-invert max-w-none mb-12
+            prose-headings:font-heading prose-headings:text-foreground
+            prose-p:text-foreground/90 prose-p:leading-relaxed
+            prose-a:text-primary prose-a:underline
+            prose-blockquote:border-l-primary prose-blockquote:bg-muted/30 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r-lg
+            prose-img:rounded-xl prose-img:shadow-lg
+            prose-strong:text-foreground
+            prose-ul:text-foreground/90 prose-ol:text-foreground/90
+            prose-hr:border-border"
+          dangerouslySetInnerHTML={{ __html: blog.content }}
+        />
 
-        {/* Related Articles */}
         {relatedBlogs.length > 0 && (
           <div className="border-t border-border pt-8">
             <h3 className="text-2xl font-heading font-bold mb-6">Related Articles</h3>
