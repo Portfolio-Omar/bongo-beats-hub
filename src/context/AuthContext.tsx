@@ -29,6 +29,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isSuspended, setIsSuspended] = useState<boolean>(false);
+
+  const checkSuspension = async (userId: string) => {
+    const { data } = await supabase
+      .from('account_suspensions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .limit(1);
+    const suspended = !!(data && data.length > 0);
+    setIsSuspended(suspended);
+    return suspended;
+  };
 
   useEffect(() => {
     // Set up auth state listener
