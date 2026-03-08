@@ -232,6 +232,16 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCurrentSong(song);
     if (newPlaylist) setPlaylist(newPlaylist);
 
+    // Track recently played
+    try {
+      const key = 'recentlyPlayed';
+      const recent: Song[] = JSON.parse(localStorage.getItem(key) || '[]');
+      const filtered = recent.filter(s => s.id !== song.id);
+      filtered.unshift(song);
+      localStorage.setItem(key, JSON.stringify(filtered.slice(0, 20)));
+    } catch {}
+
+
     if (crossfadeTimerRef.current) {
       clearTimeout(crossfadeTimerRef.current);
       crossfadeTimerRef.current = null;
