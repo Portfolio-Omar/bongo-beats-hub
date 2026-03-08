@@ -359,6 +359,8 @@ export type Database = {
           user_avatar: string | null
           user_id: string
           user_name: string
+          voice_duration: number | null
+          voice_url: string | null
         }
         Insert: {
           created_at?: string
@@ -371,6 +373,8 @@ export type Database = {
           user_avatar?: string | null
           user_id: string
           user_name: string
+          voice_duration?: number | null
+          voice_url?: string | null
         }
         Update: {
           created_at?: string
@@ -383,6 +387,8 @@ export type Database = {
           user_avatar?: string | null
           user_id?: string
           user_name?: string
+          voice_duration?: number | null
+          voice_url?: string | null
         }
         Relationships: [
           {
