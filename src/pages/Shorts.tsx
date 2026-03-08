@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Share2, Play, Volume2, VolumeX, Plus, Upload, Loader2, Send, ChevronUp, ChevronDown } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Play, Volume2, VolumeX, Plus, Upload, Loader2, Send, ChevronUp, ChevronDown, Download, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import logoImg from '@/assets/logo.png';
 
 interface Short {
   id: string;
@@ -23,6 +24,7 @@ interface Short {
   uploaded_by: string | null;
   view_count: number;
   like_count: number;
+  comment_count: number;
   published: boolean;
   created_at: string;
 }
@@ -37,7 +39,7 @@ interface ShortComment {
   created_at: string;
 }
 
-// ─── Upload Dialog (available to all authenticated users) ───
+// ─── Upload Dialog ───
 const UploadDialog: React.FC<{ open: boolean; onClose: () => void; onUploaded: () => void }> = ({ open, onClose, onUploaded }) => {
   const { user } = useAuth();
   const [title, setTitle] = useState('');
@@ -54,12 +56,11 @@ const UploadDialog: React.FC<{ open: boolean; onClose: () => void; onUploaded: (
       const { error: uploadError } = await supabase.storage.from('shorts').upload(path, file);
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from('shorts').getPublicUrl(path);
-
       const { error } = await supabase.from('shorts').insert({
         title: title.trim(),
         description: description.trim() || null,
         video_url: urlData.publicUrl,
-        uploaded_by: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Admin',
+        uploaded_by: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
         published: true,
       });
       if (error) throw error;
@@ -108,13 +109,11 @@ const CommentsSheet: React.FC<{ shortId: string; open: boolean; onClose: () => v
       setLoading(false);
     };
     fetch();
-
     const channel = supabase.channel(`short-comments-${shortId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'short_comments', filter: `short_id=eq.${shortId}` }, (payload) => {
         setComments(prev => [...prev, payload.new as ShortComment]);
       })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [shortId, open]);
 
@@ -179,18 +178,47 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
   const [muted, setMuted] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(short.like_count);
+  const [viewCount, setViewCount] = useState(short.view_count);
+  const [commentCount] = useState(short.comment_count || 0);
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [showWatermark, setShowWatermark] = useState(false);
+  const viewTracked = useRef(false);
 
+  // Track view when video becomes active
   useEffect(() => {
     if (!videoRef.current) return;
     if (isActive) {
       videoRef.current.play().then(() => setPlaying(true)).catch(() => {});
+      // Track view once per activation
+      if (!viewTracked.current) {
+        viewTracked.current = true;
+        supabase.rpc('increment_short_view', { _short_id: short.id }).then(() => {
+          setViewCount(c => c + 1);
+        });
+      }
     } else {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
       setPlaying(false);
+      setShowWatermark(false);
+      viewTracked.current = false;
     }
-  }, [isActive]);
+  }, [isActive, short.id]);
+
+  // Show watermark near end of video
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const handleTimeUpdate = () => {
+      if (video.duration && video.currentTime >= video.duration - 3) {
+        setShowWatermark(true);
+      } else {
+        setShowWatermark(false);
+      }
+    };
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    return () => video.removeEventListener('timeupdate', handleTimeUpdate);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -226,6 +254,31 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
     }
   };
 
+  const handleDownload = async () => {
+    try {
+      toast.info('Downloading...');
+      const response = await fetch(short.video_url);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${short.title.replace(/[^a-z0-9]/gi, '_')}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Download started!');
+    } catch {
+      toast.error('Download failed');
+    }
+  };
+
+  const formatCount = (n: number) => {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n.toString();
+  };
+
   return (
     <div className="relative h-full w-full snap-start snap-always bg-black flex items-center justify-center">
       <video
@@ -248,19 +301,47 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
         )}
       </AnimatePresence>
 
+      {/* Watermark at end of video */}
+      <AnimatePresence>
+        {showWatermark && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10"
+          >
+            <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-6 flex flex-col items-center gap-3">
+              <img src={logoImg} alt="Bongo Old Skool" className="h-16 w-16 rounded-full object-cover" />
+              <span className="text-white font-bold text-xl tracking-wide">Bongo Old Skool</span>
+              <span className="text-white/60 text-xs">bongo-beats-hub.lovable.app</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Persistent small watermark */}
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 opacity-50 pointer-events-none">
+        <img src={logoImg} alt="" className="h-6 w-6 rounded-full object-cover" />
+        <span className="text-white text-xs font-semibold drop-shadow">Bongo Old Skool</span>
+      </div>
+
       {/* Right sidebar actions */}
-      <div className="absolute right-3 bottom-24 flex flex-col items-center gap-5">
+      <div className="absolute right-3 bottom-28 flex flex-col items-center gap-5">
         <button onClick={toggleLike} className="flex flex-col items-center gap-1">
           <Heart className={cn('h-7 w-7 transition-colors', liked ? 'fill-red-500 text-red-500' : 'text-white')} />
-          <span className="text-white text-xs font-semibold">{likeCount}</span>
+          <span className="text-white text-xs font-semibold">{formatCount(likeCount)}</span>
         </button>
         <button onClick={() => setCommentsOpen(true)} className="flex flex-col items-center gap-1">
           <MessageCircle className="h-7 w-7 text-white" />
-          <span className="text-white text-xs font-semibold">Comments</span>
+          <span className="text-white text-xs font-semibold">{formatCount(commentCount)}</span>
         </button>
         <button onClick={handleShare} className="flex flex-col items-center gap-1">
           <Share2 className="h-7 w-7 text-white" />
           <span className="text-white text-xs font-semibold">Share</span>
+        </button>
+        <button onClick={handleDownload} className="flex flex-col items-center gap-1">
+          <Download className="h-7 w-7 text-white" />
+          <span className="text-white text-xs font-semibold">Save</span>
         </button>
         <button onClick={() => setMuted(!muted)} className="flex flex-col items-center gap-1">
           {muted ? <VolumeX className="h-6 w-6 text-white" /> : <Volume2 className="h-6 w-6 text-white" />}
@@ -273,9 +354,14 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
         {short.description && (
           <p className="text-white/80 text-sm mt-1 line-clamp-2 drop-shadow">{short.description}</p>
         )}
-        {short.uploaded_by && (
-          <p className="text-white/60 text-xs mt-1">@{short.uploaded_by}</p>
-        )}
+        <div className="flex items-center gap-3 mt-1">
+          {short.uploaded_by && (
+            <span className="text-white/60 text-xs">@{short.uploaded_by}</span>
+          )}
+          <span className="text-white/50 text-xs flex items-center gap-1">
+            <Eye className="h-3 w-3" /> {formatCount(viewCount)}
+          </span>
+        </div>
       </div>
 
       <CommentsSheet shortId={short.id} open={commentsOpen} onClose={() => setCommentsOpen(false)} />
@@ -285,17 +371,14 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
 
 // ─── Main Shorts Page ───
 const Shorts: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [shorts, setShorts] = useState<Short[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showUpload, setShowUpload] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    fetchShorts();
-  }, [user]);
+  useEffect(() => { fetchShorts(); }, [user]);
 
   const fetchShorts = async () => {
     setLoading(true);
@@ -344,18 +427,13 @@ const Shorts: React.FC = () => {
 
   return (
     <div className="h-[calc(100vh-64px)] relative bg-black">
-      {/* Upload button for all authenticated users */}
       {isAuthenticated && (
-        <Button
-          onClick={() => setShowUpload(true)}
-          size="icon"
-          className="absolute top-4 right-4 z-30 rounded-full bg-white/20 hover:bg-white/30 text-white"
-        >
+        <Button onClick={() => setShowUpload(true)} size="icon"
+          className="absolute top-4 right-4 z-30 rounded-full bg-white/20 hover:bg-white/30 text-white">
           <Plus className="h-5 w-5" />
         </Button>
       )}
 
-      {/* Navigation arrows (desktop) */}
       <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex flex-col gap-2">
         <Button variant="ghost" size="icon" onClick={() => scrollTo('up')} disabled={activeIndex === 0}
           className="rounded-full bg-white/10 text-white hover:bg-white/20">
@@ -367,13 +445,8 @@ const Shorts: React.FC = () => {
         </Button>
       </div>
 
-      {/* Video feed */}
-      <div
-        ref={containerRef}
-        className="h-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
-        onScroll={handleScroll}
-        style={{ scrollbarWidth: 'none' }}
-      >
+      <div ref={containerRef} className="h-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
+        onScroll={handleScroll} style={{ scrollbarWidth: 'none' }}>
         {shorts.map((short, i) => (
           <div key={short.id} className="h-full w-full">
             <ShortCard short={short} isActive={i === activeIndex} />
