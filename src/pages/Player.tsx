@@ -216,7 +216,15 @@ const Player: React.FC = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => { setShowComments(!showComments); setShowQueue(false); }}
+            onClick={() => { setShowLyrics(!showLyrics); setShowComments(false); setShowQueue(false); }}
+            className={`rounded-full ${showLyrics ? 'bg-primary/10 text-primary' : ''}`}
+          >
+            <Mic2 className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => { setShowComments(!showComments); setShowQueue(false); setShowLyrics(false); }}
             className={`rounded-full ${showComments ? 'bg-primary/10 text-primary' : ''}`}
           >
             <MessageCircle className="h-5 w-5" />
@@ -224,7 +232,7 @@ const Player: React.FC = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => { setShowQueue(!showQueue); setShowComments(false); }}
+            onClick={() => { setShowQueue(!showQueue); setShowComments(false); setShowLyrics(false); }}
             className={`rounded-full ${showQueue ? 'bg-primary/10 text-primary' : ''}`}
           >
             <ListMusic className="h-5 w-5" />
