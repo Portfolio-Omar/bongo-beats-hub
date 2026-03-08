@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Share2, Play, Volume2, VolumeX, Plus, Upload, Loader2, Send, ChevronUp, ChevronDown, Download, Eye, TrendingUp, Clock, ThumbsUp } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Play, Volume2, VolumeX, Plus, Upload, Loader2, Send, ChevronUp, ChevronDown, Download, Eye, TrendingUp, Clock, ThumbsUp, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,7 +13,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-// select import removed - using inline buttons instead
 import logoImg from '@/assets/logo.png';
 
 interface Short {
@@ -236,7 +235,7 @@ const UserProfileSheet: React.FC<{ uploaderName: string; open: boolean; onClose:
 };
 
 // ─── Single Short Card ───
-const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isActive }) => {
+const ShortCard: React.FC<{ short: Short; isActive: boolean; onVideoEnded?: () => void }> = ({ short, isActive, onVideoEnded }) => {
   const { user, isAuthenticated } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -543,10 +542,10 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
         ref={videoRef}
         src={short.video_url}
         className="h-full w-full object-contain"
-        loop
         muted={muted}
         playsInline
         onClick={handleVideoTap}
+        onEnded={onVideoEnded}
       />
 
       {/* Double-tap heart animation */}
@@ -681,7 +680,11 @@ const Shorts: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [showUpload, setShowUpload] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>('recent');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => { fetchShorts(); }, [user, sortBy]);
 
@@ -698,25 +701,63 @@ const Shorts: React.FC = () => {
     const { data } = await query;
     if (data) setShorts(data as Short[]);
     setLoading(false);
-    // Reset scroll to top on sort change
     if (containerRef.current) containerRef.current.scrollTo({ top: 0 });
     setActiveIndex(0);
   };
+
+  // Filter shorts by search query
+  const filteredShorts = shorts.filter(s => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return s.title.toLowerCase().includes(q) || (s.uploaded_by || '').toLowerCase().includes(q);
+  });
 
   const handleScroll = () => {
     if (!containerRef.current) return;
     const scrollTop = containerRef.current.scrollTop;
     const height = containerRef.current.clientHeight;
     const newIndex = Math.round(scrollTop / height);
-    if (newIndex !== activeIndex) setActiveIndex(newIndex);
+    if (newIndex !== activeIndex) {
+      setActiveIndex(newIndex);
+      // Cancel any active countdown when user manually scrolls
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+        countdownRef.current = null;
+        setCountdown(null);
+      }
+    }
   };
 
   const scrollTo = (direction: 'up' | 'down') => {
     if (!containerRef.current) return;
     const height = containerRef.current.clientHeight;
-    const newIndex = direction === 'up' ? Math.max(0, activeIndex - 1) : Math.min(shorts.length - 1, activeIndex + 1);
+    const newIndex = direction === 'up' ? Math.max(0, activeIndex - 1) : Math.min(filteredShorts.length - 1, activeIndex + 1);
     containerRef.current.scrollTo({ top: newIndex * height, behavior: 'smooth' });
   };
+
+  const handleVideoEnded = () => {
+    if (activeIndex >= filteredShorts.length - 1) return; // Last video, no auto-scroll
+    let count = 3;
+    setCountdown(count);
+    countdownRef.current = setInterval(() => {
+      count -= 1;
+      if (count <= 0) {
+        if (countdownRef.current) clearInterval(countdownRef.current);
+        countdownRef.current = null;
+        setCountdown(null);
+        scrollTo('down');
+      } else {
+        setCountdown(count);
+      }
+    }, 1000);
+  };
+
+  // Cleanup countdown on unmount
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -743,55 +784,119 @@ const Shorts: React.FC = () => {
 
   return (
     <div className="h-[calc(100vh-64px)] relative bg-black">
-      {/* Sort & Upload buttons */}
-      <div className="absolute top-4 right-4 z-30 flex items-center gap-2">
-        <div className="flex bg-white/20 backdrop-blur-sm rounded-full overflow-hidden">
-          <button
-            onClick={() => setSortBy('recent')}
-            className={cn('px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1',
-              sortBy === 'recent' ? 'bg-white/30 text-white' : 'text-white/60 hover:text-white')}
+      {/* Search bar */}
+      <AnimatePresence>
+        {showSearch && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-14 left-4 right-4 z-30"
           >
-            <Clock className="h-3 w-3" /> New
-          </button>
-          <button
-            onClick={() => setSortBy('most_viewed')}
-            className={cn('px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1',
-              sortBy === 'most_viewed' ? 'bg-white/30 text-white' : 'text-white/60 hover:text-white')}
-          >
-            <TrendingUp className="h-3 w-3" /> Views
-          </button>
-          <button
-            onClick={() => setSortBy('most_liked')}
-            className={cn('px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1',
-              sortBy === 'most_liked' ? 'bg-white/30 text-white' : 'text-white/60 hover:text-white')}
-          >
-            <ThumbsUp className="h-3 w-3" /> Likes
-          </button>
-        </div>
-        {isAuthenticated && (
-          <Button onClick={() => setShowUpload(true)} size="icon"
-            className="rounded-full bg-white/20 hover:bg-white/30 text-white">
-            <Plus className="h-5 w-5" />
-          </Button>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+              <Input
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search by title or uploader..."
+                className="pl-9 pr-9 bg-black/70 border-white/20 text-white placeholder:text-white/40 backdrop-blur-sm"
+                autoFocus
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <X className="h-4 w-4 text-white/50 hover:text-white" />
+                </button>
+              )}
+            </div>
+          </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* Top controls: search toggle, sort, upload */}
+      <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between">
+        <button
+          onClick={() => setShowSearch(!showSearch)}
+          className={cn('p-2 rounded-full transition-colors', showSearch ? 'bg-white/30 text-white' : 'bg-white/20 text-white/70 hover:text-white')}
+        >
+          <Search className="h-4 w-4" />
+        </button>
+
+        <div className="flex items-center gap-2">
+          <div className="flex bg-white/20 backdrop-blur-sm rounded-full overflow-hidden">
+            <button
+              onClick={() => setSortBy('recent')}
+              className={cn('px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1',
+                sortBy === 'recent' ? 'bg-white/30 text-white' : 'text-white/60 hover:text-white')}
+            >
+              <Clock className="h-3 w-3" /> New
+            </button>
+            <button
+              onClick={() => setSortBy('most_viewed')}
+              className={cn('px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1',
+                sortBy === 'most_viewed' ? 'bg-white/30 text-white' : 'text-white/60 hover:text-white')}
+            >
+              <TrendingUp className="h-3 w-3" /> Views
+            </button>
+            <button
+              onClick={() => setSortBy('most_liked')}
+              className={cn('px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1',
+                sortBy === 'most_liked' ? 'bg-white/30 text-white' : 'text-white/60 hover:text-white')}
+            >
+              <ThumbsUp className="h-3 w-3" /> Likes
+            </button>
+          </div>
+          {isAuthenticated && (
+            <Button onClick={() => setShowUpload(true)} size="icon"
+              className="rounded-full bg-white/20 hover:bg-white/30 text-white">
+              <Plus className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
       </div>
 
+      {/* Desktop scroll buttons */}
       <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 hidden md:flex flex-col gap-2">
         <Button variant="ghost" size="icon" onClick={() => scrollTo('up')} disabled={activeIndex === 0}
           className="rounded-full bg-white/10 text-white hover:bg-white/20">
           <ChevronUp className="h-5 w-5" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={() => scrollTo('down')} disabled={activeIndex === shorts.length - 1}
+        <Button variant="ghost" size="icon" onClick={() => scrollTo('down')} disabled={activeIndex === filteredShorts.length - 1}
           className="rounded-full bg-white/10 text-white hover:bg-white/20">
           <ChevronDown className="h-5 w-5" />
         </Button>
       </div>
 
+      {/* Auto-scroll countdown overlay */}
+      <AnimatePresence>
+        {countdown !== null && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none"
+          >
+            <div className="bg-black/60 backdrop-blur-sm rounded-full h-20 w-20 flex flex-col items-center justify-center">
+              <span className="text-white text-2xl font-bold">{countdown}</span>
+              <span className="text-white/60 text-[10px]">Next</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* No results */}
+      {filteredShorts.length === 0 && searchQuery && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+          <Search className="h-12 w-12 text-white/30 mb-2" />
+          <p className="text-white/50">No shorts match "{searchQuery}"</p>
+        </div>
+      )}
+
+      {/* Video feed */}
       <div ref={containerRef} className="h-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
         onScroll={handleScroll} style={{ scrollbarWidth: 'none' }}>
-        {shorts.map((short, i) => (
+        {filteredShorts.map((short, i) => (
           <div key={short.id} className="h-full w-full">
-            <ShortCard short={short} isActive={i === activeIndex} />
+            <ShortCard short={short} isActive={i === activeIndex} onVideoEnded={handleVideoEnded} />
           </div>
         ))}
       </div>
