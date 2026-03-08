@@ -182,6 +182,7 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
   const [commentCount] = useState(short.comment_count || 0);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [showWatermark, setShowWatermark] = useState(false);
+  const [progress, setProgress] = useState(0);
   const viewTracked = useRef(false);
 
   // Track view when video becomes active
@@ -205,15 +206,14 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
     }
   }, [isActive, short.id]);
 
-  // Show watermark near end of video
+  // Progress bar + watermark near end
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     const handleTimeUpdate = () => {
-      if (video.duration && video.currentTime >= video.duration - 3) {
-        setShowWatermark(true);
-      } else {
-        setShowWatermark(false);
+      if (video.duration) {
+        setProgress((video.currentTime / video.duration) * 100);
+        setShowWatermark(video.currentTime >= video.duration - 3);
       }
     };
     video.addEventListener('timeupdate', handleTimeUpdate);
@@ -313,16 +313,18 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
             <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-6 flex flex-col items-center gap-3">
               <img src={logoImg} alt="Bongo Old Skool" className="h-16 w-16 rounded-full object-cover" />
               <span className="text-white font-bold text-xl tracking-wide">Bongo Old Skool</span>
-              <span className="text-white/60 text-xs">bongo-beats-hub.lovable.app</span>
+              <a href="https://oldskoool.netlify.app" target="_blank" rel="noopener noreferrer" className="text-blue-400 text-xs hover:underline">oldskoool.netlify.app</a>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Persistent small watermark */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 opacity-50 pointer-events-none">
-        <img src={logoImg} alt="" className="h-6 w-6 rounded-full object-cover" />
-        <span className="text-white text-xs font-semibold drop-shadow">Bongo Old Skool</span>
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 opacity-50">
+        <a href="https://oldskoool.netlify.app" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+          <img src={logoImg} alt="" className="h-6 w-6 rounded-full object-cover" />
+          <span className="text-white text-xs font-semibold drop-shadow">Bongo Old Skool</span>
+        </a>
       </div>
 
       {/* Right sidebar actions */}
@@ -362,6 +364,11 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
             <Eye className="h-3 w-3" /> {formatCount(viewCount)}
           </span>
         </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20">
+        <div className="h-full bg-primary transition-[width] duration-200 ease-linear" style={{ width: `${progress}%` }} />
       </div>
 
       <CommentsSheet shortId={short.id} open={commentsOpen} onClose={() => setCommentsOpen(false)} />
