@@ -291,7 +291,7 @@ const Monetization: React.FC = () => {
         <TabsContent value="earn" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <DailyBonusCard songsToday={earnings?.songs_listened_today || 0} />
-            <AdRewardCard />
+            <AdRewardCard isRegistered={isRegistered} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
