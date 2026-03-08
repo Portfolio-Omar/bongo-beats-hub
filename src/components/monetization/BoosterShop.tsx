@@ -26,7 +26,11 @@ interface ActiveBooster {
 
 const tierIcons = [Zap, Rocket, Shield, Crown, Star];
 
-const BoosterShop: React.FC = () => {
+interface BoosterShopProps {
+  isRegistered?: boolean;
+}
+
+const BoosterShop: React.FC<BoosterShopProps> = ({ isRegistered = false }) => {
   const { user } = useAuth();
   const [tiers, setTiers] = useState<BoosterTier[]>([]);
   const [activeBooster, setActiveBooster] = useState<ActiveBooster | null>(null);
