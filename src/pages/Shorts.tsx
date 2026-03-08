@@ -187,6 +187,17 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
   const [heartPosition, setHeartPosition] = useState({ x: 0, y: 0 });
   const lastTapRef = useRef(0);
   const viewTracked = useRef(false);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const [swipeHint, setSwipeHint] = useState<'left' | 'right' | null>(null);
+  const logoImgRef = useRef<HTMLImageElement | null>(null);
+
+  // Preload logo image for canvas watermark
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = logoImg;
+    img.onload = () => { logoImgRef.current = img; };
+  }, []);
 
   // Track view when video becomes active
   useEffect(() => {
