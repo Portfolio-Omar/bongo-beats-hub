@@ -20,13 +20,11 @@ interface UserWithRole {
 }
 
 const SecurityTab: React.FC = () => {
-  const [users, setUsers] = useState<any[]>([]);
   const [roles, setRoles] = useState<UserWithRole[]>([]);
   const [flags, setFlags] = useState<any[]>([]);
   const [suspensions, setSuspensions] = useState<any[]>([]);
   const [loginActivity, setLoginActivity] = useState<any[]>([]);
   const [fingerprints, setFingerprints] = useState<any[]>([]);
-  const [searchEmail, setSearchEmail] = useState('');
   const [suspendUserId, setSuspendUserId] = useState('');
   const [suspendReason, setSuspendReason] = useState('');
   const [flagUserId, setFlagUserId] = useState('');

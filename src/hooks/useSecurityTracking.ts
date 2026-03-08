@@ -51,9 +51,9 @@ export const useSecurityTracking = () => {
         });
 
         // Bot detection: check for headless browser indicators
-        const isBot = !navigator.webdriver === undefined || 
+        const isBot = (navigator as any).webdriver === true || 
           (navigator as any).plugins?.length === 0 ||
-          !window.chrome;
+          !(window as any).chrome;
         
         if (isBot) {
           await supabase.from('security_flags').insert({
