@@ -17,7 +17,11 @@ interface Referral {
   created_at: string;
 }
 
-const ReferralCard: React.FC = () => {
+interface ReferralCardProps {
+  isRegistered?: boolean;
+}
+
+const ReferralCard: React.FC<ReferralCardProps> = ({ isRegistered = false }) => {
   const { user } = useAuth();
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [referrals, setReferrals] = useState<Referral[]>([]);
