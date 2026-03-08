@@ -237,7 +237,16 @@ const Player: React.FC = () => {
         <div className={`flex-1 flex flex-col items-center justify-center px-6 pb-8 ${showQueue ? 'lg:pr-0' : ''} overflow-y-auto`}>
           {/* Visualizer behind album art */}
           <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
-            <AudioVisualizer className="w-full h-full" style="bars" barCount={48} />
+            <AudioVisualizer className="w-full h-full" style={visualizerStyle} barCount={48} />
+          </div>
+
+          {/* Visualizer style selector */}
+          <div className="relative z-10 mb-2">
+            <VisualizerSelector
+              value={visualizerStyle}
+              onChange={(s) => { setVisualizerStyle(s); localStorage.setItem('visualizerStyle', s); }}
+            />
+          </div>
           </div>
 
           {/* Album Art */}
