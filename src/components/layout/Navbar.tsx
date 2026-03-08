@@ -24,7 +24,6 @@ const Navbar: React.FC = () => {
     { name: 'Leaderboard', path: '/leaderboard', icon: <Trophy className="h-4 w-4" /> },
     { name: 'Blog', path: '/blog', icon: <BookOpen className="h-4 w-4" /> },
     { name: 'Feedback', path: '/feedback', icon: <MessageSquare className="h-4 w-4" /> },
-    { name: 'Admin', path: '/admin', icon: <Shield className="h-4 w-4" /> },
   ];
 
   return (

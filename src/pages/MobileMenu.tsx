@@ -23,13 +23,6 @@ const MobileMenu = () => {
     { name: 'Settings', path: '/settings', icon: <Settings className="h-5 w-5 mr-3" /> },
   ];
 
-  if (isAuthenticated) {
-    menuItems.push({ 
-      name: 'Admin', 
-      path: '/admin', 
-      icon: <Shield className="h-5 w-5 mr-3" /> 
-    });
-  }
   
   menuItems.push({ 
     name: 'Feedback', 

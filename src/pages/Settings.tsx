@@ -82,31 +82,6 @@ const Settings = () => {
             <VisitorStats />
           )}
 
-          {/* Admin Panel Access - Only visible for authenticated users */}
-          {isAuthenticated && (
-            <Card className="bg-gradient-to-r from-primary/5 to-accent/10 border-primary/20">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-primary" />
-                  <CardTitle>Admin Controls</CardTitle>
-                </div>
-                <CardDescription>
-                  Access advanced management features for your platform.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild variant="default" className="w-full bg-primary hover:bg-primary/90">
-                  <Link to="/admin">
-                    <Shield className="mr-2 h-4 w-4" />
-                    Open Admin Dashboard
-                  </Link>
-                </Button>
-                <p className="text-sm text-muted-foreground mt-4">
-                  The admin dashboard allows you to manage content, users, and system settings.
-                </p>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </Layout>
