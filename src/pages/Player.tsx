@@ -10,7 +10,7 @@ import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, 
   Repeat, Shuffle, Download, Share, Heart, ChevronDown,
   Music, ListMusic, X, GripVertical, Lock, MessageCircle, SlidersHorizontal,
-  Timer, TimerOff, Disc3
+  Timer, TimerOff, Disc3, Mic2
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +22,8 @@ import SongRating from '@/components/community/SongRating';
 import SongComments from '@/components/community/SongComments';
 import AudioFXPanel from '@/components/ui-custom/AudioFXPanel';
 import AudioVisualizer from '@/components/ui-custom/AudioVisualizer';
+import VisualizerSelector from '@/components/player/VisualizerSelector';
+import LyricsDisplay from '@/components/player/LyricsDisplay';
 
 const Player: React.FC = () => {
   const navigate = useNavigate();
@@ -38,6 +40,10 @@ const Player: React.FC = () => {
   const [showQueue, setShowQueue] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showFXPanel, setShowFXPanel] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [visualizerStyle, setVisualizerStyle] = useState<'bars' | 'wave' | 'circle'>(() => {
+    return (localStorage.getItem('visualizerStyle') as 'bars' | 'wave' | 'circle') || 'bars';
+  });
   const [playerTheme, setPlayerTheme] = useState<PlayerTheme | null>(null);
   const [customWallpaper, setCustomWallpaper] = useState<string | null>(null);
   const { user, isAuthenticated } = useAuth();
@@ -210,7 +216,15 @@ const Player: React.FC = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => { setShowComments(!showComments); setShowQueue(false); }}
+            onClick={() => { setShowLyrics(!showLyrics); setShowComments(false); setShowQueue(false); }}
+            className={`rounded-full ${showLyrics ? 'bg-primary/10 text-primary' : ''}`}
+          >
+            <Mic2 className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => { setShowComments(!showComments); setShowQueue(false); setShowLyrics(false); }}
             className={`rounded-full ${showComments ? 'bg-primary/10 text-primary' : ''}`}
           >
             <MessageCircle className="h-5 w-5" />
@@ -218,7 +232,7 @@ const Player: React.FC = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => { setShowQueue(!showQueue); setShowComments(false); }}
+            onClick={() => { setShowQueue(!showQueue); setShowComments(false); setShowLyrics(false); }}
             className={`rounded-full ${showQueue ? 'bg-primary/10 text-primary' : ''}`}
           >
             <ListMusic className="h-5 w-5" />
@@ -231,7 +245,15 @@ const Player: React.FC = () => {
         <div className={`flex-1 flex flex-col items-center justify-center px-6 pb-8 ${showQueue ? 'lg:pr-0' : ''} overflow-y-auto`}>
           {/* Visualizer behind album art */}
           <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
-            <AudioVisualizer className="w-full h-full" style="bars" barCount={48} />
+            <AudioVisualizer className="w-full h-full" style={visualizerStyle} barCount={48} />
+          </div>
+
+          {/* Visualizer style selector */}
+          <div className="relative z-10 mb-2">
+            <VisualizerSelector
+              value={visualizerStyle}
+              onChange={(s) => { setVisualizerStyle(s); localStorage.setItem('visualizerStyle', s); }}
+            />
           </div>
 
           {/* Album Art */}
@@ -601,6 +623,26 @@ const Player: React.FC = () => {
               <ScrollArea className="flex-1 p-4">
                 <SongComments songId={currentSong.id} />
               </ScrollArea>
+            </motion.div>
+          )}
+
+          {/* Lyrics Panel */}
+          {showLyrics && (
+            <motion.div
+              initial={{ x: 300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 300, opacity: 0 }}
+              className="w-full lg:w-96 bg-card/50 backdrop-blur-xl border-l border-border/50 flex flex-col"
+            >
+              <div className="flex items-center justify-between p-4 border-b border-border/50">
+                <h2 className="font-semibold">Lyrics</h2>
+                <Button variant="ghost" size="icon" onClick={() => setShowLyrics(false)} className="lg:hidden">
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              <div className="flex-1 p-4 overflow-hidden">
+                <LyricsDisplay />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
