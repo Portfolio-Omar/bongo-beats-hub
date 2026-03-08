@@ -1,3 +1,4 @@
+import React from 'react';
 import { useSecurityTracking } from '@/hooks/useSecurityTracking';
 
 const SecurityTracker: React.FC = () => {
@@ -5,5 +6,4 @@ const SecurityTracker: React.FC = () => {
   return null;
 };
 
-import React from 'react';
 export default SecurityTracker;
