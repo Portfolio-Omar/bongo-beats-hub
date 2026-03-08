@@ -315,8 +315,7 @@ const Community: React.FC = () => {
                         <img 
                           src={msg.image_url} 
                           alt="Shared" 
-                          className="rounded-lg max-w-full mb-2 cursor-pointer"
-                          onClick={() => window.open(msg.image_url!, '_blank')}
+                          className="rounded-lg max-w-full mb-2"
                         />
                       )}
                       
