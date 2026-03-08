@@ -171,6 +171,70 @@ const CommentsSheet: React.FC<{ shortId: string; open: boolean; onClose: () => v
   );
 };
 
+// ─── User Profile Sheet ───
+const UserProfileSheet: React.FC<{ uploaderName: string; open: boolean; onClose: () => void }> = ({ uploaderName, open, onClose }) => {
+  const [uploaderShorts, setUploaderShorts] = useState<Short[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!open) return;
+    const fetch = async () => {
+      setLoading(true);
+      const { data } = await supabase.from('shorts').select('*').eq('uploaded_by', uploaderName).eq('published', true).order('created_at', { ascending: false });
+      if (data) setUploaderShorts(data as Short[]);
+      setLoading(false);
+    };
+    fetch();
+  }, [uploaderName, open]);
+
+  const totalViews = uploaderShorts.reduce((s, v) => s + v.view_count, 0);
+  const totalLikes = uploaderShorts.reduce((s, v) => s + v.like_count, 0);
+
+  return (
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="bottom" className="h-[50vh] rounded-t-2xl">
+        <SheetHeader><SheetTitle>@{uploaderName}</SheetTitle></SheetHeader>
+        {loading ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+        ) : (
+          <div className="mt-3 space-y-4">
+            <div className="flex gap-6 justify-center text-center">
+              <div>
+                <p className="text-2xl font-bold">{uploaderShorts.length}</p>
+                <p className="text-xs text-muted-foreground">Shorts</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{totalViews >= 1000 ? (totalViews / 1000).toFixed(1) + 'K' : totalViews}</p>
+                <p className="text-xs text-muted-foreground">Views</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{totalLikes >= 1000 ? (totalLikes / 1000).toFixed(1) + 'K' : totalLikes}</p>
+                <p className="text-xs text-muted-foreground">Likes</p>
+              </div>
+            </div>
+            <ScrollArea className="h-[calc(100%-120px)]">
+              <div className="grid grid-cols-3 gap-1">
+                {uploaderShorts.map(s => (
+                  <div key={s.id} className="aspect-[9/16] bg-muted rounded overflow-hidden relative">
+                    {s.thumbnail_url ? (
+                      <img src={s.thumbnail_url} alt={s.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-black/50">
+                        <Play className="h-6 w-6 text-white/50" />
+                      </div>
+                    )}
+                    <span className="absolute bottom-1 left-1 text-[10px] text-white bg-black/60 px-1 rounded">{s.view_count} views</span>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+};
+
 // ─── Single Short Card ───
 const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isActive }) => {
   const { user, isAuthenticated } = useAuth();
@@ -182,6 +246,7 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
   const [viewCount, setViewCount] = useState(short.view_count);
   const [commentCount] = useState(short.comment_count || 0);
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [showWatermark, setShowWatermark] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showDoubleTapHeart, setShowDoubleTapHeart] = useState(false);
