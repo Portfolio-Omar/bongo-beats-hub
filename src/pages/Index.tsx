@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Play, Music2, Headphones, Heart, Sparkles, Mic2, Radio, LogIn, User, Trophy, Wallet, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SongOfTheWeek from '@/components/ui-custom/SongOfTheWeek';
+import RecentlyPlayed from '@/components/ui-custom/RecentlyPlayed';
 import PublicUpload from '@/components/ui-custom/PublicUpload';
 import PromotedSongs from '@/components/monetization/PromotedSongs';
 import { useAuth } from '@/context/AuthContext';
@@ -232,6 +233,9 @@ const Index: React.FC = () => {
       </section>
 
       <SongOfTheWeek />
+
+      {/* Recently Played */}
+      <RecentlyPlayed />
 
       {/* Promoted Songs on Homepage */}
       <section className="py-12 px-4">
