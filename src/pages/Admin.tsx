@@ -10,12 +10,13 @@ import RequestedSongsTab from '@/components/admin/RequestedSongsTab';
 import StatisticsDashboard from '@/components/admin/StatisticsDashboard';
 import MonetizationTab from '@/components/admin/MonetizationTab';
 import PromotionsTab from '@/components/admin/PromotionsTab';
+import SecurityTab from '@/components/admin/SecurityTab';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { 
   Music, FileText, MessageSquare, 
-  Upload, Lock, BarChart3, Wallet, Megaphone, ShieldX
+  Upload, Lock, BarChart3, Wallet, Megaphone, ShieldX, Shield
 } from 'lucide-react';
 
 const Admin: React.FC = () => {
@@ -103,6 +104,9 @@ const Admin: React.FC = () => {
                   <TabsTrigger value="promotions" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                     <Megaphone className="h-4 w-4" /><span>Promotions & Boosters</span>
                   </TabsTrigger>
+                  <TabsTrigger value="security" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                    <Shield className="h-4 w-4" /><span>Security</span>
+                  </TabsTrigger>
                 </TabsList>
               </div>
               
@@ -115,6 +119,7 @@ const Admin: React.FC = () => {
                 <TabsContent value="uploads" className="mt-0"><BatchUploadSongs /></TabsContent>
                 <TabsContent value="monetization" className="mt-0"><MonetizationTab /></TabsContent>
                 <TabsContent value="promotions" className="mt-0"><PromotionsTab /></TabsContent>
+                <TabsContent value="security" className="mt-0"><SecurityTab /></TabsContent>
               </div>
             </Tabs>
           </motion.div>

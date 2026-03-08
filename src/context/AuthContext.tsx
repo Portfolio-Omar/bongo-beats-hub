@@ -8,6 +8,7 @@ interface AuthContextType {
   session: Session | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isSuspended: boolean;
   signUp: (email: string, password: string) => Promise<{ error?: any }>;
   signIn: (email: string, password: string) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
@@ -28,6 +29,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isSuspended, setIsSuspended] = useState<boolean>(false);
+
+  const checkSuspension = async (userId: string) => {
+    const { data } = await supabase
+      .from('account_suspensions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .limit(1);
+    const suspended = !!(data && data.length > 0);
+    setIsSuspended(suspended);
+    return suspended;
+  };
 
   useEffect(() => {
     // Set up auth state listener
@@ -40,9 +54,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           setTimeout(() => {
             checkAdminRole();
+            checkSuspension(session.user.id);
           }, 0);
         } else {
           setIsAdmin(false);
+          setIsSuspended(false);
         }
       }
     );
@@ -54,6 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         setTimeout(() => {
           checkAdminRole();
+          checkSuspension(session.user.id);
         }, 0);
       }
     });
@@ -141,6 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       session,
       isAuthenticated: !!user,
       isAdmin,
+      isSuspended,
       signUp,
       signIn,
       signOut,
