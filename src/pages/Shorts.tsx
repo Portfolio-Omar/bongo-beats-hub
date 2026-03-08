@@ -657,6 +657,9 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
       </AnimatePresence>
 
       <CommentsSheet shortId={short.id} open={commentsOpen} onClose={() => setCommentsOpen(false)} />
+      {short.uploaded_by && (
+        <UserProfileSheet uploaderName={short.uploaded_by} open={profileOpen} onClose={() => setProfileOpen(false)} />
+      )}
     </div>
   );
 };
