@@ -688,6 +688,33 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       promoted_songs: {
         Row: {
           created_at: string
@@ -759,6 +786,42 @@ export type Database = {
           referred_id?: string
           referred_songs_count?: number
           referrer_id?: string
+        }
+        Relationships: []
+      }
+      registration_payments: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          created_at: string
+          id: string
+          mpesa_code: string
+          status: string
+          user_id: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          mpesa_code: string
+          status?: string
+          user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          mpesa_code?: string
+          status?: string
+          user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: []
       }
@@ -1213,6 +1276,7 @@ export type Database = {
       }
       increment_video_view: { Args: { _video_id: string }; Returns: undefined }
       is_admin: { Args: { pin: string }; Returns: boolean }
+      is_registered_user: { Args: { _user_id: string }; Returns: boolean }
       process_listen_reward: {
         Args: {
           _play_duration: number

@@ -9,6 +9,7 @@ import StatisticsDashboard from '@/components/admin/StatisticsDashboard';
 import MonetizationTab from '@/components/admin/MonetizationTab';
 import PromotionsTab from '@/components/admin/PromotionsTab';
 import SecurityTab from '@/components/admin/SecurityTab';
+import PaymentVerificationTab from '@/components/admin/PaymentVerificationTab';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -213,6 +214,9 @@ const Admin: React.FC = () => {
                 <TabsTrigger value="promotions" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                   <Megaphone className="h-4 w-4" /><span>Promotions</span>
                 </TabsTrigger>
+                <TabsTrigger value="payments" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                  <Wallet className="h-4 w-4" /><span>Payments</span>
+                </TabsTrigger>
                 <TabsTrigger value="security" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                   <Shield className="h-4 w-4" /><span>Security</span>
                 </TabsTrigger>
@@ -243,6 +247,9 @@ const Admin: React.FC = () => {
               </TabsContent>
               <TabsContent value="promotions" className="mt-0">
                 <TabErrorBoundary name="Promotions"><PromotionsTab /></TabErrorBoundary>
+              </TabsContent>
+              <TabsContent value="payments" className="mt-0">
+                <TabErrorBoundary name="Payments"><PaymentVerificationTab /></TabErrorBoundary>
               </TabsContent>
               <TabsContent value="security" className="mt-0">
                 <TabErrorBoundary name="Security"><SecurityTab /></TabErrorBoundary>

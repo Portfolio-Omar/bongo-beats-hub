@@ -26,6 +26,7 @@ import Favorites from "./pages/Favorites";
 import Playlists from "./pages/Playlists";
 import Monetization from "./pages/Monetization";
 import Leaderboard from "./pages/Leaderboard";
+import Profile from "./pages/Profile";
 import ListeningRewardTracker from "./components/monetization/ListeningRewardTracker";
 import SecurityTracker from "./components/SecurityTracker";
 
@@ -58,6 +59,7 @@ const App = () => (
                     <Route path="/blog/:slug" element={<BlogDetail />} />
                     <Route path="/monetization" element={<Monetization />} />
                     <Route path="/leaderboard" element={<Leaderboard />} />
+                    <Route path="/profile" element={<Profile />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>

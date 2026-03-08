@@ -3,12 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { motion } from 'framer-motion';
 import { Trophy, Music, Wallet, Crown, Medal } from 'lucide-react';
 
 interface LeaderEntry {
   user_id: string;
-  email?: string;
+  full_name: string | null;
+  avatar_url: string | null;
   value: number;
 }
 
@@ -33,11 +35,36 @@ const Leaderboard: React.FC = () => {
       supabase.from('user_earnings').select('user_id, total_earned').order('total_earned', { ascending: false }).limit(20),
     ]);
 
+    // Collect all user IDs
+    const allUserIds = new Set<string>();
+    listenRes.data?.forEach(r => allUserIds.add(r.user_id));
+    earnRes.data?.forEach(r => allUserIds.add(r.user_id));
+
+    // Fetch profiles
+    let profileMap = new Map<string, { full_name: string | null; avatar_url: string | null }>();
+    if (allUserIds.size > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, avatar_url')
+        .in('user_id', Array.from(allUserIds));
+      profiles?.forEach(p => profileMap.set(p.user_id, p));
+    }
+
     if (listenRes.data) {
-      setTopListeners(listenRes.data.map(r => ({ user_id: r.user_id, value: r.songs_listened_today })));
+      setTopListeners(listenRes.data.map(r => ({
+        user_id: r.user_id,
+        value: r.songs_listened_today,
+        full_name: profileMap.get(r.user_id)?.full_name || null,
+        avatar_url: profileMap.get(r.user_id)?.avatar_url || null,
+      })));
     }
     if (earnRes.data) {
-      setTopEarners(earnRes.data.map(r => ({ user_id: r.user_id, value: Number(r.total_earned) })));
+      setTopEarners(earnRes.data.map(r => ({
+        user_id: r.user_id,
+        value: Number(r.total_earned),
+        full_name: profileMap.get(r.user_id)?.full_name || null,
+        avatar_url: profileMap.get(r.user_id)?.avatar_url || null,
+      })));
     }
     setLoading(false);
   };
@@ -57,8 +84,14 @@ const Leaderboard: React.FC = () => {
             <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-bold text-sm">
               {i < 3 ? rankIcons[i] : i + 1}
             </div>
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={entry.avatar_url || undefined} />
+              <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                {entry.full_name ? entry.full_name[0].toUpperCase() : 'U'}
+              </AvatarFallback>
+            </Avatar>
             <span className="font-medium text-sm">
-              User {entry.user_id.slice(0, 8)}...
+              {entry.full_name || `User ${entry.user_id.slice(0, 8)}...`}
             </span>
           </div>
           <Badge variant={i < 3 ? 'default' : 'secondary'}>
