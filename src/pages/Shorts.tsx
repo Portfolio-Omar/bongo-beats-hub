@@ -235,7 +235,7 @@ const UserProfileSheet: React.FC<{ uploaderName: string; open: boolean; onClose:
 };
 
 // ─── Single Short Card ───
-const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isActive }) => {
+const ShortCard: React.FC<{ short: Short; isActive: boolean; onVideoEnded?: () => void }> = ({ short, isActive, onVideoEnded }) => {
   const { user, isAuthenticated } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
