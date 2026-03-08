@@ -403,6 +403,45 @@ const Player: React.FC = () => {
             </Button>
           </div>
 
+          {/* Crossfade & Sleep Timer */}
+          <div className="w-full max-w-md mb-4 flex flex-wrap items-center justify-center gap-2">
+            <Button variant={crossfadeEnabled ? 'default' : 'outline'} size="sm"
+              onClick={toggleCrossfade} className="rounded-full gap-2 h-7 px-3">
+              <Disc3 className="h-3 w-3" />
+              <span className="text-[10px]">Crossfade {crossfadeEnabled ? `${crossfadeDuration}s` : 'Off'}</span>
+            </Button>
+            {crossfadeEnabled && (
+              <div className="flex items-center gap-1">
+                {[2, 3, 5, 8].map(s => (
+                  <Button key={s} variant={crossfadeDuration === s ? 'default' : 'outline'} size="sm"
+                    className="h-6 w-6 p-0 text-[10px] rounded-full" onClick={() => setCrossfadeDuration(s)}>
+                    {s}
+                  </Button>
+                ))}
+              </div>
+            )}
+            <Button variant={sleepTimer.active ? 'default' : 'outline'} size="sm"
+              className="rounded-full gap-2 h-7 px-3"
+              onClick={() => {
+                if (sleepTimer.active) cancelSleepTimer();
+              }}>
+              {sleepTimer.active ? <TimerOff className="h-3 w-3" /> : <Timer className="h-3 w-3" />}
+              <span className="text-[10px]">
+                {sleepTimer.active ? `${Math.floor(sleepTimer.remaining / 60)}:${(sleepTimer.remaining % 60).toString().padStart(2, '0')}` : 'Sleep'}
+              </span>
+            </Button>
+            {!sleepTimer.active && (
+              <div className="flex items-center gap-1">
+                {[15, 30, 45, 60].map(m => (
+                  <Button key={m} variant="outline" size="sm"
+                    className="h-6 px-2 text-[10px] rounded-full" onClick={() => setSleepTimer(m)}>
+                    {m}m
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Volume & Actions */}
           <div className="flex items-center justify-between w-full max-w-md gap-4">
             <div className="flex items-center gap-2 flex-1">
