@@ -294,20 +294,162 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
 
   const handleDownload = async () => {
     try {
-      toast.info('Downloading...');
-      const response = await fetch(short.video_url);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${short.title.replace(/[^a-z0-9]/gi, '_')}.mp4`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success('Download started!');
+      toast.info('Preparing watermarked download...');
+
+      // Create an offscreen video to capture a frame with watermark
+      const video = document.createElement('video');
+      video.crossOrigin = 'anonymous';
+      video.src = short.video_url;
+      video.muted = true;
+
+      await new Promise<void>((resolve, reject) => {
+        video.onloadeddata = () => resolve();
+        video.onerror = () => reject(new Error('Video load failed'));
+        video.load();
+      });
+
+      // Use MediaRecorder to record the video with watermark overlay
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 720;
+      canvas.height = video.videoHeight || 1280;
+      const ctx = canvas.getContext('2d')!;
+
+      const stream = canvas.captureStream(30);
+      // Also capture audio from the video
+      let combinedStream = stream;
+      try {
+        const audioCtx = new AudioContext();
+        const source = audioCtx.createMediaElementSource(video);
+        const dest = audioCtx.createMediaStreamDestination();
+        source.connect(dest);
+        source.connect(audioCtx.destination);
+        const audioTrack = dest.stream.getAudioTracks()[0];
+        if (audioTrack) {
+          combinedStream = new MediaStream([...stream.getVideoTracks(), audioTrack]);
+        }
+      } catch {
+        // Audio capture may fail, continue without
+      }
+
+      const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+      const downloadPromise = new Promise<void>((resolve) => {
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${short.title.replace(/[^a-z0-9]/gi, '_')}_bongo_oldskool.webm`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          resolve();
+        };
+      });
+
+      recorder.start();
+      video.currentTime = 0;
+      await video.play();
+
+      const drawFrame = () => {
+        if (video.ended || video.paused) {
+          recorder.stop();
+          return;
+        }
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Draw persistent watermark (top-left)
+        const logoSize = Math.round(canvas.width * 0.06);
+        if (logoImgRef.current) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(20 + logoSize / 2, 20 + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(logoImgRef.current, 20, 20, logoSize, logoSize);
+          ctx.restore();
+        }
+        ctx.font = `bold ${Math.round(canvas.width * 0.028)}px sans-serif`;
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.fillText('Bongo Old Skool', 20 + logoSize + 8, 20 + logoSize / 2 + 4);
+        ctx.font = `${Math.round(canvas.width * 0.02)}px sans-serif`;
+        ctx.fillText('oldskoool.netlify.app', 20 + logoSize + 8, 20 + logoSize / 2 + 20);
+
+        // Draw bottom-center watermark
+        const bottomText = 'Bongo Old Skool • oldskoool.netlify.app';
+        ctx.font = `bold ${Math.round(canvas.width * 0.03)}px sans-serif`;
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        const metrics = ctx.measureText(bottomText);
+        ctx.fillText(bottomText, (canvas.width - metrics.width) / 2, canvas.height - 30);
+
+        requestAnimationFrame(drawFrame);
+      };
+
+      drawFrame();
+
+      video.onended = () => {
+        recorder.stop();
+      };
+
+      await downloadPromise;
+      toast.success('Download complete!');
     } catch {
-      toast.error('Download failed');
+      // Fallback to plain download
+      try {
+        const response = await fetch(short.video_url);
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${short.title.replace(/[^a-z0-9]/gi, '_')}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success('Download started (without watermark)');
+      } catch {
+        toast.error('Download failed');
+      }
+    }
+  };
+
+  // Swipe gesture handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    const dt = Date.now() - touchStartRef.current.time;
+    touchStartRef.current = null;
+    setSwipeHint(null);
+
+    // Must be primarily horizontal, fast enough, and far enough
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && dt < 500) {
+      if (dx < 0) {
+        // Swipe left → share
+        handleShare();
+      } else {
+        // Swipe right → comments
+        setCommentsOpen(true);
+      }
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    if (Math.abs(dx) > 30) {
+      setSwipeHint(dx < 0 ? 'left' : 'right');
+    } else {
+      setSwipeHint(null);
     }
   };
 
