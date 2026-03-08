@@ -181,7 +181,7 @@ const Monetization: React.FC = () => {
   const todayEarnings = (earnings?.songs_listened_today || 0) * currentRate;
 
   return (
-    <div className="container px-4 py-6 sm:py-8 space-y-4 sm:space-y-6">
+    <div className="container px-4 py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">💰 Monetization Dashboard</h1>
         <p className="text-muted-foreground mt-1">Earn KSh by listening to music</p>
@@ -229,7 +229,7 @@ const Monetization: React.FC = () => {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div 2 lg:grid-cols-4 gap-3 sm:rid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-primary/20">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
