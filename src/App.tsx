@@ -61,6 +61,7 @@ const App = () => (
                     <Route path="/monetization" element={<Monetization />} />
                     <Route path="/leaderboard" element={<Leaderboard />} />
                     <Route path="/profile" element={<Profile />} />
+                    <Route path="/community" element={<Community />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>
