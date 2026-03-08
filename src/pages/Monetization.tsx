@@ -176,6 +176,7 @@ const Monetization: React.FC = () => {
   }
   if (loading) return <div className="container py-20 text-center text-muted-foreground">Loading...</div>;
 
+  const isRegistered = registrationStatus === 'verified';
   const currentRate = activeBoosterRate || (boostActive ? 3 : 1.5);
   const todayEarnings = (earnings?.songs_listened_today || 0) * currentRate;
 
