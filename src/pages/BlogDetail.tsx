@@ -137,6 +137,14 @@ const BlogDetail: React.FC = () => {
           dangerouslySetInnerHTML={{ __html: blog.content }}
         />
 
+        {/* Share Buttons */}
+        <div className="mb-10 pb-6 border-b border-border">
+          <BlogShareButtons title={blog.title} slug={blog.slug || blog.id} />
+        </div>
+
+        {/* Comments Section */}
+        <BlogComments blogId={blog.id} />
+
         {relatedBlogs.length > 0 && (
           <div className="border-t border-border pt-8">
             <h3 className="text-2xl font-heading font-bold mb-6">Related Articles</h3>
