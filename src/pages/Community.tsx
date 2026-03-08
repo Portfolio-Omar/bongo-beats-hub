@@ -469,7 +469,8 @@ const Community: React.FC = () => {
           </Button>
         </div>
       </div>
-    </Layout
+    </div>
+  );
 };
 
 export default Community;
