@@ -52,6 +52,7 @@ const Monetization: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
   const [activeBoosterRate, setActiveBoosterRate] = useState<number | null>(null);
+  const [registrationStatus, setRegistrationStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthenticated && user) fetchData();
