@@ -1,50 +1,82 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Play, Tv } from 'lucide-react';
+import { Play, Tv, AlertTriangle } from 'lucide-react';
 
 const MAX_ADS_PER_DAY = 10;
 const REWARD_PER_AD = 2;
+const AD_DURATION = 15; // seconds
 
 const AdRewardCard: React.FC = () => {
   const { user } = useAuth();
   const [adsWatched, setAdsWatched] = useState(0);
   const [watching, setWatching] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [tabVisible, setTabVisible] = useState(true);
+  const [paused, setPaused] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (user) fetchAdData();
   }, [user]);
 
+  // Track tab visibility - pause ad if tab is hidden
   useEffect(() => {
-    if (countdown > 0) {
-      const t = setTimeout(() => setCountdown(c => c - 1), 1000);
-      return () => clearTimeout(t);
-    } else if (watching && countdown === 0) {
-      completeAd();
+    const handleVisibility = () => {
+      const visible = document.visibilityState === 'visible';
+      setTabVisible(visible);
+      if (!visible && watching) {
+        setPaused(true);
+      } else if (visible && paused && watching) {
+        setPaused(false);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [watching, paused]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (watching && !paused && countdown > 0) {
+      intervalRef.current = setInterval(() => {
+        setCountdown(c => {
+          if (c <= 1) {
+            clearInterval(intervalRef.current!);
+            completeAd();
+            return 0;
+          }
+          return c - 1;
+        });
+      }, 1000);
+      return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
     }
-  }, [countdown, watching]);
+  }, [watching, paused]);
 
   const fetchAdData = async () => {
     if (!user) return;
+    const today = new Date().toISOString().split('T')[0];
     const { data } = await supabase.from('ad_rewards')
-      .select('*').eq('user_id', user.id).eq('reward_date', new Date().toISOString().split('T')[0]).maybeSingle();
+      .select('*').eq('user_id', user.id).eq('reward_date', today).maybeSingle();
     if (data) setAdsWatched((data as any).ads_watched || 0);
   };
 
   const startAd = () => {
+    if (!user) { toast.error('Please sign in'); return; }
     if (adsWatched >= MAX_ADS_PER_DAY) { toast.error('Daily ad limit reached'); return; }
+    if (!tabVisible) { toast.error('Please keep this tab active to watch ads'); return; }
     setWatching(true);
-    setCountdown(15); // 15 second ad
+    setPaused(false);
+    setCountdown(AD_DURATION);
   };
 
   const completeAd = async () => {
     if (!user) return;
     setWatching(false);
+    setPaused(false);
     const newCount = adsWatched + 1;
     const today = new Date().toISOString().split('T')[0];
 
@@ -56,22 +88,28 @@ const AdRewardCard: React.FC = () => {
     }, { onConflict: 'user_id,reward_date' });
 
     if (!error) {
-      // Add to balance
-      await supabase.from('user_earnings').update({
-        balance: supabase.rpc as any, // We'll use raw update
-      }).eq('user_id', user.id);
-
-      // Simple balance increment
-      const { data: earnings } = await supabase.from('user_earnings').select('balance, total_earned').eq('user_id', user.id).single();
+      // Update user earnings balance
+      const { data: earnings } = await supabase.from('user_earnings')
+        .select('balance, total_earned').eq('user_id', user.id).maybeSingle();
+      
       if (earnings) {
         await supabase.from('user_earnings').update({
           balance: Number(earnings.balance) + REWARD_PER_AD,
           total_earned: Number(earnings.total_earned) + REWARD_PER_AD,
         }).eq('user_id', user.id);
+      } else {
+        // Create earnings record if it doesn't exist
+        await supabase.from('user_earnings').insert({
+          user_id: user.id,
+          balance: REWARD_PER_AD,
+          total_earned: REWARD_PER_AD,
+        });
       }
 
       setAdsWatched(newCount);
       toast.success(`💰 Earned KSh ${REWARD_PER_AD} from ad!`);
+    } else {
+      toast.error('Failed to process ad reward');
     }
   };
 
@@ -88,14 +126,26 @@ const AdRewardCard: React.FC = () => {
         
         {watching ? (
           <div className="text-center p-4 bg-muted rounded-lg">
-            <div className="animate-pulse text-lg font-bold mb-2">📺 Watching Ad...</div>
-            <p className="text-2xl font-bold text-primary">{countdown}s</p>
-            <p className="text-xs text-muted-foreground mt-1">Please wait for the ad to finish</p>
+            {paused ? (
+              <>
+                <AlertTriangle className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
+                <div className="text-lg font-bold mb-2 text-yellow-600">⚠️ Ad Paused</div>
+                <p className="text-sm text-muted-foreground">Return to this tab to continue watching</p>
+                <p className="text-2xl font-bold text-primary mt-2">{countdown}s remaining</p>
+              </>
+            ) : (
+              <>
+                <div className="animate-pulse text-lg font-bold mb-2">📺 Watching Ad...</div>
+                <p className="text-2xl font-bold text-primary">{countdown}s</p>
+                <p className="text-xs text-muted-foreground mt-1">Keep this tab active. Don't switch away!</p>
+                <Progress value={((AD_DURATION - countdown) / AD_DURATION) * 100} className="mt-3 h-2" />
+              </>
+            )}
           </div>
         ) : (
           <Button onClick={startAd} disabled={adsWatched >= MAX_ADS_PER_DAY} className="w-full">
             <Play className="h-4 w-4 mr-2" />
-            {adsWatched >= MAX_ADS_PER_DAY ? 'Daily Limit Reached' : 'Watch Ad (+KSh 2)'}
+            {adsWatched >= MAX_ADS_PER_DAY ? 'Daily Limit Reached' : `Watch Ad (+KSh ${REWARD_PER_AD})`}
           </Button>
         )}
       </CardContent>

@@ -8,6 +8,7 @@ import { AudioProvider } from "@/context/AudioContext";
 import Layout from "@/components/layout/Layout";
 import EnhancedAudioPlayer from "@/components/ui-custom/EnhancedAudioPlayer";
 import AIChatbot from "@/components/chat/AIChatbot";
+import ReferralNotifier from "@/components/monetization/ReferralNotifier";
 
 import Index from "./pages/Index";
 import Music from "./pages/Music";
@@ -20,6 +21,7 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import MobileMenu from "./pages/MobileMenu";
 import Blog from "./pages/Blog";
+import BlogDetail from "./pages/BlogDetail";
 import Favorites from "./pages/Favorites";
 import Playlists from "./pages/Playlists";
 import Monetization from "./pages/Monetization";
@@ -52,6 +54,7 @@ const App = () => (
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/menu" element={<MobileMenu />} />
                     <Route path="/blog" element={<Blog />} />
+                    <Route path="/blog/:slug" element={<BlogDetail />} />
                     <Route path="/monetization" element={<Monetization />} />
                     <Route path="/leaderboard" element={<Leaderboard />} />
                     <Route path="*" element={<NotFound />} />
@@ -61,6 +64,7 @@ const App = () => (
             </Routes>
             <EnhancedAudioPlayer />
             <ListeningRewardTracker />
+            <ReferralNotifier />
             <AIChatbot />
           </BrowserRouter>
         </AudioProvider>
@@ -70,4 +74,3 @@ const App = () => (
 );
 
 export default App;
-

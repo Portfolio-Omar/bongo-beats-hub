@@ -2,11 +2,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
-import { Play, Music2, Headphones, Heart, Sparkles, Mic2, Radio, LogIn, User } from 'lucide-react';
+import { Play, Music2, Headphones, Heart, Sparkles, Mic2, Radio, LogIn, User, Trophy, Wallet, TrendingUp, Star, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SongOfTheWeek from '@/components/ui-custom/SongOfTheWeek';
 import PublicUpload from '@/components/ui-custom/PublicUpload';
+import PromotedSongs from '@/components/monetization/PromotedSongs';
 import { useAuth } from '@/context/AuthContext';
 import { useAudio } from '@/context/AudioContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,6 +27,34 @@ const Index: React.FC = () => {
         .order('created_at', { ascending: false }).limit(6);
       if (error) throw error;
       return data || [];
+    }
+  });
+
+  const { data: topListeners } = useQuery({
+    queryKey: ['top-listeners-home'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('user_earnings')
+        .select('user_id, songs_listened_today, total_earned')
+        .order('total_earned', { ascending: false })
+        .limit(5);
+      return data || [];
+    }
+  });
+
+  const { data: platformStats } = useQuery({
+    queryKey: ['platform-stats'],
+    queryFn: async () => {
+      const [songsRes, earningsRes] = await Promise.all([
+        supabase.from('songs').select('id', { count: 'exact', head: true }),
+        supabase.from('user_earnings').select('total_earned'),
+      ]);
+      const totalEarned = earningsRes.data?.reduce((sum, r) => sum + Number(r.total_earned), 0) || 0;
+      return {
+        totalSongs: songsRes.count || 0,
+        totalEarned,
+        totalListeners: earningsRes.data?.length || 0,
+      };
     }
   });
 
@@ -50,7 +80,6 @@ const Index: React.FC = () => {
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}
           className="relative text-center px-4 max-w-5xl mx-auto py-20">
           
-          {/* Logo */}
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.6, type: "spring" }}
             className="flex justify-center mb-8">
             <img src={logo} alt="Bongo Old Skool" className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover shadow-2xl border-4 border-gold/30" />
@@ -69,7 +98,6 @@ const Index: React.FC = () => {
           
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="space-y-3 mb-10">
             <p className="text-lg md:text-xl text-muted-foreground italic">"If you don't know who Mr. Nice is, this site will confuse you."</p>
-            <p className="text-lg md:text-xl text-muted-foreground italic">"Home of real music, not this 'vibes only' nonsense."</p>
           </motion.div>
           
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}
@@ -83,7 +111,6 @@ const Index: React.FC = () => {
             </Button>
           </motion.div>
 
-          {/* Auth CTA for non-authenticated users */}
           {!isAuthenticated && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}
               className="mt-8 flex flex-col sm:flex-row gap-3 justify-center items-center">
@@ -99,6 +126,56 @@ const Index: React.FC = () => {
             </motion.div>
           )}
         </motion.div>
+      </section>
+
+      {/* Platform Stats */}
+      {platformStats && (
+        <section className="py-12 px-4 bg-gradient-to-b from-card to-background">
+          <div className="container mx-auto max-w-5xl">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { icon: Music2, label: 'Old Skool Tracks', value: `${platformStats.totalSongs}+`, color: 'text-gold' },
+                { icon: Headphones, label: 'Active Listeners', value: `${platformStats.totalListeners}`, color: 'text-primary' },
+                { icon: Wallet, label: 'Total Earned by Users', value: `KSh ${platformStats.totalEarned.toFixed(0)}`, color: 'text-green-500' },
+              ].map((stat, i) => (
+                <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }} viewport={{ once: true }}>
+                  <Card className="text-center border-gold/20 hover:border-gold/50 transition-colors">
+                    <CardContent className="pt-6">
+                      <stat.icon className={`h-8 w-8 mx-auto mb-3 ${stat.color}`} />
+                      <p className="text-3xl font-heading font-bold">{stat.value}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+      )}
+
+      {/* Earn While Listening CTA */}
+      <section className="py-16 px-4 bg-gradient-to-r from-primary/5 via-gold/5 to-primary/5">
+        <div className="container mx-auto max-w-4xl text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <Zap className="h-12 w-12 text-gold mx-auto mb-4" />
+            <h2 className="text-3xl md:text-5xl font-heading font-bold mb-4">
+              Listen & <span className="bg-gradient-to-r from-gold to-yellow-600 bg-clip-text text-transparent">Earn KSh</span>
+            </h2>
+            <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
+              Get paid KSh 1.5 per song you listen to. Boost your earnings up to KSh 15/song with boosters. Share with friends & earn referral bonuses!
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button size="lg" asChild className="bg-gold hover:bg-gold/90 text-gold-foreground font-heading">
+                <Link to="/monetization"><Wallet className="mr-2 h-5 w-5" />Start Earning Now</Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild className="border-gold/50 hover:bg-gold/10">
+                <Link to="/leaderboard"><Trophy className="mr-2 h-5 w-5" />View Leaderboard</Link>
+              </Button>
+            </div>
+          </motion.div>
+        </div>
       </section>
 
       {/* The Golden Era */}
@@ -155,7 +232,50 @@ const Index: React.FC = () => {
       </section>
 
       <SongOfTheWeek />
+
+      {/* Promoted Songs on Homepage */}
+      <section className="py-12 px-4">
+        <div className="container mx-auto max-w-7xl">
+          <PromotedSongs />
+        </div>
+      </section>
+
       <PublicUpload />
+
+      {/* Top Listeners Mini Leaderboard */}
+      {topListeners && topListeners.length > 0 && (
+        <section className="py-16 px-4 bg-gradient-to-b from-background to-card">
+          <div className="container mx-auto max-w-3xl">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-8">
+              <Trophy className="h-10 w-10 text-gold mx-auto mb-3" />
+              <h2 className="text-3xl md:text-4xl font-heading font-bold mb-2">Top Earners</h2>
+              <p className="text-muted-foreground">The legends earning the most on our platform</p>
+            </motion.div>
+            <div className="space-y-3">
+              {topListeners.slice(0, 5).map((entry, i) => (
+                <motion.div key={entry.user_id} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }} viewport={{ once: true }}
+                  className={`flex items-center justify-between p-4 rounded-xl ${i === 0 ? 'bg-gold/10 border border-gold/30' : 'bg-muted/50'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${i === 0 ? 'bg-gold text-gold-foreground' : i === 1 ? 'bg-gray-300 text-gray-800' : i === 2 ? 'bg-amber-700 text-white' : 'bg-muted text-muted-foreground'}`}>
+                      {i + 1}
+                    </div>
+                    <span className="font-medium">User {entry.user_id.slice(0, 8)}...</span>
+                  </div>
+                  <Badge variant={i === 0 ? 'default' : 'secondary'} className={i === 0 ? 'bg-gold text-gold-foreground' : ''}>
+                    KSh {Number(entry.total_earned).toFixed(1)}
+                  </Badge>
+                </motion.div>
+              ))}
+            </div>
+            <div className="text-center mt-6">
+              <Button variant="outline" asChild className="border-gold/50 hover:bg-gold/10">
+                <Link to="/leaderboard"><Trophy className="mr-2 h-4 w-4" />View Full Leaderboard</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Latest Hits */}
       <section className="py-20 px-4 bg-gradient-to-b from-card to-background">
