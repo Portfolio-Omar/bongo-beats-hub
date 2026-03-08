@@ -95,6 +95,10 @@ const Monetization: React.FC = () => {
 
   const handleShare = async () => {
     if (!user) return;
+    if (registrationStatus !== 'verified') {
+      toast.error('Pay KSh 150 registration fee to unlock sharing boost');
+      return;
+    }
     setSharing(true);
     try {
       const shareUrl = `${window.location.origin}?ref=${user.id.slice(0, 8)}`;
