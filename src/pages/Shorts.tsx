@@ -542,10 +542,10 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean; onVideoEnded?: () =
         ref={videoRef}
         src={short.video_url}
         className="h-full w-full object-contain"
-        loop
         muted={muted}
         playsInline
         onClick={handleVideoTap}
+        onEnded={onVideoEnded}
       />
 
       {/* Double-tap heart animation */}
