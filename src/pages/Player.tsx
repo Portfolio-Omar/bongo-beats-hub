@@ -242,7 +242,12 @@ const Player: React.FC = () => {
 
       <div className="relative z-10 flex flex-col lg:flex-row h-[calc(100vh-80px)] overflow-hidden">
         {/* Main Player */}
-        <div className={`flex-1 flex flex-col items-center justify-center px-6 pb-8 ${showQueue ? 'lg:pr-0' : ''}`}>
+        <div className={`flex-1 flex flex-col items-center justify-center px-6 pb-8 ${showQueue ? 'lg:pr-0' : ''} overflow-y-auto`}>
+          {/* Visualizer behind album art */}
+          <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
+            <AudioVisualizer className="w-full h-full" style="bars" barCount={48} />
+          </div>
+
           {/* Album Art */}
           <motion.div
             className="relative w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 mb-8"
