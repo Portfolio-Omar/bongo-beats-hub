@@ -77,7 +77,6 @@ const Community: React.FC = () => {
             }
             return [...prev, newMsg];
           });
-          // Update participants
           setParticipants(prev => {
             if (prev.find(p => p.user_id === newMsg.user_id)) return prev;
             return [...prev, { user_id: newMsg.user_id, user_name: newMsg.user_name, user_avatar: newMsg.user_avatar }];
@@ -96,6 +95,45 @@ const Community: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Typing indicator via Presence
+  useEffect(() => {
+    if (!user) return;
+    const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+    const presenceChannel = supabase.channel('community-typing', {
+      config: { presence: { key: user.id } },
+    });
+
+    presenceChannel.on('presence', { event: 'sync' }, () => {
+      const state = presenceChannel.presenceState();
+      const typers: string[] = [];
+      Object.entries(state).forEach(([uid, presences]: [string, any]) => {
+        if (uid !== user.id && presences?.[0]?.typing) {
+          typers.push(presences[0].name || 'Someone');
+        }
+      });
+      setTypingUsers(typers);
+    });
+
+    presenceChannel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await presenceChannel.track({ typing: false, name: userName });
+      }
+    });
+
+    presenceChannelRef.current = presenceChannel;
+    return () => { supabase.removeChannel(presenceChannel); };
+  }, [user]);
+
+  const sendTypingIndicator = useCallback(() => {
+    if (!presenceChannelRef.current || !user) return;
+    const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+    presenceChannelRef.current.track({ typing: true, name: userName });
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      presenceChannelRef.current?.track({ typing: false, name: userName });
+    }, 2000);
+  }, [user]);
 
   useEffect(() => {
     scrollToBottom();
