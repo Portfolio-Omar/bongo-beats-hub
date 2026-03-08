@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 interface Short {
   id: string;
+  title: string;
   description: string | null;
   video_url: string;
   thumbnail_url: string | null;
