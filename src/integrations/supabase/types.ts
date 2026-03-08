@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_rewards: {
+        Row: {
+          ads_watched: number
+          created_at: string
+          id: string
+          reward_date: string
+          total_earned: number
+          user_id: string
+        }
+        Insert: {
+          ads_watched?: number
+          created_at?: string
+          id?: string
+          reward_date?: string
+          total_earned?: number
+          user_id: string
+        }
+        Update: {
+          ads_watched?: number
+          created_at?: string
+          id?: string
+          reward_date?: string
+          total_earned?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       blog_categories: {
         Row: {
           created_at: string | null
@@ -107,6 +134,116 @@ export type Database = {
           status?: string
           tags?: string[] | null
           title?: string
+        }
+        Relationships: []
+      }
+      booster_purchases: {
+        Row: {
+          booster_tier_id: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          payment_method: string
+          payment_status: string
+          price_paid: number
+          purchased_at: string
+          rate_per_song: number
+          user_id: string
+        }
+        Insert: {
+          booster_tier_id: string
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          payment_method?: string
+          payment_status?: string
+          price_paid: number
+          purchased_at?: string
+          rate_per_song: number
+          user_id: string
+        }
+        Update: {
+          booster_tier_id?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          payment_method?: string
+          payment_status?: string
+          price_paid?: number
+          purchased_at?: string
+          rate_per_song?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booster_purchases_booster_tier_id_fkey"
+            columns: ["booster_tier_id"]
+            isOneToOne: false
+            referencedRelation: "booster_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booster_tiers: {
+        Row: {
+          created_at: string
+          duration_hours: number
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          rate_per_song: number
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          duration_hours: number
+          id?: string
+          is_active?: boolean
+          name: string
+          price: number
+          rate_per_song: number
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          duration_hours?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          rate_per_song?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      daily_bonuses: {
+        Row: {
+          bonus_amount: number
+          bonus_date: string
+          created_at: string
+          id: string
+          songs_counted: number
+          tier_reached: number
+          user_id: string
+        }
+        Insert: {
+          bonus_amount?: number
+          bonus_date?: string
+          created_at?: string
+          id?: string
+          songs_counted?: number
+          tier_reached?: number
+          user_id: string
+        }
+        Update: {
+          bonus_amount?: number
+          bonus_date?: string
+          created_at?: string
+          id?: string
+          songs_counted?: number
+          tier_reached?: number
+          user_id?: string
         }
         Relationships: []
       }
@@ -433,6 +570,47 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      promoted_songs: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          promoted_by: string | null
+          promotion_type: string
+          song_id: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          promoted_by?: string | null
+          promotion_type?: string
+          song_id: string
+          start_date?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          promoted_by?: string | null
+          promotion_type?: string
+          song_id?: string
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promoted_songs_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       share_boosts: {
         Row: {
