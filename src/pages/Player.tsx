@@ -10,7 +10,7 @@ import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, 
   Repeat, Shuffle, Download, Share, Heart, ChevronDown,
   Music, ListMusic, X, GripVertical, Lock, MessageCircle, SlidersHorizontal,
-  Timer, TimerOff, Disc3
+  Timer, TimerOff, Disc3, Mic2
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +22,8 @@ import SongRating from '@/components/community/SongRating';
 import SongComments from '@/components/community/SongComments';
 import AudioFXPanel from '@/components/ui-custom/AudioFXPanel';
 import AudioVisualizer from '@/components/ui-custom/AudioVisualizer';
+import VisualizerSelector from '@/components/player/VisualizerSelector';
+import LyricsDisplay from '@/components/player/LyricsDisplay';
 
 const Player: React.FC = () => {
   const navigate = useNavigate();
