@@ -65,6 +65,7 @@ const App = () => (
             </Routes>
             <EnhancedAudioPlayer />
             <ListeningRewardTracker />
+            <SecurityTracker />
             <ReferralNotifier />
             <AIChatbot />
           </BrowserRouter>
