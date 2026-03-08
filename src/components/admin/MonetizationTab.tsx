@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { CheckCircle, XCircle, Clock, Users, Wallet, TrendingUp } from 'lucide-react';
+import { sendEmail } from '@/lib/send-email';
 
 interface WithdrawalRequest {
   id: string;
