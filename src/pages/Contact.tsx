@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Send, Mail, Phone, MapPin, MessageCircle, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
+import { sendEmail } from '@/lib/send-email';
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -37,9 +39,25 @@ const Contact: React.FC = () => {
     
     setIsSubmitting(true);
     
-    // Mock API call - in real implementation, this would send data to Supabase
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      // Save to database
+      const { error } = await supabase.from('messages').insert({
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject || 'No subject',
+        message: formData.message,
+        date: new Date().toISOString().split('T')[0],
+      });
+      
+      if (error) throw error;
+      
+      // Notify admin via email
+      sendEmail('admin_contact', undefined, {
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
+      });
       
       toast.success('Message sent successfully! We will get back to you soon.');
       

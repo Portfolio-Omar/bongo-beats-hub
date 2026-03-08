@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { sendEmail } from '@/lib/send-email';
 
 interface AuthContextType {
   user: User | null;
@@ -93,6 +94,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error(error.message);
     } else {
       toast.success('Check your email for the confirmation link!');
+      // Send welcome email to user
+      const userName = email.split('@')[0];
+      sendEmail('welcome', email, { name: userName });
+      // Notify admin
+      sendEmail('admin_new_signup', undefined, { email, name: userName });
     }
     
     return { error };

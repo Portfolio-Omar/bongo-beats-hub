@@ -9,6 +9,7 @@ import { MessageSquare, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
+import { sendEmail } from '@/lib/send-email';
 
 const FeedbackForm: React.FC = () => {
   const [name, setName] = useState('');
@@ -44,6 +45,7 @@ const FeedbackForm: React.FC = () => {
       if (error) throw error;
       
       toast.success('Thank you for your feedback!');
+      sendEmail('admin_feedback', undefined, { name, email, feedback });
       
       // Reset form
       setName('');

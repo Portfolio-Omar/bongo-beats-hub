@@ -16,6 +16,7 @@ import {
   Shield, AlertTriangle, CheckCircle2, Rocket
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { sendEmail } from '@/lib/send-email';
 import BoosterShop from '@/components/monetization/BoosterShop';
 import DailyBonusCard from '@/components/monetization/DailyBonusCard';
 import AdRewardCard from '@/components/monetization/AdRewardCard';
@@ -136,6 +137,18 @@ const Monetization: React.FC = () => {
         total_withdrawn: earnings.total_withdrawn + amount
       }).eq('user_id', user.id);
       toast.success('Withdrawal request submitted!');
+      
+      // Email user
+      sendEmail('withdrawal_submitted', user.email!, {
+        name: user.email?.split('@')[0],
+        amount, payment_method: paymentMethod, payment_details: paymentDetails.trim()
+      });
+      // Email admin
+      sendEmail('admin_withdrawal_request', undefined, {
+        name: user.email?.split('@')[0], email: user.email,
+        amount, payment_method: paymentMethod, payment_details: paymentDetails.trim()
+      });
+      
       setWithdrawAmount(''); setPaymentDetails(''); fetchData();
     }
   };

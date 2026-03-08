@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { CheckCircle, XCircle, Clock, Search } from 'lucide-react';
+import { sendEmail } from '@/lib/send-email';
 
 interface Payment {
   id: string;
@@ -68,6 +69,7 @@ const PaymentVerificationTab: React.FC = () => {
   };
 
   const handleVerify = async (paymentId: string) => {
+    const payment = payments.find(p => p.id === paymentId);
     const { error } = await supabase
       .from('registration_payments')
       .update({
@@ -82,11 +84,19 @@ const PaymentVerificationTab: React.FC = () => {
       toast.error('Failed to verify');
     } else {
       toast.success('Payment verified!');
+      // Email user about verification
+      if (payment) {
+        // Get user email from profiles or auth
+        const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', payment.user_id).maybeSingle();
+        // We need email - fetch from auth admin or use a workaround
+        sendEmail('payment_verified', undefined, { name: profile?.full_name || 'User', user_id: payment.user_id });
+      }
       fetchPayments();
     }
   };
 
   const handleReject = async (paymentId: string) => {
+    const payment = payments.find(p => p.id === paymentId);
     const { error } = await supabase
       .from('registration_payments')
       .update({
@@ -99,6 +109,10 @@ const PaymentVerificationTab: React.FC = () => {
       toast.error('Failed to reject');
     } else {
       toast.success('Payment rejected');
+      if (payment) {
+        const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', payment.user_id).maybeSingle();
+        sendEmail('payment_rejected', undefined, { name: profile?.full_name || 'User', mpesa_code: payment.mpesa_code, notes: notes[paymentId] });
+      }
       fetchPayments();
     }
   };
