@@ -69,8 +69,8 @@ const PromotionsTab: React.FC = () => {
       const arrayBuffer = await adVideoFile.arrayBuffer();
       
       const { error: uploadError } = await supabase.storage
-        .from('Music Videos Storage')
-        .upload(fileName, arrayBuffer, {
+        .from('music_videos')
+        .upload(`ads/${fileName}`, arrayBuffer, {
           contentType: adVideoFile.type,
           cacheControl: '3600',
           upsert: false,
@@ -79,8 +79,8 @@ const PromotionsTab: React.FC = () => {
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
-        .from('Music Videos Storage')
-        .getPublicUrl(fileName);
+        .from('music_videos')
+        .getPublicUrl(`ads/${fileName}`);
 
       const { error } = await supabase.from('ad_videos').insert({
         title: adTitle,
