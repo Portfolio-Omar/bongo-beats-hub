@@ -206,15 +206,14 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
     }
   }, [isActive, short.id]);
 
-  // Show watermark near end of video
+  // Progress bar + watermark near end
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     const handleTimeUpdate = () => {
-      if (video.duration && video.currentTime >= video.duration - 3) {
-        setShowWatermark(true);
-      } else {
-        setShowWatermark(false);
+      if (video.duration) {
+        setProgress((video.currentTime / video.duration) * 100);
+        setShowWatermark(video.currentTime >= video.duration - 3);
       }
     };
     video.addEventListener('timeupdate', handleTimeUpdate);
