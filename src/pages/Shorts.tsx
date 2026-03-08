@@ -320,9 +320,11 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
       </AnimatePresence>
 
       {/* Persistent small watermark */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 opacity-50 pointer-events-none">
-        <img src={logoImg} alt="" className="h-6 w-6 rounded-full object-cover" />
-        <span className="text-white text-xs font-semibold drop-shadow">Bongo Old Skool</span>
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 opacity-50">
+        <a href="https://oldskoool.netlify.app" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+          <img src={logoImg} alt="" className="h-6 w-6 rounded-full object-cover" />
+          <span className="text-white text-xs font-semibold drop-shadow">Bongo Old Skool</span>
+        </a>
       </div>
 
       {/* Right sidebar actions */}
