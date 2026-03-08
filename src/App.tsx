@@ -59,6 +59,7 @@ const App = () => (
                     <Route path="/blog/:slug" element={<BlogDetail />} />
                     <Route path="/monetization" element={<Monetization />} />
                     <Route path="/leaderboard" element={<Leaderboard />} />
+                    <Route path="/profile" element={<Profile />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>

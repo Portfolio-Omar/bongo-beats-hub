@@ -248,6 +248,9 @@ const Admin: React.FC = () => {
               <TabsContent value="promotions" className="mt-0">
                 <TabErrorBoundary name="Promotions"><PromotionsTab /></TabErrorBoundary>
               </TabsContent>
+              <TabsContent value="payments" className="mt-0">
+                <TabErrorBoundary name="Payments"><PaymentVerificationTab /></TabErrorBoundary>
+              </TabsContent>
               <TabsContent value="security" className="mt-0">
                 <TabErrorBoundary name="Security"><SecurityTab /></TabErrorBoundary>
               </TabsContent>
