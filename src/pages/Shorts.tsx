@@ -183,6 +183,9 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [showWatermark, setShowWatermark] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showDoubleTapHeart, setShowDoubleTapHeart] = useState(false);
+  const [heartPosition, setHeartPosition] = useState({ x: 0, y: 0 });
+  const lastTapRef = useRef(0);
   const viewTracked = useRef(false);
 
   // Track view when video becomes active
@@ -226,10 +229,34 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
       .then(({ data }) => { if (data) setLiked(true); });
   }, [user, short.id]);
 
-  const togglePlay = () => {
-    if (!videoRef.current) return;
-    if (playing) { videoRef.current.pause(); } else { videoRef.current.play(); }
-    setPlaying(!playing);
+  const handleVideoTap = (e: React.MouseEvent) => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      // Double tap — like + heart animation
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      setHeartPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      setShowDoubleTapHeart(true);
+      setTimeout(() => setShowDoubleTapHeart(false), 900);
+
+      if (!liked && user && isAuthenticated) {
+        supabase.from('short_likes').insert({ short_id: short.id, user_id: user.id });
+        setLiked(true);
+        setLikeCount(c => c + 1);
+      }
+      lastTapRef.current = 0;
+    } else {
+      // Single tap — toggle play after delay
+      lastTapRef.current = now;
+      setTimeout(() => {
+        if (lastTapRef.current === now) {
+          if (!videoRef.current) return;
+          if (playing) { videoRef.current.pause(); } else { videoRef.current.play(); }
+          setPlaying(!playing);
+        }
+      }, DOUBLE_TAP_DELAY);
+    }
   };
 
   const toggleLike = async () => {
@@ -288,8 +315,24 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
         loop
         muted={muted}
         playsInline
-        onClick={togglePlay}
+        onClick={handleVideoTap}
       />
+
+      {/* Double-tap heart animation */}
+      <AnimatePresence>
+        {showDoubleTapHeart && (
+          <motion.div
+            initial={{ scale: 0, opacity: 1 }}
+            animate={{ scale: 1.5, opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+            className="absolute pointer-events-none z-30"
+            style={{ left: heartPosition.x - 40, top: heartPosition.y - 40 }}
+          >
+            <Heart className="h-20 w-20 fill-red-500 text-red-500 drop-shadow-lg" />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Play/Pause overlay */}
       <AnimatePresence>
