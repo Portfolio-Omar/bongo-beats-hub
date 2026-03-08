@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import { Link } from 'react-router-dom';
 import ImageViewerModal from '@/components/community/ImageViewerModal';
 import VoiceRecorder from '@/components/community/VoiceRecorder';
 import VoiceNotePlayer from '@/components/community/VoiceNotePlayer';
+import MessageReactions from '@/components/community/MessageReactions';
 
 interface Message {
   id: string;
@@ -57,6 +58,9 @@ const Community: React.FC = () => {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const touchStartX = useRef<number>(0);
   const [swipingMessageId, setSwipingMessageId] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const presenceChannelRef = useRef<any>(null);
 
   useEffect(() => {
     fetchMessages();
@@ -73,7 +77,6 @@ const Community: React.FC = () => {
             }
             return [...prev, newMsg];
           });
-          // Update participants
           setParticipants(prev => {
             if (prev.find(p => p.user_id === newMsg.user_id)) return prev;
             return [...prev, { user_id: newMsg.user_id, user_name: newMsg.user_name, user_avatar: newMsg.user_avatar }];
@@ -92,6 +95,45 @@ const Community: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Typing indicator via Presence
+  useEffect(() => {
+    if (!user) return;
+    const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+    const presenceChannel = supabase.channel('community-typing', {
+      config: { presence: { key: user.id } },
+    });
+
+    presenceChannel.on('presence', { event: 'sync' }, () => {
+      const state = presenceChannel.presenceState();
+      const typers: string[] = [];
+      Object.entries(state).forEach(([uid, presences]: [string, any]) => {
+        if (uid !== user.id && presences?.[0]?.typing) {
+          typers.push(presences[0].name || 'Someone');
+        }
+      });
+      setTypingUsers(typers);
+    });
+
+    presenceChannel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await presenceChannel.track({ typing: false, name: userName });
+      }
+    });
+
+    presenceChannelRef.current = presenceChannel;
+    return () => { supabase.removeChannel(presenceChannel); };
+  }, [user]);
+
+  const sendTypingIndicator = useCallback(() => {
+    if (!presenceChannelRef.current || !user) return;
+    const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+    presenceChannelRef.current.track({ typing: true, name: userName });
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      presenceChannelRef.current?.track({ typing: false, name: userName });
+    }, 2000);
+  }, [user]);
 
   useEffect(() => {
     scrollToBottom();
@@ -319,7 +361,7 @@ const Community: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                   className={cn(
-                    'flex gap-2',
+                    'flex gap-2 group',
                     isOwnMessage(msg) ? 'flex-row-reverse' : 'flex-row'
                   )}
                   onTouchStart={(e) => handleTouchStart(e, msg)}
@@ -401,6 +443,9 @@ const Community: React.FC = () => {
                     )}>
                       {format(new Date(msg.created_at), 'h:mm a')}
                     </p>
+
+                    {/* Reactions */}
+                    <MessageReactions messageId={msg.id} isOwn={isOwnMessage(msg)} />
                   </div>
 
                   {/* Reply button for desktop */}
@@ -421,6 +466,17 @@ const Community: React.FC = () => {
           </div>
         )}
       </ScrollArea>
+
+      {/* Typing Indicator */}
+      {typingUsers.length > 0 && (
+        <div className="px-2 py-1">
+          <p className="text-xs text-muted-foreground italic animate-pulse">
+            {typingUsers.length === 1
+              ? `${typingUsers[0]} is typing...`
+              : `${typingUsers.join(', ')} are typing...`}
+          </p>
+        </div>
+      )}
 
       {/* Reply Preview */}
       <AnimatePresence>
@@ -484,7 +540,7 @@ const Community: React.FC = () => {
         <Input
           placeholder="Type a message..."
           value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
+          onChange={(e) => { setNewMessage(e.target.value); sendTypingIndicator(); }}
           onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
           disabled={sending}
           className="flex-1"
