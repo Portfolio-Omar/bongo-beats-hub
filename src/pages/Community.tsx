@@ -467,6 +467,17 @@ const Community: React.FC = () => {
         )}
       </ScrollArea>
 
+      {/* Typing Indicator */}
+      {typingUsers.length > 0 && (
+        <div className="px-2 py-1">
+          <p className="text-xs text-muted-foreground italic animate-pulse">
+            {typingUsers.length === 1
+              ? `${typingUsers[0]} is typing...`
+              : `${typingUsers.join(', ')} are typing...`}
+          </p>
+        </div>
+      )}
+
       {/* Reply Preview */}
       <AnimatePresence>
         {replyTo && (
