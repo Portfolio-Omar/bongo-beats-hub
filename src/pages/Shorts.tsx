@@ -292,15 +292,10 @@ const Shorts: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [showUpload, setShowUpload] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     fetchShorts();
-    if (user) {
-      supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' }).then(({ data }) => {
-        if (data) setIsAdmin(true);
-      });
-    }
   }, [user]);
 
   const fetchShorts = async () => {
