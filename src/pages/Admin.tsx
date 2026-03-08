@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { 
   Music, FileText, MessageSquare, 
-  Upload, Lock, BarChart3, Wallet, Megaphone, ShieldX
+  Upload, Lock, BarChart3, Wallet, Megaphone, ShieldX, Shield
 } from 'lucide-react';
 
 const Admin: React.FC = () => {
