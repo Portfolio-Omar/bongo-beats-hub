@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAudio } from '@/context/AudioContext';
 import { useAuth } from '@/context/AuthContext';
-import { useBassBoost } from '@/hooks/useBassBoost';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, 
   Repeat, Shuffle, Download, Share, Heart, ChevronDown,
-  Music, ListMusic, X, GripVertical, Lock, MessageCircle, AudioLines
+  Music, ListMusic, X, GripVertical, Lock, MessageCircle, SlidersHorizontal
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,6 +19,7 @@ import logo from '@/assets/logo.png';
 import ThemeSelector, { PlayerTheme } from '@/components/player/ThemeSelector';
 import SongRating from '@/components/community/SongRating';
 import SongComments from '@/components/community/SongComments';
+import AudioFXPanel from '@/components/ui-custom/AudioFXPanel';
 
 const Player: React.FC = () => {
   const navigate = useNavigate();
