@@ -228,7 +228,7 @@ const Community: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <Layout>
+      <>
         <div className="container mx-auto px-4 py-20 text-center">
           <MessageCircle className="h-16 w-16 mx-auto mb-4 text-primary/50" />
           <h2 className="text-2xl font-bold mb-2">Join the Community</h2>
