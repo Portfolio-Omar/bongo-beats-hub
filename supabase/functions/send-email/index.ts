@@ -281,7 +281,19 @@ serve(async (req) => {
     }
 
     const template = templates[type](data || {});
-    const recipient = to || (type.startsWith("admin_") ? ADMIN_EMAIL : null);
+    let recipient = to || (type.startsWith("admin_") ? ADMIN_EMAIL : null);
+
+    // If no recipient but user_id provided, look up email via service role
+    if (!recipient && data?.user_id) {
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: userData } = await supabaseAdmin.auth.admin.getUserById(data.user_id);
+      if (userData?.user?.email) {
+        recipient = userData.user.email;
+      }
+    }
 
     if (!recipient) {
       return new Response(JSON.stringify({ error: "No recipient specified" }), {
