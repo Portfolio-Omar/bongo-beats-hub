@@ -119,6 +119,7 @@ const Admin: React.FC = () => {
                 <TabsContent value="uploads" className="mt-0"><BatchUploadSongs /></TabsContent>
                 <TabsContent value="monetization" className="mt-0"><MonetizationTab /></TabsContent>
                 <TabsContent value="promotions" className="mt-0"><PromotionsTab /></TabsContent>
+                <TabsContent value="security" className="mt-0"><SecurityTab /></TabsContent>
               </div>
             </Tabs>
           </motion.div>
