@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import logo from '@/assets/logo.png';
 
 const Navbar: React.FC = () => {
-  const { isAuthenticated, isAdmin, signOut } = useAuth();
+  const { isAuthenticated, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -22,7 +22,7 @@ const Navbar: React.FC = () => {
     { name: 'Leaderboard', path: '/leaderboard', icon: <Trophy className="h-4 w-4" /> },
     { name: 'Blog', path: '/blog', icon: <BookOpen className="h-4 w-4" /> },
     { name: 'Feedback', path: '/feedback', icon: <MessageSquare className="h-4 w-4" /> },
-    ...(isAdmin ? [{ name: 'Admin', path: '/admin', icon: <Shield className="h-4 w-4" /> }] : []),
+    { name: 'Admin', path: '/admin', icon: <Shield className="h-4 w-4" /> },
   ];
 
   return (
