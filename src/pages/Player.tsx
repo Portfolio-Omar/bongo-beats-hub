@@ -40,6 +40,10 @@ const Player: React.FC = () => {
   const [showQueue, setShowQueue] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showFXPanel, setShowFXPanel] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [visualizerStyle, setVisualizerStyle] = useState<'bars' | 'wave' | 'circle'>(() => {
+    return (localStorage.getItem('visualizerStyle') as 'bars' | 'wave' | 'circle') || 'bars';
+  });
   const [playerTheme, setPlayerTheme] = useState<PlayerTheme | null>(null);
   const [customWallpaper, setCustomWallpaper] = useState<string | null>(null);
   const { user, isAuthenticated } = useAuth();
