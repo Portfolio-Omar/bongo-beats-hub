@@ -86,18 +86,18 @@ const Index: React.FC = () => {
           </motion.div>
 
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.6, delay: 0.2 }}>
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-heading font-bold mb-6 bg-gradient-to-r from-gold via-yellow-500 to-gold bg-clip-text text-transparent">
+            <h1 className="text-3xl sm:text-3xl sm:text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-heading font-bold mb-6 bg-gradient-to-r from-gold via-yellow-500 to-gold bg-clip-text text-transparent">
               Welcome to Bongo Old Skool!
             </h1>
           </motion.div>
           
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-            className="text-xl md:text-3xl mb-4 text-muted-foreground font-display">
+            className="text-base sm:text-xl md:text-3xl mb-4 text-muted-foreground font-display">
             Where every beat, every lyric, and every heartbreak from the 2000s still lives rent-free in our hearts.
           </motion.p>
           
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="space-y-3 mb-10">
-            <p className="text-lg md:text-xl text-muted-foreground italic">"If you don't know who Mr. Nice is, this site will confuse you."</p>
+            <p className="text-sm sm:text-lg md:text-xl text-muted-foreground italic">"If you don't know who Mr. Nice is, this site will confuse you."</p>
           </motion.div>
           
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}

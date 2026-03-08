@@ -106,7 +106,7 @@ export default function Favorites() {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-gold/20 to-gold/5 mb-6">
             <Heart className="w-10 h-10 text-gold fill-gold" />
           </div>
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-gold via-amber-300 to-gold bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-gold via-amber-300 to-gold bg-clip-text text-transparent">
             Your Favorites
           </h1>
           <p className="text-muted-foreground text-lg">

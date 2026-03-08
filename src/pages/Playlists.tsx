@@ -223,11 +223,11 @@ const Playlists: React.FC = () => {
     <div className="container mx-auto px-4 py-8 pb-32">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
-            <ListMusic className="w-10 h-10 text-primary" />
+            <ListMusic className="w-8 h-8 sm:w-10 sm:h-10 text-primary flex-shrink-0" />
             <div>
-              <h1 className="text-4xl font-heading font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 My Playlists
               </h1>
               <p className="text-sm text-muted-foreground">{playlists?.length || 0} playlists</p>
@@ -236,11 +236,11 @@ const Playlists: React.FC = () => {
           
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90">
+              <Button className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />New Playlist
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-border">
+            <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-lg">
               <DialogHeader><DialogTitle>Create New Playlist</DialogTitle></DialogHeader>
               <div className="space-y-4 mt-4">
                 <Input placeholder="Playlist name" value={newPlaylistName}
@@ -321,16 +321,16 @@ const Playlists: React.FC = () => {
             {selectedPlaylist ? (
               <Card className="border-border">
                 <CardHeader className="border-b border-border">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center overflow-hidden">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                      <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center overflow-hidden flex-shrink-0">
                         {reorderedSongs[0]?.songs?.cover_url ? (
                           <img src={reorderedSongs[0].songs.cover_url} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <ListMusic className="w-10 h-10 text-primary" />
+                          <ListMusic className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
                         )}
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         {editingPlaylist?.id === selectedPlaylist.id ? (
                           <div className="space-y-2">
                             <Input value={editingPlaylist.name}
@@ -345,9 +345,9 @@ const Playlists: React.FC = () => {
                           </div>
                         ) : (
                           <>
-                            <CardTitle className="text-2xl">{selectedPlaylist.name}</CardTitle>
+                            <CardTitle className="text-xl sm:text-2xl truncate">{selectedPlaylist.name}</CardTitle>
                             {selectedPlaylist.description && (
-                              <p className="text-muted-foreground">{selectedPlaylist.description}</p>
+                              <p className="text-muted-foreground text-sm truncate">{selectedPlaylist.description}</p>
                             )}
                             <div className="flex items-center gap-3 mt-1">
                               <span className="text-sm text-muted-foreground">{reorderedSongs.length} songs</span>
@@ -360,10 +360,10 @@ const Playlists: React.FC = () => {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
                       {reorderedSongs.length > 0 && (
                         <>
-                          <Button onClick={handlePlayPlaylist} className="bg-primary hover:bg-primary/90">
+                          <Button onClick={handlePlayPlaylist} className="bg-primary hover:bg-primary/90 flex-1 sm:flex-none">
                             <Play className="h-4 w-4 mr-2" />Play All
                           </Button>
                           <Button variant="outline" size="icon" onClick={handleShufflePlay}>

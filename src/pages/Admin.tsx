@@ -172,15 +172,15 @@ const Admin: React.FC = () => {
   }
 
   return (
-    <div className="container py-12">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+    <div className="container px-2 sm:px-4 py-6 sm:py-12">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Admin Dashboard
           </h1>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Timer className="h-4 w-4" />
-            <span>Session: {formatTime(remainingTime)}</span>
+            <span className="hidden sm:inline">Session: </span><span>{formatTime(remainingTime)}</span>
             <Button variant="outline" size="sm" onClick={handleLock}>
               Lock
             </Button>
@@ -189,8 +189,8 @@ const Admin: React.FC = () => {
         
         <div className="p-1 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-lg">
           <Tabs defaultValue="songs" className="bg-background rounded-md">
-            <div className="overflow-x-auto pb-2 pt-4 px-4">
-              <TabsList className="h-12 bg-muted/80 backdrop-blur-sm flex-wrap">
+            <div className="overflow-x-auto pb-2 pt-4 px-2 sm:px-4 -mx-1">
+              <TabsList className="h-auto min-h-[48px] bg-muted/80 backdrop-blur-sm flex flex-wrap gap-1 p-1">
                 <TabsTrigger value="statistics" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                   <BarChart3 className="h-4 w-4" /><span>Statistics</span>
                 </TabsTrigger>
