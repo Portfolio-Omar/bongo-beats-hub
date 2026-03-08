@@ -158,6 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       session,
       isAuthenticated: !!user,
       isAdmin,
+      isSuspended,
       signUp,
       signIn,
       signOut,
