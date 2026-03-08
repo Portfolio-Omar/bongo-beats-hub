@@ -360,13 +360,17 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
 
   const handleDownload = async () => {
     try {
-      toast.info('Preparing watermarked download...');
-
-      // Create an offscreen video to capture a frame with watermark
+      toast.info('Downloading with watermark...');
+      
+      // Fetch the video as a blob to avoid CORS issues
+      const resp = await fetch(short.video_url);
+      const videoBlob = await resp.blob();
+      const blobUrl = URL.createObjectURL(videoBlob);
+      
       const video = document.createElement('video');
-      video.crossOrigin = 'anonymous';
-      video.src = short.video_url;
-      video.muted = true;
+      video.src = blobUrl;
+      video.volume = 1;
+      video.muted = false;
 
       await new Promise<void>((resolve, reject) => {
         video.onloadeddata = () => resolve();
@@ -374,30 +378,35 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
         video.load();
       });
 
-      // Use MediaRecorder to record the video with watermark overlay
       const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth || 720;
       canvas.height = video.videoHeight || 1280;
       const ctx = canvas.getContext('2d')!;
 
-      const stream = canvas.captureStream(30);
-      // Also capture audio from the video
-      let combinedStream = stream;
+      const canvasStream = canvas.captureStream(30);
+      let combinedStream: MediaStream = canvasStream;
+      
       try {
         const audioCtx = new AudioContext();
         const source = audioCtx.createMediaElementSource(video);
         const dest = audioCtx.createMediaStreamDestination();
         source.connect(dest);
         source.connect(audioCtx.destination);
-        const audioTrack = dest.stream.getAudioTracks()[0];
-        if (audioTrack) {
-          combinedStream = new MediaStream([...stream.getVideoTracks(), audioTrack]);
+        const audioTracks = dest.stream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          combinedStream = new MediaStream([
+            ...canvasStream.getVideoTracks(),
+            ...audioTracks
+          ]);
         }
       } catch {
-        // Audio capture may fail, continue without
+        // Audio capture may fail on some browsers
       }
 
-      const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus') 
+        ? 'video/webm;codecs=vp8,opus' 
+        : 'video/webm';
+      const recorder = new MediaRecorder(combinedStream, { mimeType });
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
 
@@ -412,22 +421,23 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
+          URL.revokeObjectURL(blobUrl);
           resolve();
         };
       });
 
       recorder.start();
       video.currentTime = 0;
+      video.muted = false;
       await video.play();
 
       const drawFrame = () => {
         if (video.ended || video.paused) {
-          recorder.stop();
+          if (recorder.state === 'recording') recorder.stop();
           return;
         }
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Draw persistent watermark (top-left)
         const logoSize = Math.round(canvas.width * 0.06);
         if (logoImgRef.current) {
           ctx.save();
@@ -443,7 +453,6 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
         ctx.font = `${Math.round(canvas.width * 0.02)}px sans-serif`;
         ctx.fillText('oldskoool.netlify.app', 20 + logoSize + 8, 20 + logoSize / 2 + 20);
 
-        // Draw bottom-center watermark
         const bottomText = 'Bongo Old Skool • oldskoool.netlify.app';
         ctx.font = `bold ${Math.round(canvas.width * 0.03)}px sans-serif`;
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
@@ -454,15 +463,13 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
       };
 
       drawFrame();
-
       video.onended = () => {
-        recorder.stop();
+        if (recorder.state === 'recording') recorder.stop();
       };
 
       await downloadPromise;
       toast.success('Download complete!');
     } catch {
-      // Fallback to plain download
       try {
         const response = await fetch(short.video_url);
         const blob = await response.blob();
