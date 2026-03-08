@@ -36,7 +36,7 @@ const BlogDetail: React.FC = () => {
   const fetchBlog = async () => {
     setLoading(true);
     // Try by slug first, then by id
-    let { data, error } = await supabase
+    let { data } = await supabase
       .from('blogs')
       .select('*')
       .eq('slug', slug!)

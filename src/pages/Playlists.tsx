@@ -18,7 +18,7 @@ import {
 import { 
   Plus, Music, Play, Trash2, GripVertical, ListMusic, 
   Disc, ChevronRight, Edit2, X, Search, MoreVertical,
-  Shuffle, Clock, Download
+  Shuffle, Clock
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { toast } from 'sonner';
