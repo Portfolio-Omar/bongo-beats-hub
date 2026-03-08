@@ -5,11 +5,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Play, Tv, AlertTriangle } from 'lucide-react';
+import { Play, Tv, AlertTriangle, Video } from 'lucide-react';
 
 const MAX_ADS_PER_DAY = 3;
 const REWARD_PER_AD = 2;
-const AD_DURATION = 15; // seconds
+const AD_DURATION = 15;
 
 interface AdVideo {
   id: string;
@@ -85,7 +85,6 @@ const AdRewardCard: React.FC = () => {
     if (adsWatched >= MAX_ADS_PER_DAY) { toast.error('Daily ad limit reached (3/day)'); return; }
     if (!tabVisible) { toast.error('Please keep this tab active to watch ads'); return; }
     
-    // Pick a random ad video if available
     const ad = adVideos.length > 0 ? adVideos[Math.floor(Math.random() * adVideos.length)] : null;
     setCurrentAd(ad);
     setWatching(true);
@@ -181,6 +180,21 @@ const AdRewardCard: React.FC = () => {
             <Play className="h-4 w-4 mr-2" />
             {adsWatched >= MAX_ADS_PER_DAY ? 'Daily Limit Reached (3/3)' : `Watch Ad (+KSh ${REWARD_PER_AD})`}
           </Button>
+        )}
+
+        {/* Available Ad Videos Preview */}
+        {adVideos.length > 0 && !watching && (
+          <div className="mt-4 pt-4 border-t border-border/40">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Available Ads ({adVideos.length})</p>
+            <div className="grid gap-2">
+              {adVideos.map((ad) => (
+                <div key={ad.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/30">
+                  <Video className="h-4 w-4 text-primary shrink-0" />
+                  <span className="text-xs truncate">{ad.title}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
