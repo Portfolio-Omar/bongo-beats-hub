@@ -1109,6 +1109,7 @@ export type Database = {
       }
       shorts: {
         Row: {
+          comment_count: number
           created_at: string
           description: string | null
           id: string
@@ -1121,6 +1122,7 @@ export type Database = {
           view_count: number
         }
         Insert: {
+          comment_count?: number
           created_at?: string
           description?: string | null
           id?: string
@@ -1133,6 +1135,7 @@ export type Database = {
           view_count?: number
         }
         Update: {
+          comment_count?: number
           created_at?: string
           description?: string | null
           id?: string
@@ -1531,6 +1534,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_short_view: { Args: { _short_id: string }; Returns: undefined }
       increment_song_view: {
         Args: { _song_id: string; _view_date?: string }
         Returns: undefined
