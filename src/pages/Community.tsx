@@ -443,6 +443,9 @@ const Community: React.FC = () => {
                     )}>
                       {format(new Date(msg.created_at), 'h:mm a')}
                     </p>
+
+                    {/* Reactions */}
+                    <MessageReactions messageId={msg.id} isOwn={isOwnMessage(msg)} />
                   </div>
 
                   {/* Reply button for desktop */}
