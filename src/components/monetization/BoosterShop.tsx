@@ -51,6 +51,7 @@ const BoosterShop: React.FC<BoosterShopProps> = ({ isRegistered = false }) => {
 
   const handlePurchase = async (tier: BoosterTier) => {
     if (!user) { toast.error('Please sign in first'); return; }
+    if (!isRegistered) { toast.error('Pay KSh 150 registration fee before purchasing boosters'); return; }
     if (activeBooster) { toast.error('You already have an active booster. Wait for it to expire.'); return; }
     
     setPurchasing(tier.id);
