@@ -361,7 +361,7 @@ const Community: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                   className={cn(
-                    'flex gap-2',
+                    'flex gap-2 group',
                     isOwnMessage(msg) ? 'flex-row-reverse' : 'flex-row'
                   )}
                   onTouchStart={(e) => handleTouchStart(e, msg)}
