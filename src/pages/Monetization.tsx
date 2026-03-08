@@ -16,6 +16,7 @@ import {
   Shield, AlertTriangle, CheckCircle2, Rocket
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { sendEmail } from '@/lib/send-email';
 import BoosterShop from '@/components/monetization/BoosterShop';
 import DailyBonusCard from '@/components/monetization/DailyBonusCard';
 import AdRewardCard from '@/components/monetization/AdRewardCard';
