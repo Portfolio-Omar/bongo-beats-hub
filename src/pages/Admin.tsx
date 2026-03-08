@@ -10,13 +10,14 @@ import MonetizationTab from '@/components/admin/MonetizationTab';
 import PromotionsTab from '@/components/admin/PromotionsTab';
 import SecurityTab from '@/components/admin/SecurityTab';
 import PaymentVerificationTab from '@/components/admin/PaymentVerificationTab';
+import ShortsManagementTab from '@/components/admin/ShortsManagementTab';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { 
   Music, FileText, MessageSquare, 
-  Upload, Lock, BarChart3, Wallet, Megaphone, Shield, Timer
+  Upload, Lock, BarChart3, Wallet, Megaphone, Shield, Timer, Video
 } from 'lucide-react';
 import { toast } from 'sonner';
 
