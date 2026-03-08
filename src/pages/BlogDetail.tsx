@@ -7,6 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Calendar, Clock, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
+import BlogComments from '@/components/blog/BlogComments';
+import BlogShareButtons from '@/components/blog/BlogShareButtons';
 
 interface BlogPost {
   id: string;
@@ -134,6 +136,14 @@ const BlogDetail: React.FC = () => {
             prose-hr:border-border"
           dangerouslySetInnerHTML={{ __html: blog.content }}
         />
+
+        {/* Share Buttons */}
+        <div className="mb-10 pb-6 border-b border-border">
+          <BlogShareButtons title={blog.title} slug={blog.slug || blog.id} />
+        </div>
+
+        {/* Comments Section */}
+        <BlogComments blogId={blog.id} />
 
         {relatedBlogs.length > 0 && (
           <div className="border-t border-border pt-8">
