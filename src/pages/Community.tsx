@@ -468,7 +468,6 @@ const Community: React.FC = () => {
             {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
           </Button>
         </div>
-      </div>
     </div>
   );
 };
