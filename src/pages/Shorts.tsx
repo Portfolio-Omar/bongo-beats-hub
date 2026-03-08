@@ -333,12 +333,12 @@ const Shorts: React.FC = () => {
       <div className="h-screen flex flex-col items-center justify-center bg-black text-white gap-4">
         <Play className="h-16 w-16 opacity-50" />
         <p className="text-lg">No shorts yet</p>
-        {isAdmin && (
+        {isAuthenticated && (
           <Button onClick={() => setShowUpload(true)} variant="secondary">
             <Plus className="h-4 w-4 mr-2" /> Upload First Short
           </Button>
         )}
-        <AdminUploadDialog open={showUpload} onClose={() => setShowUpload(false)} onUploaded={fetchShorts} />
+        <UploadDialog open={showUpload} onClose={() => setShowUpload(false)} onUploaded={fetchShorts} />
       </div>
     );
   }
