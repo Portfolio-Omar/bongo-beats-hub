@@ -49,9 +49,11 @@ const Player: React.FC = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showBassPanel, setShowBassPanel] = useState(false);
   const [playerTheme, setPlayerTheme] = useState<PlayerTheme | null>(null);
   const [customWallpaper, setCustomWallpaper] = useState<string | null>(null);
   const { user, isAuthenticated } = useAuth();
+  const { bassBoost, toggleBassBoost, setBassGain, setBassFrequency } = useBassBoost(audioRef.current);
 
   useEffect(() => {
     if (!currentSong) {
