@@ -373,6 +373,7 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
 
       <CommentsSheet shortId={short.id} open={commentsOpen} onClose={() => setCommentsOpen(false)} />
     </div>
+  );
 };
 
 // ─── Main Shorts Page ───
