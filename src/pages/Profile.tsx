@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { User, Camera, CheckCircle, Clock, AlertCircle, CreditCard } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { sendEmail } from '@/lib/send-email';
 
 const Profile: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
