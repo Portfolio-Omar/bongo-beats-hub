@@ -8,16 +8,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   Plus, Music, Play, Trash2, GripVertical, ListMusic, 
-  Disc, ChevronRight, Edit2, X 
+  Disc, ChevronRight, Edit2, X, Search, MoreVertical,
+  Shuffle, Clock
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { toast } from 'sonner';
@@ -51,92 +52,79 @@ const Playlists: React.FC = () => {
   const [newPlaylistDescription, setNewPlaylistDescription] = useState('');
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null);
   const [reorderedSongs, setReorderedSongs] = useState<PlaylistSong[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [playlistSearch, setPlaylistSearch] = useState('');
 
-  // Fetch user playlists
   const { data: playlists, isLoading: playlistsLoading } = useQuery({
     queryKey: ['playlists', user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
-        .from('playlists')
-        .select('*')
-        .eq('user_id', user.id)
+        .from('playlists').select('*').eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      
       if (error) throw error;
       return data as Playlist[];
     },
     enabled: !!user,
   });
 
-  // Fetch songs for selected playlist
   const { data: playlistSongs, isLoading: songsLoading } = useQuery({
     queryKey: ['playlist-songs', selectedPlaylist?.id],
     queryFn: async () => {
       if (!selectedPlaylist) return [];
       const { data, error } = await supabase
         .from('playlist_songs')
-        .select(`
-          id,
-          playlist_id,
-          song_id,
-          added_at,
-          songs (*)
-        `)
+        .select(`id, playlist_id, song_id, added_at, songs (*)`)
         .eq('playlist_id', selectedPlaylist.id)
         .order('added_at', { ascending: true });
-      
       if (error) throw error;
       return data as PlaylistSong[];
     },
     enabled: !!selectedPlaylist,
   });
 
-  // Update reorderedSongs when playlistSongs changes
+  // Get song count per playlist
+  const { data: playlistCounts } = useQuery({
+    queryKey: ['playlist-counts', user?.id],
+    queryFn: async () => {
+      if (!user || !playlists) return {};
+      const counts: Record<string, number> = {};
+      for (const pl of playlists) {
+        const { count } = await supabase
+          .from('playlist_songs').select('id', { count: 'exact', head: true })
+          .eq('playlist_id', pl.id);
+        counts[pl.id] = count || 0;
+      }
+      return counts;
+    },
+    enabled: !!playlists && playlists.length > 0,
+  });
+
   React.useEffect(() => {
-    if (playlistSongs) {
-      setReorderedSongs(playlistSongs);
-    }
+    if (playlistSongs) setReorderedSongs(playlistSongs);
   }, [playlistSongs]);
 
-  // Create playlist mutation
   const createPlaylist = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not authenticated');
       const { data, error } = await supabase
-        .from('playlists')
-        .insert([{
-          name: newPlaylistName,
-          description: newPlaylistDescription || null,
-          user_id: user.id,
-        }])
-        .select()
-        .single();
-      
+        .from('playlists').insert([{ name: newPlaylistName, description: newPlaylistDescription || null, user_id: user.id }])
+        .select().single();
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['playlists'] });
-      setIsCreateOpen(false);
-      setNewPlaylistName('');
-      setNewPlaylistDescription('');
+      setIsCreateOpen(false); setNewPlaylistName(''); setNewPlaylistDescription('');
       toast.success('Playlist created!');
     },
-    onError: (error) => {
-      console.error('Error creating playlist:', error);
-      toast.error('Failed to create playlist');
-    },
+    onError: () => toast.error('Failed to create playlist'),
   });
 
-  // Update playlist mutation
   const updatePlaylist = useMutation({
     mutationFn: async (playlist: Playlist) => {
-      const { error } = await supabase
-        .from('playlists')
-        .update({ name: playlist.name, description: playlist.description })
-        .eq('id', playlist.id);
-      
+      const { error } = await supabase.from('playlists')
+        .update({ name: playlist.name, description: playlist.description }).eq('id', playlist.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -144,19 +132,12 @@ const Playlists: React.FC = () => {
       setEditingPlaylist(null);
       toast.success('Playlist updated!');
     },
-    onError: () => {
-      toast.error('Failed to update playlist');
-    },
+    onError: () => toast.error('Failed to update playlist'),
   });
 
-  // Delete playlist mutation
   const deletePlaylist = useMutation({
     mutationFn: async (playlistId: string) => {
-      const { error } = await supabase
-        .from('playlists')
-        .delete()
-        .eq('id', playlistId);
-      
+      const { error } = await supabase.from('playlists').delete().eq('id', playlistId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -164,60 +145,75 @@ const Playlists: React.FC = () => {
       setSelectedPlaylist(null);
       toast.success('Playlist deleted!');
     },
-    onError: () => {
-      toast.error('Failed to delete playlist');
-    },
+    onError: () => toast.error('Failed to delete playlist'),
   });
 
-  // Remove song from playlist mutation
   const removeSongFromPlaylist = useMutation({
     mutationFn: async (playlistSongId: string) => {
-      const { error } = await supabase
-        .from('playlist_songs')
-        .delete()
-        .eq('id', playlistSongId);
-      
+      const { error } = await supabase.from('playlist_songs').delete().eq('id', playlistSongId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['playlist-songs'] });
+      queryClient.invalidateQueries({ queryKey: ['playlist-counts'] });
       toast.success('Song removed from playlist');
     },
-    onError: () => {
-      toast.error('Failed to remove song');
-    },
+    onError: () => toast.error('Failed to remove song'),
   });
 
   const handlePlayPlaylist = () => {
     if (reorderedSongs.length > 0 && reorderedSongs[0].songs) {
-      const songs = reorderedSongs
-        .filter(ps => ps.songs)
-        .map(ps => ps.songs as Song);
+      const songs = reorderedSongs.filter(ps => ps.songs).map(ps => ps.songs as Song);
       playSong(songs[0], songs);
     }
   };
 
+  const handleShufflePlay = () => {
+    const songs = reorderedSongs.filter(ps => ps.songs).map(ps => ps.songs as Song);
+    if (songs.length > 0) {
+      const shuffled = [...songs].sort(() => Math.random() - 0.5);
+      playSong(shuffled[0], shuffled);
+      toast.success('🔀 Shuffle play started!');
+    }
+  };
+
   const handlePlaySong = (song: Song) => {
-    const songs = reorderedSongs
-      .filter(ps => ps.songs)
-      .map(ps => ps.songs as Song);
+    const songs = reorderedSongs.filter(ps => ps.songs).map(ps => ps.songs as Song);
     playSong(song, songs);
   };
+
+  const getTotalDuration = () => {
+    const totalMinutes = reorderedSongs.reduce((sum, item) => {
+      if (item.songs?.duration) {
+        const parts = item.songs.duration.split(':');
+        return sum + (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+      }
+      return sum;
+    }, 0);
+    const hours = Math.floor(totalMinutes / 3600);
+    const mins = Math.floor((totalMinutes % 3600) / 60);
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  };
+
+  const filteredSongs = reorderedSongs.filter(item => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return item.songs?.title?.toLowerCase().includes(q) || item.songs?.artist?.toLowerCase().includes(q);
+  });
+
+  const filteredPlaylists = playlists?.filter(pl => {
+    if (!playlistSearch) return true;
+    return pl.name.toLowerCase().includes(playlistSearch.toLowerCase());
+  });
 
   if (!isAuthenticated) {
     return (
       <div className="container mx-auto px-4 py-20">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
           <ListMusic className="w-16 h-16 text-primary/50 mx-auto mb-4" />
           <h2 className="text-2xl font-heading font-bold mb-2">Sign in to view playlists</h2>
           <p className="text-muted-foreground mb-6">Create and manage your personal playlists</p>
-          <Button onClick={() => navigate('/auth')} className="bg-primary hover:bg-primary/90">
-            Sign In
-          </Button>
+          <Button onClick={() => navigate('/auth')} className="bg-primary hover:bg-primary/90">Sign In</Button>
         </motion.div>
       </div>
     );
@@ -225,52 +221,35 @@ const Playlists: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 pb-32">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <ListMusic className="w-10 h-10 text-primary" />
-            <h1 className="text-4xl font-heading font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              My Playlists
-            </h1>
+            <div>
+              <h1 className="text-4xl font-heading font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                My Playlists
+              </h1>
+              <p className="text-sm text-muted-foreground">{playlists?.length || 0} playlists</p>
+            </div>
           </div>
           
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button className="bg-primary hover:bg-primary/90">
-                <Plus className="h-4 w-4 mr-2" />
-                New Playlist
+                <Plus className="h-4 w-4 mr-2" />New Playlist
               </Button>
             </DialogTrigger>
             <DialogContent className="bg-card border-border">
-              <DialogHeader>
-                <DialogTitle>Create New Playlist</DialogTitle>
-              </DialogHeader>
+              <DialogHeader><DialogTitle>Create New Playlist</DialogTitle></DialogHeader>
               <div className="space-y-4 mt-4">
-                <div>
-                  <Input
-                    placeholder="Playlist name"
-                    value={newPlaylistName}
-                    onChange={(e) => setNewPlaylistName(e.target.value)}
-                    className="bg-background border-border"
-                  />
-                </div>
-                <div>
-                  <Textarea
-                    placeholder="Description (optional)"
-                    value={newPlaylistDescription}
-                    onChange={(e) => setNewPlaylistDescription(e.target.value)}
-                    className="bg-background border-border"
-                  />
-                </div>
-                <Button
-                  onClick={() => createPlaylist.mutate()}
+                <Input placeholder="Playlist name" value={newPlaylistName}
+                  onChange={(e) => setNewPlaylistName(e.target.value)} className="bg-background border-border" />
+                <Textarea placeholder="Description (optional)" value={newPlaylistDescription}
+                  onChange={(e) => setNewPlaylistDescription(e.target.value)} className="bg-background border-border" />
+                <Button onClick={() => createPlaylist.mutate()}
                   disabled={!newPlaylistName.trim() || createPlaylist.isPending}
-                  className="w-full bg-primary hover:bg-primary/90"
-                >
+                  className="w-full bg-primary hover:bg-primary/90">
                   Create Playlist
                 </Button>
               </div>
@@ -281,38 +260,34 @@ const Playlists: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Playlists List */}
           <div className="lg:col-span-1 space-y-4">
+            {/* Playlist search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search playlists..." value={playlistSearch}
+                onChange={e => setPlaylistSearch(e.target.value)} className="pl-10" />
+            </div>
+
             {playlistsLoading ? (
               <div className="flex items-center justify-center py-10">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                >
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
                   <Disc className="w-8 h-8 text-primary" />
                 </motion.div>
               </div>
-            ) : playlists?.length === 0 ? (
+            ) : filteredPlaylists?.length === 0 ? (
               <Card className="border-dashed border-2 border-border">
                 <CardContent className="p-8 text-center">
                   <Music className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No playlists yet</p>
-                  <p className="text-sm text-muted-foreground">Create your first playlist!</p>
+                  <p className="text-muted-foreground">{playlistSearch ? 'No matching playlists' : 'No playlists yet'}</p>
+                  {!playlistSearch && <p className="text-sm text-muted-foreground">Create your first playlist!</p>}
                 </CardContent>
               </Card>
             ) : (
               <AnimatePresence>
-                {playlists?.map((playlist) => (
-                  <motion.div
-                    key={playlist.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                  >
-                    <Card
-                      className={`cursor-pointer transition-all duration-200 hover:border-primary/50 ${
-                        selectedPlaylist?.id === playlist.id ? 'border-primary bg-primary/5' : 'border-border'
-                      }`}
-                      onClick={() => setSelectedPlaylist(playlist)}
-                    >
+                {filteredPlaylists?.map((playlist) => (
+                  <motion.div key={playlist.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                    <Card className={`cursor-pointer transition-all duration-200 hover:border-primary/50 ${
+                      selectedPlaylist?.id === playlist.id ? 'border-primary bg-primary/5' : 'border-border'
+                    }`} onClick={() => setSelectedPlaylist(playlist)}>
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -321,11 +296,14 @@ const Playlists: React.FC = () => {
                             </div>
                             <div className="min-w-0">
                               <h3 className="font-semibold truncate">{playlist.name}</h3>
-                              {playlist.description && (
-                                <p className="text-sm text-muted-foreground truncate">
-                                  {playlist.description}
-                                </p>
-                              )}
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-xs">
+                                  {playlistCounts?.[playlist.id] || 0} songs
+                                </Badge>
+                                {playlist.description && (
+                                  <p className="text-xs text-muted-foreground truncate">{playlist.description}</p>
+                                )}
+                              </div>
                             </div>
                           </div>
                           <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -345,30 +323,24 @@ const Playlists: React.FC = () => {
                 <CardHeader className="border-b border-border">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center">
-                        <ListMusic className="w-10 h-10 text-primary" />
+                      <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center overflow-hidden">
+                        {reorderedSongs[0]?.songs?.cover_url ? (
+                          <img src={reorderedSongs[0].songs.cover_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <ListMusic className="w-10 h-10 text-primary" />
+                        )}
                       </div>
                       <div>
                         {editingPlaylist?.id === selectedPlaylist.id ? (
                           <div className="space-y-2">
-                            <Input
-                              value={editingPlaylist.name}
-                              onChange={(e) => setEditingPlaylist({ ...editingPlaylist, name: e.target.value })}
-                              className="bg-background"
-                            />
-                            <Input
-                              value={editingPlaylist.description || ''}
+                            <Input value={editingPlaylist.name}
+                              onChange={(e) => setEditingPlaylist({ ...editingPlaylist, name: e.target.value })} className="bg-background" />
+                            <Input value={editingPlaylist.description || ''}
                               onChange={(e) => setEditingPlaylist({ ...editingPlaylist, description: e.target.value })}
-                              placeholder="Description"
-                              className="bg-background"
-                            />
+                              placeholder="Description" className="bg-background" />
                             <div className="flex gap-2">
-                              <Button size="sm" onClick={() => updatePlaylist.mutate(editingPlaylist)}>
-                                Save
-                              </Button>
-                              <Button size="sm" variant="ghost" onClick={() => setEditingPlaylist(null)}>
-                                Cancel
-                              </Button>
+                              <Button size="sm" onClick={() => updatePlaylist.mutate(editingPlaylist)}>Save</Button>
+                              <Button size="sm" variant="ghost" onClick={() => setEditingPlaylist(null)}>Cancel</Button>
                             </div>
                           </div>
                         ) : (
@@ -377,9 +349,12 @@ const Playlists: React.FC = () => {
                             {selectedPlaylist.description && (
                               <p className="text-muted-foreground">{selectedPlaylist.description}</p>
                             )}
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {reorderedSongs.length} songs
-                            </p>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="text-sm text-muted-foreground">{reorderedSongs.length} songs</span>
+                              <span className="text-sm text-muted-foreground flex items-center gap-1">
+                                <Clock className="h-3 w-3" />{getTotalDuration()}
+                              </span>
+                            </div>
                           </>
                         )}
                       </div>
@@ -387,37 +362,48 @@ const Playlists: React.FC = () => {
                     
                     <div className="flex items-center gap-2">
                       {reorderedSongs.length > 0 && (
-                        <Button onClick={handlePlayPlaylist} className="bg-primary hover:bg-primary/90">
-                          <Play className="h-4 w-4 mr-2" />
-                          Play All
-                        </Button>
+                        <>
+                          <Button onClick={handlePlayPlaylist} className="bg-primary hover:bg-primary/90">
+                            <Play className="h-4 w-4 mr-2" />Play All
+                          </Button>
+                          <Button variant="outline" size="icon" onClick={handleShufflePlay}>
+                            <Shuffle className="h-4 w-4" />
+                          </Button>
+                        </>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setEditingPlaylist(selectedPlaylist)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => deletePlaylist.mutate(selectedPlaylist.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditingPlaylist(selectedPlaylist)}>
+                            <Edit2 className="h-4 w-4 mr-2" />Edit Playlist
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate('/music')}>
+                            <Plus className="h-4 w-4 mr-2" />Add Songs
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => deletePlaylist.mutate(selectedPlaylist.id)}>
+                            <Trash2 className="h-4 w-4 mr-2" />Delete Playlist
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
+
+                  {/* Song search within playlist */}
+                  {reorderedSongs.length > 3 && (
+                    <div className="relative mt-4">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input placeholder="Search songs in this playlist..." value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
+                    </div>
+                  )}
                 </CardHeader>
                 
                 <CardContent className="p-4">
                   {songsLoading ? (
                     <div className="flex items-center justify-center py-10">
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      >
+                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
                         <Disc className="w-8 h-8 text-primary" />
                       </motion.div>
                     </div>
@@ -425,40 +411,21 @@ const Playlists: React.FC = () => {
                     <div className="text-center py-10">
                       <Music className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                       <p className="text-muted-foreground">No songs in this playlist</p>
-                      <p className="text-sm text-muted-foreground">
-                        Add songs from the Music page
-                      </p>
-                      <Button
-                        variant="outline"
-                        className="mt-4"
-                        onClick={() => navigate('/music')}
-                      >
-                        Browse Music
-                      </Button>
+                      <p className="text-sm text-muted-foreground">Add songs from the Music page</p>
+                      <Button variant="outline" className="mt-4" onClick={() => navigate('/music')}>Browse Music</Button>
                     </div>
                   ) : (
-                    <Reorder.Group
-                      axis="y"
-                      values={reorderedSongs}
-                      onReorder={setReorderedSongs}
-                      className="space-y-2"
-                    >
-                      {reorderedSongs.map((item) => (
-                        <Reorder.Item
-                          key={item.id}
-                          value={item}
-                          className="bg-card border border-border rounded-lg p-3 cursor-grab active:cursor-grabbing"
-                        >
+                    <Reorder.Group axis="y" values={reorderedSongs} onReorder={setReorderedSongs} className="space-y-2">
+                      {(searchQuery ? filteredSongs : reorderedSongs).map((item, index) => (
+                        <Reorder.Item key={item.id} value={item}
+                          className="bg-card border border-border rounded-lg p-3 cursor-grab active:cursor-grabbing">
                           <div className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground w-5 text-center">{index + 1}</span>
                             <GripVertical className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                             
                             <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
                               {item.songs?.cover_url ? (
-                                <img
-                                  src={item.songs.cover_url}
-                                  alt={item.songs.title}
-                                  className="w-full h-full object-cover"
-                                />
+                                <img src={item.songs.cover_url} alt={item.songs.title} className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center">
                                   <Music className="w-5 h-5 text-primary/70" />
@@ -468,26 +435,21 @@ const Playlists: React.FC = () => {
                             
                             <div className="flex-1 min-w-0">
                               <p className="font-medium truncate">{item.songs?.title}</p>
-                              <p className="text-sm text-muted-foreground truncate">
-                                {item.songs?.artist}
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm text-muted-foreground truncate">{item.songs?.artist}</p>
+                                {item.songs?.duration && (
+                                  <span className="text-xs text-muted-foreground">{item.songs.duration}</span>
+                                )}
+                              </div>
                             </div>
                             
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => item.songs && handlePlaySong(item.songs)}
-                                className="hover:bg-primary/10"
-                              >
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => item.songs && handlePlaySong(item.songs)}
+                                className="hover:bg-primary/10 h-8 w-8">
                                 <Play className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeSongFromPlaylist.mutate(item.id)}
-                                className="hover:text-destructive"
-                              >
+                              <Button variant="ghost" size="icon" onClick={() => removeSongFromPlaylist.mutate(item.id)}
+                                className="hover:text-destructive h-8 w-8">
                                 <X className="h-4 w-4" />
                               </Button>
                             </div>
@@ -503,6 +465,7 @@ const Playlists: React.FC = () => {
                 <CardContent className="text-center">
                   <ListMusic className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">Select a playlist to view songs</p>
+                  <p className="text-sm text-muted-foreground mt-1">Or create a new one to get started</p>
                 </CardContent>
               </Card>
             )}
