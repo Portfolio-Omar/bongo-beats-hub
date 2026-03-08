@@ -242,7 +242,7 @@ const Community: React.FC = () => {
   }
 
   return (
-    <Layout>
+    <>
       <div className="container mx-auto px-4 py-6 max-w-3xl h-[calc(100vh-180px)] flex flex-col">
         {/* Header */}
         <div className="flex items-center gap-3 pb-4 border-b border-border mb-4">
