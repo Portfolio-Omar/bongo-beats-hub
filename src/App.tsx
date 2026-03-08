@@ -28,6 +28,7 @@ import Monetization from "./pages/Monetization";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
 import Community from "./pages/Community";
+import Shorts from "./pages/Shorts";
 import ListeningRewardTracker from "./components/monetization/ListeningRewardTracker";
 import SecurityTracker from "./components/SecurityTracker";
 
