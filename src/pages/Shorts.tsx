@@ -38,8 +38,8 @@ interface ShortComment {
   created_at: string;
 }
 
-// ─── Admin Upload Dialog ───
-const AdminUploadDialog: React.FC<{ open: boolean; onClose: () => void; onUploaded: () => void }> = ({ open, onClose, onUploaded }) => {
+// ─── Upload Dialog (available to all authenticated users) ───
+const UploadDialog: React.FC<{ open: boolean; onClose: () => void; onUploaded: () => void }> = ({ open, onClose, onUploaded }) => {
   const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
