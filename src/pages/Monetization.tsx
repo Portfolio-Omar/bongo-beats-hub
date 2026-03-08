@@ -181,7 +181,7 @@ const Monetization: React.FC = () => {
   const todayEarnings = (earnings?.songs_listened_today || 0) * currentRate;
 
   return (
-    <div className="container px-4 py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:space-y-6">
+    <div className="container px-4 py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:py-6 sm:py-8 space-y-4 sm:space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">💰 Monetization Dashboard</h1>
         <p className="text-muted-foreground mt-1">Earn KSh by listening to music</p>
@@ -221,14 +221,12 @@ const Monetization: React.FC = () => {
                       </Button>
                     </>
                   )}
-                </div>
-              </div>
-    2 lg:grid-cols-4 gap-3 sm:rid-cols-4 gap-3 sm:rid-cols-4 gap-3 sm:rid-cols-4 gap-3 sm:rid-cols-4 gap-3 sm:rid-cols-2 lg:grid-cols-4 gap-4">
+                </div>2 lg:grid-cols-4 gap-3 sm:rid-cols-4 gap-3 sm:rid-cols-4 gap-3 sm:rid-cols-4 gap-3 sm:rid-cols-4 gap-3 sm:rid-cols-4 gap-3 sm:rid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-primary/20">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="textxl sm:text--sm text-muted-foregxl sm:text-round">Total Balancexl sm:text-</p>
+              xl sm:text-  <p className="textxl sm:text--sm text-muted-foregxl sm:text-round">Total Balancexl sm:text-</p>
                xl sm:text- <p className="text-3xl font-bold text-primary">KSh {(earnings?.balance || 0).toFixed(1)}</p>
               </div>
               <Wallet className="h-10 w-10 text-primary/40" />
@@ -238,7 +236,7 @@ const Monetization: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <div>
+             xl sm:text- <div>
                 <p classxl sm:text-Name="text-sm text-muted-foregrxl sm:text-ound">Today's Earnings</p>
     xl sm:text-            <p className="text-3xl font-bold">KSh {todayEarnings.toFixed(1)}</p>
               </div>
@@ -249,7 +247,7 @@ const Monetization: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <div>
+      xl sm:text-        <div>
                 <p classNamexl sm:text-="text-sm text-muted-foreground">Songs Todxl sm:text-ay</p>
                 <p className="text-3xl font-bold">{earnings?.songs_listened_today || 0}</p>
                 <p className="text-xs text-muted-foreground">/ 150 max</p>
@@ -263,7 +261,7 @@ const Monetization: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Lxl sm:text-istening Rate</p>
+         xl sm:text-       <p className="text-sm text-muted-foreground">Lxl sm:text-istening Rate</p>
                 <p className="text-3xl font-bold">KSh {currentRate}</p>
                 {activeBoosterRate && <Badge className="mt-1 bg-primary/20 text-primary"><Rocket className="h-3 w-3 mr-1" /> Booster Active</Badge>}
                 {!activeBoosterRate && boostActive && <Badge className="mt-1 bg-yellow-500/20 text-yellow-700"><Zap className="h-3 w-3 mr-1" /> Boosted · {getBoostTimeLeft()}</Badge>}
@@ -323,7 +321,7 @@ const Monetization: React.FC = () => {
         <TabsContent value="withdraw">
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2"><ArrowDownToLine className="h-5 w-5" /> Withdraw Earnings</CardTitle></CardHeader>
-            <CardContent>
+         sm:grid-cols-2 lg <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <div>
                   <label className="text-sm text-muted-foreground">Amount (KSh)</label>
