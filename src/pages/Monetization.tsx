@@ -61,11 +61,12 @@ const Monetization: React.FC = () => {
 
   const fetchData = async () => {
     if (!user) return;
-    const [earningsRes, boostRes, withdrawRes, boosterRes] = await Promise.all([
+    const [earningsRes, boostRes, withdrawRes, boosterRes, regRes] = await Promise.all([
       supabase.from('user_earnings').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('share_boosts').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
       supabase.from('withdrawals').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
       supabase.from('booster_purchases').select('*').eq('user_id', user.id).eq('is_active', true).gt('expires_at', new Date().toISOString()).order('rate_per_song', { ascending: false }).limit(1),
+      supabase.from('registration_payments').select('status').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
     ]);
 
     if (earningsRes.data) setEarnings(earningsRes.data as Earnings);
@@ -79,6 +80,12 @@ const Monetization: React.FC = () => {
 
     if (boosterRes.data && boosterRes.data.length > 0) {
       setActiveBoosterRate((boosterRes.data[0] as any).rate_per_song);
+    }
+
+    if (regRes.data && regRes.data.length > 0) {
+      setRegistrationStatus((regRes.data[0] as any).status);
+    } else {
+      setRegistrationStatus('none');
     }
 
     if (withdrawRes.data) setWithdrawals(withdrawRes.data as Withdrawal[]);
