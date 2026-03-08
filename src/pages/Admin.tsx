@@ -11,6 +11,8 @@ import PromotionsTab from '@/components/admin/PromotionsTab';
 import SecurityTab from '@/components/admin/SecurityTab';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { 
   Music, FileText, MessageSquare, 
   Upload, Lock, BarChart3, Wallet, Megaphone, Shield, Timer
@@ -18,9 +20,33 @@ import {
 import { toast } from 'sonner';
 
 const ADMIN_PASSWORD = 'Calcium@123';
-const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+const REMEMBER_KEY = 'admin_device_token';
+const REMEMBER_DURATION_MS = 24 * 60 * 60 * 1000;
 
-// Error boundary for tab content
+const generateToken = (): string => {
+  const payload = {
+    ts: Date.now(),
+    exp: Date.now() + REMEMBER_DURATION_MS,
+    sig: btoa(`admin-${Date.now()}-${Math.random().toString(36).slice(2)}`),
+  };
+  return btoa(JSON.stringify(payload));
+};
+
+const validateToken = (): boolean => {
+  try {
+    const token = localStorage.getItem(REMEMBER_KEY);
+    if (!token) return false;
+    const payload = JSON.parse(atob(token));
+    if (payload.exp && payload.exp > Date.now()) return true;
+    localStorage.removeItem(REMEMBER_KEY);
+    return false;
+  } catch {
+    localStorage.removeItem(REMEMBER_KEY);
+    return false;
+  }
+};
+
 class TabErrorBoundary extends React.Component<
   { children: React.ReactNode; name: string },
   { hasError: boolean; error?: string }
@@ -46,8 +72,9 @@ class TabErrorBoundary extends React.Component<
 }
 
 const Admin: React.FC = () => {
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(() => validateToken());
   const [password, setPassword] = useState('');
+  const [rememberDevice, setRememberDevice] = useState(false);
   const [remainingTime, setRemainingTime] = useState(SESSION_TIMEOUT_MS);
   const lastActivityRef = useRef(Date.now());
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -56,7 +83,6 @@ const Admin: React.FC = () => {
     lastActivityRef.current = Date.now();
   }, []);
 
-  // Session timeout logic
   useEffect(() => {
     if (!isUnlocked) return;
 
@@ -88,10 +114,19 @@ const Admin: React.FC = () => {
       setIsUnlocked(true);
       lastActivityRef.current = Date.now();
       setRemainingTime(SESSION_TIMEOUT_MS);
+      if (rememberDevice) {
+        localStorage.setItem(REMEMBER_KEY, generateToken());
+      }
       toast.success('Admin access granted!');
     } else {
       toast.error('Incorrect password');
     }
+  };
+
+  const handleLock = () => {
+    setIsUnlocked(false);
+    setPassword('');
+    localStorage.removeItem(REMEMBER_KEY);
   };
 
   const formatTime = (ms: number) => {
@@ -117,6 +152,16 @@ const Admin: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
             />
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="remember"
+                checked={rememberDevice}
+                onCheckedChange={(checked) => setRememberDevice(checked === true)}
+              />
+              <Label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
+                Remember this device for 24 hours
+              </Label>
+            </div>
             <Button className="w-full" onClick={handleUnlock}>Unlock</Button>
           </div>
         </div>
@@ -134,7 +179,7 @@ const Admin: React.FC = () => {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Timer className="h-4 w-4" />
             <span>Session: {formatTime(remainingTime)}</span>
-            <Button variant="outline" size="sm" onClick={() => { setIsUnlocked(false); setPassword(''); }}>
+            <Button variant="outline" size="sm" onClick={handleLock}>
               Lock
             </Button>
           </div>

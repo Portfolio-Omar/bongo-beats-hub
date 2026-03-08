@@ -64,9 +64,17 @@ const PromotionsTab: React.FC = () => {
     try {
       const ext = adVideoFile.name.split('.').pop();
       const fileName = `ad-${Date.now()}.${ext}`;
+      
+      // Convert file to ArrayBuffer for reliable upload
+      const arrayBuffer = await adVideoFile.arrayBuffer();
+      
       const { error: uploadError } = await supabase.storage
         .from('Music Videos Storage')
-        .upload(fileName, adVideoFile);
+        .upload(fileName, arrayBuffer, {
+          contentType: adVideoFile.type,
+          cacheControl: '3600',
+          upsert: false,
+        });
 
       if (uploadError) throw uploadError;
 
@@ -84,8 +92,12 @@ const PromotionsTab: React.FC = () => {
       toast.success('Ad video uploaded!');
       setAdTitle('');
       setAdVideoFile(null);
+      // Reset file input
+      const fileInput = document.querySelector('input[type="file"][accept="video/*"]') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
       fetchAll();
     } catch (err: any) {
+      console.error('Ad upload error:', err);
       toast.error('Upload failed: ' + (err.message || 'Unknown error'));
     } finally {
       setUploading(false);
@@ -149,7 +161,7 @@ const PromotionsTab: React.FC = () => {
               <Input value={adTitle} onChange={(e) => setAdTitle(e.target.value)} placeholder="e.g. Sponsor Message" />
             </div>
             <div className="grid gap-2">
-              <Label>Video File (short clip)</Label>
+              <Label>Video File (short clip, max 20MB)</Label>
               <Input type="file" accept="video/*" onChange={(e) => setAdVideoFile(e.target.files?.[0] || null)} />
             </div>
             <Button onClick={uploadAdVideo} disabled={uploading}>
