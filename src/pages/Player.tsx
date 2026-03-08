@@ -44,6 +44,7 @@ const Player: React.FC = () => {
     playSong,
     setPlaylist,
     removeFromQueue,
+    audioRef,
   } = useAudio();
 
   const [isLiked, setIsLiked] = useState(false);
