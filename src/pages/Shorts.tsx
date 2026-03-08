@@ -560,7 +560,9 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean }> = ({ short, isAct
         )}
         <div className="flex items-center gap-3 mt-1">
           {short.uploaded_by && (
-            <span className="text-white/60 text-xs">@{short.uploaded_by}</span>
+            <button onClick={() => setProfileOpen(true)} className="text-white/60 text-xs hover:text-white/90 transition-colors">
+              @{short.uploaded_by}
+            </button>
           )}
           <span className="text-white/50 text-xs flex items-center gap-1">
             <Eye className="h-3 w-3" /> {formatCount(viewCount)}
