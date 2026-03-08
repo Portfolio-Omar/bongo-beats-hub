@@ -302,19 +302,22 @@ serve(async (req) => {
       });
     }
 
-    const client = new SmtpClient();
-    await client.connectTLS({
-      hostname: "smtp.gmail.com",
-      port: 465,
-      username: GMAIL_USER,
-      password: GMAIL_APP_PASSWORD,
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp.gmail.com",
+        port: 465,
+        tls: true,
+        auth: {
+          username: GMAIL_USER,
+          password: GMAIL_APP_PASSWORD,
+        },
+      },
     });
 
     await client.send({
       from: `${SITE_NAME} <${GMAIL_USER}>`,
       to: recipient,
       subject: template.subject,
-      content: "",
       html: template.html,
     });
 
