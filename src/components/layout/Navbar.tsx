@@ -102,6 +102,9 @@ const Navbar: React.FC = () => {
                     ))}
                     {isAuthenticated && (
                       <>
+                        <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-3"><User className="h-4 w-4" /> Profile</Button>
+                        </Link>
                         <Link to="/favorites" onClick={() => setMobileMenuOpen(false)}>
                           <Button variant="ghost" className="w-full justify-start gap-3"><Heart className="h-4 w-4" /> Favorites</Button>
                         </Link>
