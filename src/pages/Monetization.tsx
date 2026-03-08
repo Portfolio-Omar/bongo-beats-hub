@@ -52,6 +52,7 @@ const Monetization: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
   const [activeBoosterRate, setActiveBoosterRate] = useState<number | null>(null);
+  const [registrationStatus, setRegistrationStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthenticated && user) fetchData();
@@ -60,11 +61,12 @@ const Monetization: React.FC = () => {
 
   const fetchData = async () => {
     if (!user) return;
-    const [earningsRes, boostRes, withdrawRes, boosterRes] = await Promise.all([
+    const [earningsRes, boostRes, withdrawRes, boosterRes, regRes] = await Promise.all([
       supabase.from('user_earnings').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('share_boosts').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
       supabase.from('withdrawals').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
       supabase.from('booster_purchases').select('*').eq('user_id', user.id).eq('is_active', true).gt('expires_at', new Date().toISOString()).order('rate_per_song', { ascending: false }).limit(1),
+      supabase.from('registration_payments').select('status').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
     ]);
 
     if (earningsRes.data) setEarnings(earningsRes.data as Earnings);
@@ -78,6 +80,12 @@ const Monetization: React.FC = () => {
 
     if (boosterRes.data && boosterRes.data.length > 0) {
       setActiveBoosterRate((boosterRes.data[0] as any).rate_per_song);
+    }
+
+    if (regRes.data && regRes.data.length > 0) {
+      setRegistrationStatus((regRes.data[0] as any).status);
+    } else {
+      setRegistrationStatus('none');
     }
 
     if (withdrawRes.data) setWithdrawals(withdrawRes.data as Withdrawal[]);
@@ -160,6 +168,47 @@ const Monetization: React.FC = () => {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">💰 Monetization Dashboard</h1>
         <p className="text-muted-foreground mt-1">Earn KSh by listening to music</p>
       </motion.div>
+
+      {/* Registration Payment Banner */}
+      {registrationStatus !== 'verified' && (
+        <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className={registrationStatus === 'pending' ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-primary/50 bg-primary/5'}>
+            <CardContent className="pt-6 pb-4">
+              <div className="flex items-start gap-4">
+                {registrationStatus === 'pending' ? (
+                  <Clock className="h-8 w-8 text-yellow-500 shrink-0 mt-1" />
+                ) : (
+                  <AlertTriangle className="h-8 w-8 text-primary shrink-0 mt-1" />
+                )}
+                <div className="flex-1">
+                  {registrationStatus === 'pending' ? (
+                    <>
+                      <h3 className="font-semibold text-lg">Payment Under Review</h3>
+                      <p className="text-sm text-muted-foreground mt-1">Your M-Pesa payment is being verified by our admin team. You can stream music while you wait, but rewards will be activated once verified.</p>
+                    </>
+                  ) : registrationStatus === 'rejected' ? (
+                    <>
+                      <h3 className="font-semibold text-lg text-destructive">Payment Rejected</h3>
+                      <p className="text-sm text-muted-foreground mt-1">Your payment was not verified. Please submit a valid M-Pesa transaction code on your profile page.</p>
+                      <Button size="sm" className="mt-3" onClick={() => navigate('/profile')}>Go to Profile</Button>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="font-semibold text-lg">Activate Earnings – Pay KSh 150</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        To start earning from listening, pay a one-time registration fee of <strong>KSh 150</strong> via M-Pesa Buy Goods to <strong>4097548</strong>, then submit your transaction code on your profile. Streaming is free and always available!
+                      </p>
+                      <Button size="sm" className="mt-3" onClick={() => navigate('/profile')}>
+                        <CreditCard className="h-4 w-4 mr-2" /> Pay & Activate
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
