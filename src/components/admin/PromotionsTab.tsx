@@ -173,17 +173,18 @@ const PromotionsTab: React.FC = () => {
           <div className="space-y-2 mt-4">
             <h4 className="text-sm font-medium">Current Ad Videos</h4>
             {adVideos.length === 0 && <p className="text-sm text-muted-foreground">No ad videos uploaded yet</p>}
-            {adVideos.map((ad: any) => (
-              <div key={ad.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/40">
-                <div className="flex items-center gap-3">
-                  <Video className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">{ad.title}</p>
-                    <Badge variant={ad.is_active ? 'default' : 'secondary'} className="text-xs mt-1">
-                      {ad.is_active ? 'Active' : 'Disabled'}
-                    </Badge>
+             {adVideos.map((ad: any) => (
+              <div key={ad.id} className="flex flex-col gap-3 p-3 rounded-lg bg-muted/50 border border-border/40">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Video className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">{ad.title}</p>
+                      <Badge variant={ad.is_active ? 'default' : 'secondary'} className="text-xs mt-1">
+                        {ad.is_active ? 'Active' : 'Disabled'}
+                      </Badge>
+                    </div>
                   </div>
-                </div>
                 <div className="flex gap-1">
                   <Button size="sm" variant="outline" onClick={() => toggleAdVideo(ad.id, ad.is_active)}>
                     {ad.is_active ? 'Disable' : 'Enable'}
