@@ -149,7 +149,6 @@ const AudioFXPanel: React.FC<AudioFXPanelProps> = ({ audioElement, compact = fal
                     <div
                       className="absolute w-full bg-primary rounded-full transition-all"
                       style={{
-                        bottom: '50%',
                         height: `${Math.abs(gain) / 12 * 50}%`,
                         transform: gain < 0 ? 'translateY(100%)' : 'translateY(0)',
                         bottom: gain >= 0 ? '50%' : `${50 - Math.abs(gain) / 12 * 50}%`,
