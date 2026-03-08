@@ -10,7 +10,6 @@ import {
 import { Toggle } from '@/components/ui/toggle';
 
 const MobileMenu = () => {
-  const { isAuthenticated } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
