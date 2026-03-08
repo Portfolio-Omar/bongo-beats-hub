@@ -94,8 +94,8 @@ const Profile: React.FC = () => {
     const fileName = `${user.id}-${Date.now()}.${ext}`;
     
     const { error: uploadError } = await supabase.storage
-      .from('Album cover images storage')
-      .upload(`avatars/${fileName}`, file, { contentType: file.type, upsert: true });
+      .from('avatars')
+      .upload(`${user.id}/${fileName}`, file, { contentType: file.type, upsert: true });
 
     if (uploadError) {
       toast.error('Upload failed: ' + uploadError.message);
@@ -104,8 +104,8 @@ const Profile: React.FC = () => {
     }
 
     const { data: urlData } = supabase.storage
-      .from('Album cover images storage')
-      .getPublicUrl(`avatars/${fileName}`);
+      .from('avatars')
+      .getPublicUrl(`${user.id}/${fileName}`);
 
     setAvatarUrl(urlData.publicUrl);
     setUploading(false);
