@@ -58,6 +58,7 @@ const MonetizationTab: React.FC = () => {
   };
 
   const handleWithdrawal = async (id: string, status: 'approved' | 'rejected') => {
+    const withdrawal = withdrawals.find(w => w.id === id);
     const { error } = await supabase.from('withdrawals').update({
       status,
       processed_at: new Date().toISOString()
@@ -67,6 +68,15 @@ const MonetizationTab: React.FC = () => {
       toast.error('Failed to update withdrawal');
     } else {
       toast.success(`Withdrawal ${status}`);
+      if (withdrawal) {
+        const emailType = status === 'approved' ? 'withdrawal_approved' : 'withdrawal_rejected';
+        sendEmail(emailType, undefined, {
+          user_id: withdrawal.user_id,
+          amount: withdrawal.amount,
+          payment_method: withdrawal.payment_method,
+          payment_details: withdrawal.payment_details,
+        });
+      }
       fetchAll();
     }
   };
