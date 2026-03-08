@@ -385,6 +385,36 @@ const Player: React.FC = () => {
             </motion.div>
           </div>
 
+          {/* Bass Boost Controls */}
+          <div className="w-full max-w-md mb-4">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-card/30 backdrop-blur-sm border border-border/30">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleBassBoost}
+                className={`h-9 w-9 rounded-full flex-shrink-0 ${bassBoost.enabled ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}
+              >
+                <AudioLines className="h-4 w-4" />
+              </Button>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium">Bass Boost</span>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {bassBoost.enabled ? `+${bassBoost.gain}dB` : 'Off'}
+                  </span>
+                </div>
+                <Slider
+                  value={[bassBoost.gain]}
+                  onValueChange={(v) => setBassGain(v[0])}
+                  max={12}
+                  step={0.5}
+                  className="w-full"
+                  disabled={!bassBoost.enabled}
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Volume & Actions */}
           <div className="flex items-center justify-between w-full max-w-md gap-4">
             <div className="flex items-center gap-2 flex-1">
@@ -407,32 +437,17 @@ const Player: React.FC = () => {
 
             <div className="flex items-center gap-2">
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleFavorite}
-                  className="h-10 w-10 rounded-full"
-                >
+                <Button variant="ghost" size="icon" onClick={toggleFavorite} className="h-10 w-10 rounded-full">
                   <Heart className={`h-5 w-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                 </Button>
               </motion.div>
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleDownload}
-                  className="h-10 w-10 rounded-full"
-                >
+                <Button variant="ghost" size="icon" onClick={handleDownload} className="h-10 w-10 rounded-full">
                   {isAuthenticated ? <Download className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
                 </Button>
               </motion.div>
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleShare}
-                  className="h-10 w-10 rounded-full"
-                >
+                <Button variant="ghost" size="icon" onClick={handleShare} className="h-10 w-10 rounded-full">
                   <Share className="h-5 w-5" />
                 </Button>
               </motion.div>
