@@ -323,7 +323,7 @@ const Monetization: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="boosters">
-          <BoosterShop />
+          <BoosterShop isRegistered={isRegistered} />
         </TabsContent>
 
         <TabsContent value="withdraw">
