@@ -6,11 +6,6 @@ const ICE_SERVERS = [
   { urls: 'stun:stun1.l.google.com:19302' },
 ];
 
-interface PeerConnection {
-  pc: RTCPeerConnection;
-  peerId: string;
-}
-
 export function useBroadcaster(sessionId: string | null) {
   const [isLive, setIsLive] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);

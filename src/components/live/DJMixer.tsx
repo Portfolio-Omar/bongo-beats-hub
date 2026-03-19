@@ -30,7 +30,7 @@ const DJMixer: React.FC = () => {
   const [deckB, setDeckB] = useState<DeckState>(defaultDeck);
   const [crossfader, setCrossfader] = useState(50);
   const [masterVolume, setMasterVolume] = useState(80);
-  const [queue, setQueue] = useState<Song[]>([]);
+  const [_queue, _setQueue] = useState<Song[]>([]);
 
   const audioARef = useRef<HTMLAudioElement | null>(null);
   const audioBRef = useRef<HTMLAudioElement | null>(null);
