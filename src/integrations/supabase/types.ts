@@ -592,6 +592,124 @@ export type Database = {
           },
         ]
       }
+      live_chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_pinned: boolean
+          message: string
+          session_id: string
+          user_avatar: string | null
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          message: string
+          session_id: string
+          user_avatar?: string | null
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          message?: string
+          session_id?: string
+          user_avatar?: string | null
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          reaction_type: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reaction_type?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reaction_type?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_reactions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_sessions: {
+        Row: {
+          artist_name: string
+          created_at: string
+          created_by: string | null
+          ended_at: string | null
+          id: string
+          recording_url: string | null
+          scheduled_for: string | null
+          started_at: string | null
+          status: string
+          thumbnail_url: string | null
+          title: string
+          viewer_count: number
+        }
+        Insert: {
+          artist_name?: string
+          created_at?: string
+          created_by?: string | null
+          ended_at?: string | null
+          id?: string
+          recording_url?: string | null
+          scheduled_for?: string | null
+          started_at?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          title: string
+          viewer_count?: number
+        }
+        Update: {
+          artist_name?: string
+          created_at?: string
+          created_by?: string | null
+          ended_at?: string | null
+          id?: string
+          recording_url?: string | null
+          scheduled_for?: string | null
+          started_at?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          title?: string
+          viewer_count?: number
+        }
+        Relationships: []
+      }
       login_activity: {
         Row: {
           id: string

@@ -11,13 +11,14 @@ import PromotionsTab from '@/components/admin/PromotionsTab';
 import SecurityTab from '@/components/admin/SecurityTab';
 import PaymentVerificationTab from '@/components/admin/PaymentVerificationTab';
 import ShortsManagementTab from '@/components/admin/ShortsManagementTab';
+import GoLiveStudio from '@/components/live/GoLiveStudio';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { 
   Music, FileText, MessageSquare, 
-  Upload, Lock, BarChart3, Wallet, Megaphone, Shield, Timer, Video
+  Upload, Lock, BarChart3, Wallet, Megaphone, Shield, Timer, Video, Radio
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -224,6 +225,9 @@ const Admin: React.FC = () => {
                 <TabsTrigger value="shorts" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                   <Video className="h-4 w-4" /><span>Shorts</span>
                 </TabsTrigger>
+                <TabsTrigger value="live" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                  <Radio className="h-4 w-4" /><span>Go Live</span>
+                </TabsTrigger>
               </TabsList>
             </div>
             
@@ -260,6 +264,9 @@ const Admin: React.FC = () => {
               </TabsContent>
               <TabsContent value="shorts" className="mt-0">
                 <TabErrorBoundary name="Shorts"><ShortsManagementTab /></TabErrorBoundary>
+              </TabsContent>
+              <TabsContent value="live" className="mt-0">
+                <TabErrorBoundary name="Live"><GoLiveStudio /></TabErrorBoundary>
               </TabsContent>
             </div>
           </Tabs>
