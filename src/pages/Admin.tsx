@@ -18,7 +18,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { 
   Music, FileText, MessageSquare, 
-  Upload, Lock, BarChart3, Wallet, Megaphone, Shield, Timer, Video
+  Upload, Lock, BarChart3, Wallet, Megaphone, Shield, Timer, Video, Radio
 } from 'lucide-react';
 import { toast } from 'sonner';
 
