@@ -11,6 +11,7 @@ import PromotionsTab from '@/components/admin/PromotionsTab';
 import SecurityTab from '@/components/admin/SecurityTab';
 import PaymentVerificationTab from '@/components/admin/PaymentVerificationTab';
 import ShortsManagementTab from '@/components/admin/ShortsManagementTab';
+import GoLiveStudio from '@/components/live/GoLiveStudio';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
