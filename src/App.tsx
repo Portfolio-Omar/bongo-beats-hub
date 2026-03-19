@@ -65,6 +65,7 @@ const App = () => (
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/community" element={<Community />} />
                     <Route path="/shorts" element={<Shorts />} />
+                    <Route path="/live" element={<Live />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>
