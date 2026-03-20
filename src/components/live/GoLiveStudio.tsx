@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Video, Mic, MicOff, VideoOff, Monitor, MonitorOff, Radio, Square, Users, Clock, CalendarPlus, Download } from 'lucide-react';
+import { Video, Mic, MicOff, VideoOff, Monitor, MonitorOff, Radio, Square, Users, Clock, CalendarPlus } from 'lucide-react';
 import { useBroadcaster } from '@/hooks/useLiveStream';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
