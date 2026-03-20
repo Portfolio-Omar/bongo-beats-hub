@@ -76,6 +76,7 @@ const App = () => (
             <ListeningRewardTracker />
             <SecurityTracker />
             <ReferralNotifier />
+            <LiveNotifier />
             <AIChatbot />
           </BrowserRouter>
         </AudioProvider>

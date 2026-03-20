@@ -102,7 +102,7 @@ const GoLiveStudio: React.FC = () => {
 
     try {
       const fileName = `recordings/${sessionId}-${Date.now()}.webm`;
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('music_videos')
         .upload(fileName, blob, { contentType: 'video/webm' });
 

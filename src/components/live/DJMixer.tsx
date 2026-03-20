@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Play, Pause, Volume2, Disc3, Music, Waves, GripVertical, SkipForward, SkipBack, Repeat, Shuffle } from 'lucide-react';
+import { Play, Pause, Volume2, Disc3, Music, Waves, GripVertical, SkipForward, SkipBack, Repeat } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Song } from '@/types/music';
