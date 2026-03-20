@@ -32,6 +32,7 @@ import Shorts from "./pages/Shorts";
 import Live from "./pages/Live";
 import ListeningRewardTracker from "./components/monetization/ListeningRewardTracker";
 import SecurityTracker from "./components/SecurityTracker";
+import LiveNotifier from "./components/live/LiveNotifier";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,7 @@ const App = () => (
             <ListeningRewardTracker />
             <SecurityTracker />
             <ReferralNotifier />
+            <LiveNotifier />
             <AIChatbot />
           </BrowserRouter>
         </AudioProvider>

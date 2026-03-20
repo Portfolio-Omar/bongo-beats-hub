@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Maximize, Minimize, Radio, Users, Clock, Eye } from 'lucide-react';
+import { Maximize, Minimize, Radio, Users, Clock, Eye, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -30,7 +30,9 @@ const Live: React.FC = () => {
   const [activeSession, setActiveSession] = useState<LiveSession | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [playingRecording, setPlayingRecording] = useState<LiveSession | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const replayVideoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { remoteStream, connected, connect, disconnect } = useViewer(activeSession?.id || null);
@@ -56,7 +58,7 @@ const Live: React.FC = () => {
         .select('*')
         .eq('status', 'ended')
         .order('ended_at', { ascending: false })
-        .limit(10);
+        .limit(20);
       return (data || []) as LiveSession[];
     },
   });
@@ -106,6 +108,12 @@ const Live: React.FC = () => {
     const m = Math.floor((s % 3600) / 60);
     const sec = s % 60;
     return `${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  const getDurationBetween = (start: string | null, end: string | null) => {
+    if (!start || !end) return '';
+    const diff = Math.floor((new Date(end).getTime() - new Date(start).getTime()) / 1000);
+    return formatDuration(diff);
   };
 
   const liveSession = liveSessions?.find(s => s.status === 'live');
@@ -170,6 +178,36 @@ const Live: React.FC = () => {
             <LiveChat sessionId={liveSession.id} />
           </div>
         </div>
+      ) : playingRecording ? (
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="border-border/50 bg-card/80 backdrop-blur overflow-hidden">
+            <div className="relative aspect-video bg-black">
+              <video
+                ref={replayVideoRef}
+                src={playingRecording.recording_url || ''}
+                controls
+                autoPlay
+                className="w-full h-full object-contain"
+              />
+              <div className="absolute top-3 left-3 flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">📼 Replay</Badge>
+                <span className="text-white text-sm font-semibold">{playingRecording.artist_name}</span>
+              </div>
+            </div>
+            <CardContent className="p-3 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">{playingRecording.title}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {playingRecording.ended_at && format(new Date(playingRecording.ended_at), 'PPp')}
+                  {playingRecording.started_at && playingRecording.ended_at && ` • ${getDurationBetween(playingRecording.started_at, playingRecording.ended_at)}`}
+                </p>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => setPlayingRecording(null)}>
+                Close
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
       ) : (
         <Card className="border-border/50 bg-card/80 backdrop-blur">
           <CardContent className="py-16 text-center">
@@ -182,7 +220,7 @@ const Live: React.FC = () => {
 
       {/* Scheduled with countdown */}
       {scheduledSessions.length > 0 && (
-        <section>
+        <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
           <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" /> Upcoming Performances
           </h2>
@@ -205,30 +243,44 @@ const Live: React.FC = () => {
               </motion.div>
             ))}
           </div>
-        </section>
+        </motion.section>
       )}
 
       {/* Past Performances */}
       {pastSessions && pastSessions.length > 0 && (
-        <section>
+        <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
           <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
             <Eye className="h-5 w-5 text-primary" /> Past Performances
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {pastSessions.map(session => (
-              <Card key={session.id} className="border-border/50 bg-card/80 backdrop-blur hover:border-primary/30 transition-colors cursor-pointer">
+              <Card
+                key={session.id}
+                className={`border-border/50 bg-card/80 backdrop-blur hover:border-primary/30 transition-colors ${session.recording_url ? 'cursor-pointer' : ''}`}
+                onClick={() => session.recording_url && setPlayingRecording(session)}
+              >
                 <CardContent className="p-4">
-                  <Badge variant="outline" className="mb-2 text-xs">Ended</Badge>
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge variant="outline" className="text-xs">
+                      {session.recording_url ? '📼 Replay Available' : 'Ended'}
+                    </Badge>
+                    {session.recording_url && (
+                      <Play className="h-4 w-4 text-primary" />
+                    )}
+                  </div>
                   <h3 className="font-semibold">{session.title}</h3>
                   <p className="text-sm text-muted-foreground">{session.artist_name}</p>
                   {session.ended_at && (
-                    <p className="text-xs text-muted-foreground mt-1">{format(new Date(session.ended_at), 'PPp')}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {format(new Date(session.ended_at), 'PPp')}
+                      {session.started_at && ` • ${getDurationBetween(session.started_at, session.ended_at)}`}
+                    </p>
                   )}
                 </CardContent>
               </Card>
             ))}
           </div>
-        </section>
+        </motion.section>
       )}
     </div>
   );

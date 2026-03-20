@@ -25,8 +25,11 @@ const GoLiveStudio: React.FC = () => {
   const [liveDuration, setLiveDuration] = useState(0);
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
 
   const { isLive, localStream, screenStream, viewerCount, startMedia, startScreenShare, stopScreenShare, goLive, stopLive } = useBroadcaster(sessionId);
 
@@ -54,6 +57,83 @@ const GoLiveStudio: React.FC = () => {
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isLive]);
+
+  // Start recording when live starts
+  useEffect(() => {
+    if (isLive && localStream && !mediaRecorderRef.current) {
+      startRecording();
+    }
+  }, [isLive, localStream]);
+
+  const startRecording = () => {
+    const stream = screenStream || localStream;
+    if (!stream) return;
+
+    try {
+      recordedChunksRef.current = [];
+      const recorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm',
+      });
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          recordedChunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        if (recordedChunksRef.current.length > 0) {
+          const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+          await uploadRecording(blob);
+        }
+        setIsRecording(false);
+      };
+
+      recorder.start(1000); // record in 1s chunks
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+    } catch (e) {
+      console.error('Recording failed:', e);
+    }
+  };
+
+  const uploadRecording = async (blob: Blob) => {
+    if (!sessionId) return;
+
+    try {
+      const fileName = `recordings/${sessionId}-${Date.now()}.webm`;
+      const { error } = await supabase.storage
+        .from('music_videos')
+        .upload(fileName, blob, { contentType: 'video/webm' });
+
+      if (error) {
+        console.error('Upload error:', error);
+        // Offer local download as fallback
+        offerDownload(blob);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage.from('music_videos').getPublicUrl(fileName);
+      await supabase.from('live_sessions').update({
+        recording_url: urlData.publicUrl,
+      }).eq('id', sessionId);
+
+      toast({ title: '🎬 Recording saved!', description: 'Available in Past Performances' });
+    } catch (e) {
+      console.error('Upload failed:', e);
+      offerDownload(blob);
+    }
+  };
+
+  const offerDownload = (blob: Blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `live-recording-${Date.now()}.webm`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: 'Recording downloaded locally' });
+  };
 
   const handleStartPreview = async () => {
     const videoId = selectedVideo === 'default' ? undefined : selectedVideo;
@@ -83,6 +163,11 @@ const GoLiveStudio: React.FC = () => {
   }, [sessionId]);
 
   const handleStopLive = async () => {
+    // Stop recording first
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+    }
     await stopLive();
     toast({ title: 'Stream ended' });
   };
@@ -138,6 +223,12 @@ const GoLiveStudio: React.FC = () => {
         {isLive && (
           <div className="flex items-center gap-3">
             <Badge variant="destructive" className="animate-pulse">🔴 LIVE</Badge>
+            {isRecording && (
+              <Badge variant="outline" className="text-xs border-red-500/50 text-red-500">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse mr-1" />
+                REC
+              </Badge>
+            )}
             <Badge variant="secondary" className="flex items-center gap-1">
               <Clock className="h-3 w-3" />{formatDuration(liveDuration)}
             </Badge>
@@ -184,8 +275,13 @@ const GoLiveStudio: React.FC = () => {
                 </div>
               )}
               {isLive && (
-                <div className="absolute top-3 left-3">
+                <div className="absolute top-3 left-3 flex items-center gap-2">
                   <Badge variant="destructive" className="animate-pulse text-xs">🔴 LIVE</Badge>
+                  {isRecording && (
+                    <Badge variant="outline" className="text-xs bg-black/50 text-red-400 border-red-500/30">
+                      REC
+                    </Badge>
+                  )}
                 </div>
               )}
             </div>
@@ -199,7 +295,7 @@ const GoLiveStudio: React.FC = () => {
                     <SelectContent>
                       <SelectItem value="default">Default Camera</SelectItem>
                       {devices.video.map(d => (
-                        <SelectItem key={d.deviceId} value={d.deviceId || `video-${d.label}`}>
+                        <SelectItem key={d.deviceId} value={d.deviceId || `video-${d.label || 'cam'}`}>
                           {d.label || 'Camera'}
                         </SelectItem>
                       ))}
@@ -210,7 +306,7 @@ const GoLiveStudio: React.FC = () => {
                     <SelectContent>
                       <SelectItem value="default">Default Microphone</SelectItem>
                       {devices.audio.map(d => (
-                        <SelectItem key={d.deviceId} value={d.deviceId || `audio-${d.label}`}>
+                        <SelectItem key={d.deviceId} value={d.deviceId || `audio-${d.label || 'mic'}`}>
                           {d.label || 'Microphone'}
                         </SelectItem>
                       ))}
