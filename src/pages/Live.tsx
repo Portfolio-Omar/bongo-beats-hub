@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useViewer } from '@/hooks/useLiveStream';
 import LiveChat from '@/components/live/LiveChat';
 import LiveReactions from '@/components/live/LiveReactions';
+import CountdownTimer from '@/components/live/CountdownTimer';
 import { format } from 'date-fns';
 
 interface LiveSession {
@@ -34,7 +35,6 @@ const Live: React.FC = () => {
 
   const { remoteStream, connected, connect, disconnect } = useViewer(activeSession?.id || null);
 
-  // Fetch live sessions
   const { data: liveSessions } = useQuery({
     queryKey: ['live-sessions'],
     queryFn: async () => {
@@ -48,7 +48,6 @@ const Live: React.FC = () => {
     refetchInterval: 5000,
   });
 
-  // Past sessions
   const { data: pastSessions } = useQuery({
     queryKey: ['past-live-sessions'],
     queryFn: async () => {
@@ -62,7 +61,6 @@ const Live: React.FC = () => {
     },
   });
 
-  // Auto-select active live session
   useEffect(() => {
     const live = liveSessions?.find(s => s.status === 'live');
     if (live && !activeSession) {
@@ -70,7 +68,6 @@ const Live: React.FC = () => {
     }
   }, [liveSessions]);
 
-  // Connect to stream when session is set
   useEffect(() => {
     if (activeSession?.status === 'live') {
       connect();
@@ -78,14 +75,12 @@ const Live: React.FC = () => {
     }
   }, [activeSession?.id]);
 
-  // Set video source
   useEffect(() => {
     if (videoRef.current && remoteStream) {
       videoRef.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
 
-  // Elapsed timer
   useEffect(() => {
     if (!activeSession?.started_at) return;
     const start = new Date(activeSession.started_at).getTime();
@@ -118,7 +113,6 @@ const Live: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
-      {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-bold flex items-center gap-3">
           <Radio className="h-8 w-8 text-primary" />
@@ -129,13 +123,10 @@ const Live: React.FC = () => {
 
       {liveSession ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Main Video */}
           <div className="lg:col-span-2">
             <Card ref={containerRef} className="border-border/50 bg-card/80 backdrop-blur overflow-hidden relative">
               <div className="relative aspect-video bg-black">
                 <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-
-                {/* Overlay */}
                 <div className="absolute top-0 left-0 right-0 p-3 bg-gradient-to-b from-black/60 to-transparent">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -152,20 +143,14 @@ const Live: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
-                {/* Bottom overlay */}
                 <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-white font-semibold text-lg">{liveSession.title}</h3>
-                    </div>
+                    <h3 className="text-white font-semibold text-lg">{liveSession.title}</h3>
                     <Button size="icon" variant="ghost" onClick={toggleFullscreen} className="text-white hover:bg-white/20">
                       {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
                     </Button>
                   </div>
                 </div>
-
-                {/* Connection status */}
                 {!connected && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                     <div className="text-center text-white space-y-2">
@@ -174,19 +159,13 @@ const Live: React.FC = () => {
                     </div>
                   </div>
                 )}
-
-                {/* Reactions overlay */}
                 <LiveReactions sessionId={liveSession.id} />
               </div>
-
-              {/* Reactions bar */}
               <CardContent className="p-3 flex items-center justify-between">
                 <LiveReactions sessionId={liveSession.id} />
               </CardContent>
             </Card>
           </div>
-
-          {/* Chat */}
           <div className="lg:col-span-1 min-h-[400px]">
             <LiveChat sessionId={liveSession.id} />
           </div>
@@ -201,24 +180,29 @@ const Live: React.FC = () => {
         </Card>
       )}
 
-      {/* Scheduled */}
+      {/* Scheduled with countdown */}
       {scheduledSessions.length > 0 && (
         <section>
           <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" /> Upcoming
+            <Clock className="h-5 w-5 text-primary" /> Upcoming Performances
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {scheduledSessions.map(session => (
-              <Card key={session.id} className="border-border/50 bg-card/80 backdrop-blur">
-                <CardContent className="p-4">
-                  <Badge variant="secondary" className="mb-2 text-xs">Scheduled</Badge>
-                  <h3 className="font-semibold">{session.title}</h3>
-                  <p className="text-sm text-muted-foreground">{session.artist_name}</p>
-                  {session.scheduled_for && (
-                    <p className="text-xs text-primary mt-1">{format(new Date(session.scheduled_for), 'PPp')}</p>
-                  )}
-                </CardContent>
-              </Card>
+              <motion.div key={session.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                <Card className="border-border/50 bg-card/80 backdrop-blur hover:border-primary/30 transition-colors">
+                  <CardContent className="p-4 space-y-2">
+                    <Badge variant="secondary" className="text-xs">Scheduled</Badge>
+                    <h3 className="font-semibold">{session.title}</h3>
+                    <p className="text-sm text-muted-foreground">{session.artist_name}</p>
+                    {session.scheduled_for && (
+                      <>
+                        <p className="text-xs text-primary">{format(new Date(session.scheduled_for), 'PPp')}</p>
+                        <CountdownTimer targetDate={session.scheduled_for} />
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
         </section>

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { Play, Pause, Volume2, Disc3, Music } from 'lucide-react';
+import { Play, Pause, Volume2, Disc3, Music, Waves } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Song } from '@/types/music';
@@ -18,25 +18,56 @@ interface DeckState {
   mid: number;
   treble: number;
   gain: number;
+  echo: number;
+  reverb: number;
+  lpf: number;
 }
 
 const defaultDeck: DeckState = {
   song: null, isPlaying: false, currentTime: 0, duration: 0,
   volume: 0.8, bass: 0, mid: 0, treble: 0, gain: 1,
+  echo: 0, reverb: 0, lpf: 22050,
 };
+
+interface AudioNodes {
+  gain: GainNode;
+  bass: BiquadFilterNode;
+  mid: BiquadFilterNode;
+  treble: BiquadFilterNode;
+  delay: DelayNode;
+  delayGain: GainNode;
+  feedback: GainNode;
+  convolver: ConvolverNode;
+  reverbGain: GainNode;
+  dryGain: GainNode;
+  lpf: BiquadFilterNode;
+}
+
+function createImpulse(ctx: AudioContext, duration = 2, decay = 2): AudioBuffer {
+  const rate = ctx.sampleRate;
+  const length = rate * duration;
+  const buf = ctx.createBuffer(2, length, rate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buf.getChannelData(ch);
+    for (let i = 0; i < length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+    }
+  }
+  return buf;
+}
 
 const DJMixer: React.FC = () => {
   const [deckA, setDeckA] = useState<DeckState>(defaultDeck);
   const [deckB, setDeckB] = useState<DeckState>(defaultDeck);
   const [crossfader, setCrossfader] = useState(50);
   const [masterVolume, setMasterVolume] = useState(80);
-  const [_queue, _setQueue] = useState<Song[]>([]);
+  const [showFX, setShowFX] = useState(false);
 
   const audioARef = useRef<HTMLAudioElement | null>(null);
   const audioBRef = useRef<HTMLAudioElement | null>(null);
   const ctxRef = useRef<AudioContext | null>(null);
-  const nodesARef = useRef<{ gain: GainNode; bass: BiquadFilterNode; mid: BiquadFilterNode; treble: BiquadFilterNode } | null>(null);
-  const nodesBRef = useRef<{ gain: GainNode; bass: BiquadFilterNode; mid: BiquadFilterNode; treble: BiquadFilterNode } | null>(null);
+  const nodesARef = useRef<AudioNodes | null>(null);
+  const nodesBRef = useRef<AudioNodes | null>(null);
   const sourceARef = useRef<MediaElementAudioSourceNode | null>(null);
   const sourceBRef = useRef<MediaElementAudioSourceNode | null>(null);
 
@@ -55,16 +86,46 @@ const DJMixer: React.FC = () => {
     return ctx;
   }, []);
 
-  const createChain = useCallback((audio: HTMLAudioElement, ctx: AudioContext, sourceRef: React.MutableRefObject<MediaElementAudioSourceNode | null>) => {
+  const createChain = useCallback((audio: HTMLAudioElement, ctx: AudioContext, sourceRef: React.MutableRefObject<MediaElementAudioSourceNode | null>): AudioNodes | null => {
     if (sourceRef.current) return null;
     const source = ctx.createMediaElementSource(audio);
     sourceRef.current = source;
+
     const gain = ctx.createGain();
     const bass = ctx.createBiquadFilter(); bass.type = 'lowshelf'; bass.frequency.value = 200;
     const mid = ctx.createBiquadFilter(); mid.type = 'peaking'; mid.frequency.value = 1000; mid.Q.value = 1;
     const treble = ctx.createBiquadFilter(); treble.type = 'highshelf'; treble.frequency.value = 3000;
-    source.connect(bass).connect(mid).connect(treble).connect(gain).connect(ctx.destination);
-    return { gain, bass, mid, treble };
+
+    // Echo (delay + feedback)
+    const delay = ctx.createDelay(1.0); delay.delayTime.value = 0.3;
+    const feedback = ctx.createGain(); feedback.gain.value = 0;
+    const delayGain = ctx.createGain(); delayGain.gain.value = 0;
+
+    // Reverb (convolver)
+    const convolver = ctx.createConvolver();
+    convolver.buffer = createImpulse(ctx);
+    const reverbGain = ctx.createGain(); reverbGain.gain.value = 0;
+    const dryGain = ctx.createGain(); dryGain.gain.value = 1;
+
+    // Low-pass filter
+    const lpf = ctx.createBiquadFilter(); lpf.type = 'lowpass'; lpf.frequency.value = 22050; lpf.Q.value = 1;
+
+    // Chain: source -> bass -> mid -> treble -> lpf -> dryGain -> gain -> dest
+    //                                              \-> delay -> delayGain -> gain
+    //                                              \-> convolver -> reverbGain -> gain
+    source.connect(bass).connect(mid).connect(treble).connect(lpf);
+    
+    // Dry path
+    lpf.connect(dryGain).connect(gain).connect(ctx.destination);
+    
+    // Delay path
+    lpf.connect(delay).connect(feedback).connect(delay); // feedback loop
+    delay.connect(delayGain).connect(gain);
+    
+    // Reverb path
+    lpf.connect(convolver).connect(reverbGain).connect(gain);
+
+    return { gain, bass, mid, treble, delay, delayGain, feedback, convolver, reverbGain, dryGain, lpf };
   }, []);
 
   const loadToDeck = useCallback((deck: 'A' | 'B', song: Song) => {
@@ -125,29 +186,39 @@ const DJMixer: React.FC = () => {
     const masterGain = masterVolume / 100;
     const crossA = Math.min(1, (100 - crossfader) / 50);
     const crossB = Math.min(1, crossfader / 50);
-
     if (audioARef.current) audioARef.current.volume = deckA.volume * crossA * masterGain;
     if (audioBRef.current) audioBRef.current.volume = deckB.volume * crossB * masterGain;
   }, [crossfader, masterVolume, deckA.volume, deckB.volume]);
 
-  // Apply EQ
+  // Apply EQ + FX for deck A
   useEffect(() => {
-    if (nodesARef.current) {
-      nodesARef.current.bass.gain.value = deckA.bass;
-      nodesARef.current.mid.gain.value = deckA.mid;
-      nodesARef.current.treble.gain.value = deckA.treble;
-      nodesARef.current.gain.gain.value = deckA.gain;
-    }
-  }, [deckA.bass, deckA.mid, deckA.treble, deckA.gain]);
+    const n = nodesARef.current;
+    if (!n) return;
+    n.bass.gain.value = deckA.bass;
+    n.mid.gain.value = deckA.mid;
+    n.treble.gain.value = deckA.treble;
+    n.gain.gain.value = deckA.gain;
+    n.delayGain.gain.value = deckA.echo;
+    n.feedback.gain.value = Math.min(deckA.echo * 0.6, 0.85);
+    n.reverbGain.gain.value = deckA.reverb;
+    n.dryGain.gain.value = Math.max(0.3, 1 - deckA.reverb * 0.5);
+    n.lpf.frequency.value = deckA.lpf;
+  }, [deckA.bass, deckA.mid, deckA.treble, deckA.gain, deckA.echo, deckA.reverb, deckA.lpf]);
 
+  // Apply EQ + FX for deck B
   useEffect(() => {
-    if (nodesBRef.current) {
-      nodesBRef.current.bass.gain.value = deckB.bass;
-      nodesBRef.current.mid.gain.value = deckB.mid;
-      nodesBRef.current.treble.gain.value = deckB.treble;
-      nodesBRef.current.gain.gain.value = deckB.gain;
-    }
-  }, [deckB.bass, deckB.mid, deckB.treble, deckB.gain]);
+    const n = nodesBRef.current;
+    if (!n) return;
+    n.bass.gain.value = deckB.bass;
+    n.mid.gain.value = deckB.mid;
+    n.treble.gain.value = deckB.treble;
+    n.gain.gain.value = deckB.gain;
+    n.delayGain.gain.value = deckB.echo;
+    n.feedback.gain.value = Math.min(deckB.echo * 0.6, 0.85);
+    n.reverbGain.gain.value = deckB.reverb;
+    n.dryGain.gain.value = Math.max(0.3, 1 - deckB.reverb * 0.5);
+    n.lpf.frequency.value = deckB.lpf;
+  }, [deckB.bass, deckB.mid, deckB.treble, deckB.gain, deckB.echo, deckB.reverb, deckB.lpf]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -167,28 +238,18 @@ const DJMixer: React.FC = () => {
         </span>
       </div>
 
-      {/* Song name */}
       <div className="bg-background/50 rounded px-2 py-1 text-xs truncate border border-border/50">
         {deck.song ? `${deck.song.artist} - ${deck.song.title}` : 'No track loaded'}
       </div>
 
-      {/* Seek bar */}
-      <Slider
-        value={[deck.currentTime]}
-        max={deck.duration || 100}
-        step={0.1}
-        onValueChange={([v]) => seekDeck(deckKey, v)}
-        className="cursor-pointer"
-      />
+      <Slider value={[deck.currentTime]} max={deck.duration || 100} step={0.1} onValueChange={([v]) => seekDeck(deckKey, v)} className="cursor-pointer" />
 
-      {/* Controls */}
       <div className="flex items-center gap-2 justify-center">
         <Button size="icon" variant={deck.isPlaying ? "default" : "outline"} onClick={() => togglePlay(deckKey)} className="h-10 w-10 rounded-full">
           {deck.isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
         </Button>
       </div>
 
-      {/* Volume */}
       <div className="space-y-1">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Volume2 className="h-3 w-3" /> Vol
@@ -198,11 +259,11 @@ const DJMixer: React.FC = () => {
 
       {/* EQ */}
       <div className="grid grid-cols-3 gap-2 text-center">
-        {[
+        {([
           { label: 'BASS', key: 'bass' as const },
           { label: 'MID', key: 'mid' as const },
           { label: 'TREBLE', key: 'treble' as const },
-        ].map(({ label: eqLabel, key }) => (
+        ]).map(({ label: eqLabel, key }) => (
           <div key={key} className="space-y-1">
             <span className="text-[10px] text-muted-foreground font-bold">{eqLabel}</span>
             <Slider
@@ -221,16 +282,46 @@ const DJMixer: React.FC = () => {
         <span className="text-[10px] text-muted-foreground font-bold">GAIN</span>
         <Slider value={[deck.gain * 50]} max={100} onValueChange={([v]) => setDeck(prev => ({ ...prev, gain: v / 50 }))} />
       </div>
+
+      {/* FX Section */}
+      {showFX && (
+        <div className="space-y-2 pt-2 border-t border-border/30">
+          <div className="space-y-1">
+            <span className="text-[10px] text-muted-foreground font-bold">ECHO</span>
+            <Slider value={[deck.echo * 100]} max={100} onValueChange={([v]) => setDeck(prev => ({ ...prev, echo: v / 100 }))} />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[10px] text-muted-foreground font-bold">REVERB</span>
+            <Slider value={[deck.reverb * 100]} max={100} onValueChange={([v]) => setDeck(prev => ({ ...prev, reverb: v / 100 }))} />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[10px] text-muted-foreground font-bold">LPF CUTOFF</span>
+            <Slider
+              value={[Math.log2(deck.lpf / 200) / Math.log2(22050 / 200) * 100]}
+              max={100}
+              onValueChange={([v]) => {
+                const freq = 200 * Math.pow(22050 / 200, v / 100);
+                setDeck(prev => ({ ...prev, lpf: freq }));
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 
   return (
     <Card className="border-border/50 bg-card/80 backdrop-blur">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Music className="h-4 w-4 text-primary" />
-          DJ Mixer
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Music className="h-4 w-4 text-primary" />
+            DJ Mixer
+          </CardTitle>
+          <Button size="sm" variant={showFX ? "default" : "outline"} onClick={() => setShowFX(!showFX)} className="h-7 text-xs">
+            <Waves className="h-3 w-3 mr-1" /> FX
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">

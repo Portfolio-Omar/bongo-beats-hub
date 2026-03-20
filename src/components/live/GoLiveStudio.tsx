@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Video, Mic, MicOff, VideoOff, Monitor, MonitorOff, Radio, Square, Users, Clock } from 'lucide-react';
+import { Video, Mic, MicOff, VideoOff, Monitor, MonitorOff, Radio, Square, Users, Clock, CalendarPlus } from 'lucide-react';
 import { useBroadcaster } from '@/hooks/useLiveStream';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -20,15 +20,16 @@ const GoLiveStudio: React.FC = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isCamOff, setIsCamOff] = useState(false);
   const [devices, setDevices] = useState<{ video: MediaDeviceInfo[]; audio: MediaDeviceInfo[] }>({ video: [], audio: [] });
-  const [selectedVideo, setSelectedVideo] = useState('');
-  const [selectedAudio, setSelectedAudio] = useState('');
+  const [selectedVideo, setSelectedVideo] = useState('default');
+  const [selectedAudio, setSelectedAudio] = useState('default');
   const [liveDuration, setLiveDuration] = useState(0);
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('');
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { isLive, localStream, screenStream, viewerCount, startMedia, startScreenShare, stopScreenShare, goLive, stopLive } = useBroadcaster(sessionId);
 
-  // Get devices
   useEffect(() => {
     navigator.mediaDevices.enumerateDevices().then(devs => {
       setDevices({
@@ -38,14 +39,12 @@ const GoLiveStudio: React.FC = () => {
     });
   }, []);
 
-  // Preview local stream
   useEffect(() => {
     if (videoPreviewRef.current && localStream) {
       videoPreviewRef.current.srcObject = screenStream || localStream;
     }
   }, [localStream, screenStream]);
 
-  // Timer
   useEffect(() => {
     if (isLive) {
       setLiveDuration(0);
@@ -57,12 +56,13 @@ const GoLiveStudio: React.FC = () => {
   }, [isLive]);
 
   const handleStartPreview = async () => {
-    await startMedia(selectedVideo || undefined, selectedAudio || undefined);
+    const videoId = selectedVideo === 'default' ? undefined : selectedVideo;
+    const audioId = selectedAudio === 'default' ? undefined : selectedAudio;
+    await startMedia(videoId, audioId);
   };
 
   const handleGoLive = async () => {
     if (!user) { toast({ title: 'Please sign in', variant: 'destructive' }); return; }
-    // Create session
     const { data, error } = await supabase.from('live_sessions').insert({
       title,
       artist_name: artistName,
@@ -73,12 +73,9 @@ const GoLiveStudio: React.FC = () => {
 
     if (error || !data) { toast({ title: 'Failed to create session', variant: 'destructive' }); return; }
     setSessionId(data.id);
-    // Wait for state, then go live
-    setTimeout(() => goLive(), 100);
     toast({ title: '🔴 You are now LIVE!' });
   };
 
-  // Fix: goLive depends on sessionId, so call it after setting
   useEffect(() => {
     if (sessionId && !isLive) {
       goLive();
@@ -88,6 +85,23 @@ const GoLiveStudio: React.FC = () => {
   const handleStopLive = async () => {
     await stopLive();
     toast({ title: 'Stream ended' });
+  };
+
+  const handleSchedule = async () => {
+    if (!user) { toast({ title: 'Please sign in', variant: 'destructive' }); return; }
+    if (!scheduleDate || !scheduleTime) { toast({ title: 'Set date and time', variant: 'destructive' }); return; }
+    const scheduledFor = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+    const { error } = await supabase.from('live_sessions').insert({
+      title,
+      artist_name: artistName,
+      status: 'scheduled',
+      scheduled_for: scheduledFor,
+      created_by: user.id,
+    });
+    if (error) { toast({ title: 'Failed to schedule', variant: 'destructive' }); return; }
+    toast({ title: '📅 Performance scheduled!' });
+    setScheduleDate('');
+    setScheduleTime('');
   };
 
   const toggleMute = () => {
@@ -113,7 +127,6 @@ const GoLiveStudio: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
@@ -135,10 +148,30 @@ const GoLiveStudio: React.FC = () => {
         )}
       </div>
 
+      {/* Schedule Section */}
+      {!isLive && (
+        <Card className="border-border/50 bg-card/80 backdrop-blur">
+          <CardContent className="p-4">
+            <h3 className="text-sm font-bold flex items-center gap-2 mb-3">
+              <CalendarPlus className="h-4 w-4 text-primary" /> Schedule a Performance
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Performance title" className="h-9 text-sm" />
+              <Input value={artistName} onChange={e => setArtistName(e.target.value)} placeholder="Artist name" className="h-9 text-sm" />
+              <Input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className="h-9 text-sm" />
+              <div className="flex gap-2">
+                <Input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="h-9 text-sm flex-1" />
+                <Button size="sm" onClick={handleSchedule} variant="outline" className="h-9">
+                  <CalendarPlus className="h-4 w-4 mr-1" /> Schedule
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Main Column: Preview + Controls */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Video Preview */}
           <Card className="border-border/50 bg-card/80 backdrop-blur overflow-hidden">
             <div className="relative aspect-video bg-black rounded-t-lg">
               <video ref={videoPreviewRef} autoPlay muted playsInline className="w-full h-full object-cover" />
@@ -157,7 +190,6 @@ const GoLiveStudio: React.FC = () => {
               )}
             </div>
             <CardContent className="p-3">
-              {/* Device Selection */}
               {!isLive && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                   <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Performance title" className="h-9 text-sm" />
@@ -165,19 +197,28 @@ const GoLiveStudio: React.FC = () => {
                   <Select value={selectedVideo} onValueChange={setSelectedVideo}>
                     <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select Camera" /></SelectTrigger>
                     <SelectContent>
-                      {devices.video.map(d => <SelectItem key={d.deviceId} value={d.deviceId}>{d.label || 'Camera'}</SelectItem>)}
+                      <SelectItem value="default">Default Camera</SelectItem>
+                      {devices.video.map(d => (
+                        <SelectItem key={d.deviceId} value={d.deviceId || `video-${d.label}`}>
+                          {d.label || 'Camera'}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Select value={selectedAudio} onValueChange={setSelectedAudio}>
                     <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select Mic" /></SelectTrigger>
                     <SelectContent>
-                      {devices.audio.map(d => <SelectItem key={d.deviceId} value={d.deviceId}>{d.label || 'Microphone'}</SelectItem>)}
+                      <SelectItem value="default">Default Microphone</SelectItem>
+                      {devices.audio.map(d => (
+                        <SelectItem key={d.deviceId} value={d.deviceId || `audio-${d.label}`}>
+                          {d.label || 'Microphone'}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
               )}
 
-              {/* Control Buttons */}
               <div className="flex items-center gap-2 flex-wrap">
                 {!localStream && (
                   <Button onClick={handleStartPreview} variant="outline" size="sm">
@@ -209,11 +250,9 @@ const GoLiveStudio: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* DJ Mixer */}
           <DJMixer />
         </div>
 
-        {/* Sidebar: Chat */}
         <div className="lg:col-span-1">
           {sessionId ? (
             <LiveChat sessionId={sessionId} isAdmin />
