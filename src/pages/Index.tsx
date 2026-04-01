@@ -86,10 +86,12 @@ const Index: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-b from-background via-background to-card">
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10"
-          style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80)' }} />
-        <div className="absolute inset-0 bg-gradient-to-b from-gold/5 via-transparent to-transparent" />
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        {heroImages.map((img, i) => (
+          <div key={i} className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-[2000ms]"
+            style={{ backgroundImage: `url(${img})`, opacity: i === heroIndex ? 0.35 : 0 }} />
+        ))}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
         
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}
           className="relative text-center px-4 max-w-5xl mx-auto py-20">

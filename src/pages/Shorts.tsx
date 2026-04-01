@@ -856,10 +856,17 @@ const Shorts: React.FC = () => {
             </button>
           </div>
           {isAuthenticated && (
-            <Button onClick={() => setShowUpload(true)} size="icon"
-              className="rounded-full bg-white/20 hover:bg-white/30 text-white">
-              <Plus className="h-5 w-5" />
-            </Button>
+            <>
+              <Link to="/create-short">
+                <Button size="sm" className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground gap-1">
+                  <Clapperboard className="h-4 w-4" /> Create
+                </Button>
+              </Link>
+              <Button onClick={() => setShowUpload(true)} size="icon"
+                className="rounded-full bg-white/20 hover:bg-white/30 text-white">
+                <Plus className="h-5 w-5" />
+              </Button>
+            </>
           )}
         </div>
       </div>

@@ -20,6 +20,7 @@ const Navbar: React.FC = () => {
     { name: 'Playlists', path: '/playlists', icon: <ListMusic className="h-4 w-4" /> },
     { name: 'Community', path: '/community', icon: <Users className="h-4 w-4" /> },
     { name: 'Shorts', path: '/shorts', icon: <Play className="h-4 w-4" /> },
+    { name: 'Create Short', path: '/create-short', icon: <Clapperboard className="h-4 w-4" /> },
     { name: 'Live', path: '/live', icon: <Radio className="h-4 w-4" /> },
     { name: 'Earn', path: '/monetization', icon: <Wallet className="h-4 w-4" /> },
     { name: 'Leaderboard', path: '/leaderboard', icon: <Trophy className="h-4 w-4" /> },
