@@ -19,9 +19,19 @@ import heroBg1 from '@/assets/hero-bg-1.jpg';
 import heroBg2 from '@/assets/hero-bg-2.jpg';
 import heroBg3 from '@/assets/hero-bg-3.jpg';
 
+const heroImages = [heroBg1, heroBg2, heroBg3];
+
 const Index: React.FC = () => {
   const { playSong } = useAudio();
   const { isAuthenticated } = useAuth();
+  const [heroIndex, setHeroIndex] = React.useState(0);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setHeroIndex(prev => (prev + 1) % heroImages.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
 
   const { data: featuredSongs } = useQuery({
     queryKey: ['featured-songs'],
