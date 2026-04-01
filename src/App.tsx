@@ -68,6 +68,8 @@ const App = () => (
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/community" element={<Community />} />
                     <Route path="/shorts" element={<Shorts />} />
+                    <Route path="/create-short" element={<CreateShort />} />
+                    <Route path="/install" element={<Install />} />
                     <Route path="/live" element={<Live />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>

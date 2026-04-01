@@ -54,7 +54,7 @@ const CreateShort: React.FC = () => {
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const _canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Fetch songs
   useEffect(() => {
