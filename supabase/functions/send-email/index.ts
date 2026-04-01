@@ -253,6 +253,46 @@ ${btn("View All Feedback", SITE_URL + "/admin")}
 `),
   }),
 
+  short_published: (data) => ({
+    subject: `Your Short is Live! - ${SITE_NAME}`,
+    html: baseTemplate(`
+<h2 style="color:#18181b;margin:0 0 16px;">Your Short is Published!</h2>
+<p style="color:#3f3f46;line-height:1.6;">Hi ${data.name || "there"},</p>
+<p style="color:#3f3f46;line-height:1.6;">Your short <strong>"${data.title || "Untitled"}"</strong> has been published and is now visible to everyone!</p>
+<div style="background-color:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin:20px 0;text-align:center;">
+<p style="color:#166534;margin:0;font-weight:600;">🎬 Your short is now live</p>
+</div>
+${btn("View Your Short", SITE_URL + "/shorts")}
+`),
+  }),
+
+  short_liked: (data) => ({
+    subject: `Someone Liked Your Short! - ${SITE_NAME}`,
+    html: baseTemplate(`
+<h2 style="color:#18181b;margin:0 0 16px;">New Like on Your Short!</h2>
+<p style="color:#3f3f46;line-height:1.6;">Hi ${data.owner_name || "there"},</p>
+<p style="color:#3f3f46;line-height:1.6;"><strong>${data.liker_name || "Someone"}</strong> liked your short <strong>"${data.short_title || "your video"}"</strong>!</p>
+<div style="background-color:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:20px 0;text-align:center;">
+<p style="color:#991b1b;margin:0;font-size:28px;">❤️</p>
+<p style="color:#991b1b;margin:8px 0 0;font-weight:600;">New Like!</p>
+</div>
+${btn("View Your Shorts", SITE_URL + "/shorts")}
+`),
+  }),
+
+  admin_new_short: (data) => ({
+    subject: `New Short Uploaded - ${SITE_NAME}`,
+    html: baseTemplate(`
+<h2 style="color:#18181b;margin:0 0 16px;">New Short Uploaded</h2>
+<table style="width:100%;margin:20px 0;border-collapse:collapse;">
+<tr><td style="padding:8px 0;color:#71717a;">Uploader</td><td style="padding:8px 0;font-weight:600;color:#18181b;">${data.uploader || "Unknown"}</td></tr>
+<tr><td style="padding:8px 0;color:#71717a;">Title</td><td style="padding:8px 0;font-weight:600;color:#18181b;">${data.title || "Untitled"}</td></tr>
+<tr><td style="padding:8px 0;color:#71717a;">Email</td><td style="padding:8px 0;font-weight:600;color:#18181b;">${data.email || "N/A"}</td></tr>
+</table>
+${btn("Review in Admin Panel", SITE_URL + "/admin")}
+`),
+  }),
+
   admin_contact: (data) => ({
     subject: `Contact: ${data.subject || "New Message"} - ${SITE_NAME}`,
     html: baseTemplate(`
