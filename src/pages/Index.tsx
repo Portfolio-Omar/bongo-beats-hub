@@ -15,6 +15,9 @@ import { useAudio } from '@/context/AudioContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Song } from '@/types/music';
 import logo from '@/assets/logo.png';
+import heroBg1 from '@/assets/hero-bg-1.jpg';
+import heroBg2 from '@/assets/hero-bg-2.jpg';
+import heroBg3 from '@/assets/hero-bg-3.jpg';
 
 const Index: React.FC = () => {
   const { playSong } = useAudio();
