@@ -29,6 +29,8 @@ import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
 import Community from "./pages/Community";
 import Shorts from "./pages/Shorts";
+import CreateShort from "./pages/CreateShort";
+import Install from "./pages/Install";
 import Live from "./pages/Live";
 import ListeningRewardTracker from "./components/monetization/ListeningRewardTracker";
 import SecurityTracker from "./components/SecurityTracker";
