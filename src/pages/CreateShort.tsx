@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Upload, Music, Play, Pause, Volume2, VolumeX, Loader2, 
-  Image as ImageIcon, Video, Scissors, Search, Check, X, Eye
+  Image as ImageIcon, Video, Scissors, Search, Check, X, Eye,
+  Type, Palette, Sparkles, RotateCcw, FlipHorizontal, Crop,
+  ZoomIn, Sun, Contrast, SlidersHorizontal
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -23,8 +26,32 @@ interface Song {
   cover_url: string | null;
 }
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
-const MAX_DURATION = 60; // 1 minute
+interface TextOverlay {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  fontSize: number;
+  color: string;
+  fontFamily: string;
+}
+
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
+const MAX_DURATION = 60;
+
+const FILTERS = [
+  { name: 'None', value: 'none', css: '' },
+  { name: 'Warm', value: 'warm', css: 'sepia(0.3) saturate(1.4) brightness(1.1)' },
+  { name: 'Cool', value: 'cool', css: 'saturate(0.8) hue-rotate(20deg) brightness(1.05)' },
+  { name: 'Vintage', value: 'vintage', css: 'sepia(0.5) contrast(1.1) brightness(0.9)' },
+  { name: 'B&W', value: 'bw', css: 'grayscale(1) contrast(1.2)' },
+  { name: 'Vivid', value: 'vivid', css: 'saturate(1.8) contrast(1.1)' },
+  { name: 'Fade', value: 'fade', css: 'saturate(0.6) brightness(1.2) contrast(0.9)' },
+  { name: 'Drama', value: 'drama', css: 'contrast(1.4) saturate(1.2) brightness(0.95)' },
+];
+
+const FONT_FAMILIES = ['Arial', 'Georgia', 'Impact', 'Courier New', 'Comic Sans MS'];
+const TEXT_COLORS = ['#ffffff', '#000000', '#ff0000', '#ffff00', '#00ff00', '#00bfff', '#ff69b4', '#ffa500'];
 
 const CreateShort: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
@@ -35,6 +62,28 @@ const CreateShort: React.FC = () => {
   const [mediaPreview, setMediaPreview] = useState<string>('');
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const [mediaDuration, setMediaDuration] = useState(0);
+
+  // Video trimming
+  const [trimStart, setTrimStart] = useState([0]);
+  const [trimEnd, setTrimEnd] = useState([60]);
+  const [videoDurationRaw, setVideoDurationRaw] = useState(0);
+
+  // Filters & adjustments
+  const [selectedFilter, setSelectedFilter] = useState('none');
+  const [brightness, setBrightness] = useState([100]);
+  const [contrast, setContrast] = useState([100]);
+  const [saturation, setSaturation] = useState([100]);
+
+  // Text overlays
+  const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
+  const [newText, setNewText] = useState('');
+  const [textColor, setTextColor] = useState('#ffffff');
+  const [textFontSize, setTextFontSize] = useState([32]);
+  const [textFont, setTextFont] = useState('Arial');
+
+  // Flip/rotate
+  const [flipH, setFlipH] = useState(false);
+  const [rotation, setRotation] = useState(0);
 
   // Audio state
   const [songs, setSongs] = useState<Song[]>([]);
@@ -54,7 +103,6 @@ const CreateShort: React.FC = () => {
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const _canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Fetch songs
   useEffect(() => {
@@ -108,9 +156,13 @@ const CreateShort: React.FC = () => {
           return;
         }
         setMediaDuration(video.duration);
+        setVideoDurationRaw(video.duration);
+        setTrimStart([0]);
+        setTrimEnd([Math.floor(video.duration)]);
       };
     } else {
-      setMediaDuration(15); // Default 15s for images
+      setMediaDuration(15);
+      setVideoDurationRaw(0);
     }
   };
 
@@ -126,20 +178,52 @@ const CreateShort: React.FC = () => {
     setAudioPlaying(!audioPlaying);
   };
 
-  // Update audio volume
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = audioVolume[0] / 100;
     }
   }, [audioVolume]);
 
+  // Get combined CSS filter string
+  const getCombinedFilter = useCallback(() => {
+    const filterObj = FILTERS.find(f => f.value === selectedFilter);
+    const base = filterObj?.css || '';
+    const adjustments = `brightness(${brightness[0] / 100}) contrast(${contrast[0] / 100}) saturate(${saturation[0] / 100})`;
+    return `${base} ${adjustments}`.trim();
+  }, [selectedFilter, brightness, contrast, saturation]);
+
+  // Get transform string
+  const getTransform = useCallback(() => {
+    const parts: string[] = [];
+    if (flipH) parts.push('scaleX(-1)');
+    if (rotation) parts.push(`rotate(${rotation}deg)`);
+    return parts.join(' ') || 'none';
+  }, [flipH, rotation]);
+
+  // Add text overlay
+  const addTextOverlay = () => {
+    if (!newText.trim()) return;
+    setTextOverlays(prev => [...prev, {
+      id: Date.now().toString(),
+      text: newText.trim(),
+      x: 50, y: 50,
+      fontSize: textFontSize[0],
+      color: textColor,
+      fontFamily: textFont,
+    }]);
+    setNewText('');
+  };
+
+  const removeTextOverlay = (id: string) => {
+    setTextOverlays(prev => prev.filter(t => t.id !== id));
+  };
+
   // Toggle preview mode
   const handlePreview = () => {
     setPreviewMode(!previewMode);
     if (!previewMode) {
-      // Start playing both video and audio together
       if (videoRef.current) {
-        videoRef.current.currentTime = 0;
+        videoRef.current.currentTime = trimStart[0];
         videoRef.current.muted = muteOriginal;
         videoRef.current.play();
       }
@@ -155,6 +239,20 @@ const CreateShort: React.FC = () => {
     }
   };
 
+  // Enforce trim end during preview
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || mediaType !== 'video') return;
+    const handleTime = () => {
+      if (video.currentTime >= trimEnd[0]) {
+        video.pause();
+        video.currentTime = trimStart[0];
+      }
+    };
+    video.addEventListener('timeupdate', handleTime);
+    return () => video.removeEventListener('timeupdate', handleTime);
+  }, [trimEnd, trimStart, mediaType]);
+
   // Publish short
   const handlePublish = async () => {
     if (!mediaFile || !title.trim() || !user) {
@@ -164,7 +262,6 @@ const CreateShort: React.FC = () => {
 
     setPublishing(true);
     try {
-      // Upload media file
       const ext = mediaFile.name.split('.').pop();
       const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: uploadError } = await supabase.storage.from('shorts').upload(path, mediaFile);
@@ -173,11 +270,8 @@ const CreateShort: React.FC = () => {
       const { data: urlData } = supabase.storage.from('shorts').getPublicUrl(path);
       const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
 
-      // If it's an image, we need to create a video with the audio
-      // For now, upload as-is and let the player handle combining
       let finalVideoUrl = urlData.publicUrl;
 
-      // If image + audio selected, create a canvas-recorded video
       if (mediaType === 'image' && selectedSong) {
         toast.info('Creating video from image and audio...');
         finalVideoUrl = await createVideoFromImage(urlData.publicUrl, selectedSong.audio_url);
@@ -192,18 +286,8 @@ const CreateShort: React.FC = () => {
       });
       if (error) throw error;
 
-      // Send email to user
-      sendEmail('short_published', user.email, { 
-        name: userName, 
-        title: title.trim() 
-      });
-
-      // Notify admin
-      sendEmail('admin_new_short', undefined, { 
-        uploader: userName, 
-        title: title.trim(),
-        email: user.email 
-      });
+      sendEmail('short_published', user.email, { name: userName, title: title.trim() });
+      sendEmail('admin_new_short', undefined, { uploader: userName, title: title.trim(), email: user.email });
 
       toast.success('Short published successfully!');
       navigate('/shorts');
@@ -215,7 +299,6 @@ const CreateShort: React.FC = () => {
     }
   };
 
-  // Create video from image + audio using canvas recording
   const createVideoFromImage = async (imageUrl: string, audioUrl: string): Promise<string> => {
     return new Promise(async (resolve, reject) => {
       try {
@@ -229,7 +312,6 @@ const CreateShort: React.FC = () => {
         canvas.height = 1280;
         const ctx = canvas.getContext('2d')!;
 
-        // Draw image scaled to fill
         const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
         const x = (canvas.width - img.width * scale) / 2;
         const y = (canvas.height - img.height * scale) / 2;
@@ -263,10 +345,10 @@ const CreateShort: React.FC = () => {
         recorder.onstop = async () => {
           const blob = new Blob(chunks, { type: 'video/webm' });
           const file = new File([blob], `short_${Date.now()}.webm`, { type: 'video/webm' });
-          const path = `created_${Date.now()}.webm`;
-          const { error } = await supabase.storage.from('shorts').upload(path, file);
+          const uploadPath = `created_${Date.now()}.webm`;
+          const { error } = await supabase.storage.from('shorts').upload(uploadPath, file);
           if (error) { reject(error); return; }
-          const { data } = supabase.storage.from('shorts').getPublicUrl(path);
+          const { data } = supabase.storage.from('shorts').getPublicUrl(uploadPath);
           resolve(data.publicUrl);
         };
 
@@ -284,9 +366,34 @@ const CreateShort: React.FC = () => {
             if (recorder.state === 'recording') recorder.stop();
             return;
           }
+          ctx.save();
           ctx.fillStyle = '#000';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Apply filter via canvas filter property
+          ctx.filter = getCombinedFilter();
+          
+          // Apply transforms
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          if (flipH) ctx.scale(-1, 1);
+          if (rotation) ctx.rotate((rotation * Math.PI) / 180);
+          ctx.translate(-canvas.width / 2, -canvas.height / 2);
+          
           ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+          ctx.restore();
+
+          // Draw text overlays
+          textOverlays.forEach(overlay => {
+            ctx.save();
+            ctx.font = `bold ${overlay.fontSize}px ${overlay.fontFamily}`;
+            ctx.fillStyle = overlay.color;
+            ctx.textAlign = 'center';
+            ctx.shadowColor = 'rgba(0,0,0,0.7)';
+            ctx.shadowBlur = 4;
+            ctx.fillText(overlay.text, (overlay.x / 100) * canvas.width, (overlay.y / 100) * canvas.height);
+            ctx.restore();
+          });
+
           requestAnimationFrame(drawFrame);
         };
         drawFrame();
@@ -307,9 +414,9 @@ const CreateShort: React.FC = () => {
   }
 
   return (
-    <div className="container max-w-4xl py-6 sm:py-12">
+    <div className="container max-w-5xl py-6 sm:py-12">
       <h1 className="text-2xl sm:text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-        Create Short
+        🎬 Create Short
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -322,18 +429,10 @@ const CreateShort: React.FC = () => {
               Upload Media
             </h2>
             <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-              <Input
-                type="file"
-                accept="image/*,video/*"
-                onChange={handleMediaSelect}
-                className="hidden"
-                id="media-upload"
-              />
+              <Input type="file" accept="image/*,video/*" onChange={handleMediaSelect} className="hidden" id="media-upload" />
               <label htmlFor="media-upload" className="cursor-pointer space-y-2 block">
                 <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Upload image or video (max 20MB, 1 min)
-                </p>
+                <p className="text-sm text-muted-foreground">Upload image or video (max 20MB, 1 min)</p>
                 {mediaFile && (
                   <Badge variant="secondary" className="mt-2">
                     {mediaFile.name} ({(mediaFile.size / (1024 * 1024)).toFixed(1)}MB)
@@ -346,32 +445,42 @@ const CreateShort: React.FC = () => {
           {/* Preview */}
           {mediaPreview && (
             <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <div className="aspect-[9/16] relative bg-black max-h-[400px] mx-auto">
-                {mediaType === 'video' ? (
-                  <video
-                    ref={videoRef}
-                    src={mediaPreview}
-                    className="w-full h-full object-contain"
-                    loop
-                    muted={muteOriginal}
-                    playsInline
-                  />
-                ) : (
-                  <img
-                    src={mediaPreview}
-                    className="w-full h-full object-contain"
-                    alt="Preview"
-                  />
-                )}
-                {/* Preview overlay controls */}
+              <div className="aspect-[9/16] relative bg-black max-h-[450px] mx-auto overflow-hidden">
+                <div style={{ filter: getCombinedFilter(), transform: getTransform() }} className="w-full h-full">
+                  {mediaType === 'video' ? (
+                    <video ref={videoRef} src={mediaPreview} className="w-full h-full object-contain" loop muted={muteOriginal} playsInline />
+                  ) : (
+                    <img src={mediaPreview} className="w-full h-full object-contain" alt="Preview" />
+                  )}
+                </div>
+
+                {/* Text overlays on preview */}
+                {textOverlays.map(overlay => (
+                  <div
+                    key={overlay.id}
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: `${overlay.x}%`, top: `${overlay.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                      fontSize: `${overlay.fontSize * 0.5}px`,
+                      color: overlay.color,
+                      fontFamily: overlay.fontFamily,
+                      fontWeight: 'bold',
+                      textShadow: '2px 2px 4px rgba(0,0,0,0.7)',
+                    }}
+                  >
+                    {overlay.text}
+                  </div>
+                ))}
+
+                {/* Preview controls */}
                 <div className="absolute bottom-2 left-2 right-2 flex justify-between">
                   <Button size="sm" variant="secondary" className="bg-black/50 text-white" onClick={handlePreview}>
                     {previewMode ? <Pause className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
                     {previewMode ? 'Stop' : 'Preview'}
                   </Button>
                   {mediaType === 'video' && (
-                    <Button size="sm" variant="secondary" className="bg-black/50 text-white"
-                      onClick={() => setMuteOriginal(!muteOriginal)}>
+                    <Button size="sm" variant="secondary" className="bg-black/50 text-white" onClick={() => setMuteOriginal(!muteOriginal)}>
                       {muteOriginal ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
                     </Button>
                   )}
@@ -381,112 +490,234 @@ const CreateShort: React.FC = () => {
           )}
         </div>
 
-        {/* Right: Audio & Details */}
+        {/* Right: Tools & Details */}
         <div className="space-y-4">
-          {/* Audio selection */}
-          <div className="bg-card border border-border rounded-xl p-4 space-y-4">
-            <h2 className="font-semibold flex items-center gap-2">
-              <Music className="h-4 w-4 text-primary" /> Add Audio
-            </h2>
+          <Tabs defaultValue="audio" className="w-full">
+            <TabsList className="w-full grid grid-cols-4">
+              <TabsTrigger value="audio" className="text-xs gap-1"><Music className="h-3 w-3" /> Audio</TabsTrigger>
+              <TabsTrigger value="edit" className="text-xs gap-1"><SlidersHorizontal className="h-3 w-3" /> Edit</TabsTrigger>
+              <TabsTrigger value="text" className="text-xs gap-1"><Type className="h-3 w-3" /> Text</TabsTrigger>
+              <TabsTrigger value="filters" className="text-xs gap-1"><Sparkles className="h-3 w-3" /> Filters</TabsTrigger>
+            </TabsList>
 
-            {selectedSong ? (
-              <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                <div className="w-10 h-10 rounded bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Music className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{selectedSong.title}</p>
-                  <p className="text-xs text-muted-foreground truncate">{selectedSong.artist}</p>
-                </div>
-                <Button size="icon" variant="ghost" onClick={toggleAudioPreview}>
-                  {audioPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                </Button>
-                <Button size="icon" variant="ghost" onClick={() => { setSelectedSong(null); if (audioRef.current) audioRef.current.pause(); setAudioPlaying(false); }}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : null}
-
-            {selectedSong && (
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Volume</label>
-                  <Slider value={audioVolume} onValueChange={setAudioVolume} max={100} step={1} />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Start at (seconds)</label>
-                  <Slider value={audioStart} onValueChange={setAudioStart} max={180} step={1} />
-                  <span className="text-xs text-muted-foreground">{audioStart[0]}s</span>
-                </div>
-              </div>
-            )}
-
-            {/* Song search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search songs..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-
-            <ScrollArea className="h-48">
-              <div className="space-y-1">
-                {filteredSongs.slice(0, 50).map(song => (
-                  <button
-                    key={song.id}
-                    onClick={() => { setSelectedSong(song); setAudioPlaying(false); }}
-                    className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors hover:bg-muted/50 ${
-                      selectedSong?.id === song.id ? 'bg-primary/10 border border-primary/20' : ''
-                    }`}
-                  >
-                    <div className="w-8 h-8 rounded bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      {song.cover_url ? (
-                        <img src={song.cover_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <Music className="h-4 w-4 text-muted-foreground" />
-                      )}
+            {/* Audio Tab */}
+            <TabsContent value="audio" className="space-y-4">
+              <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+                {selectedSong ? (
+                  <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                    <div className="w-10 h-10 rounded bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Music className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{song.title}</p>
-                      <p className="text-xs text-muted-foreground truncate">{song.artist}</p>
+                      <p className="font-medium text-sm truncate">{selectedSong.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{selectedSong.artist}</p>
                     </div>
-                    {selectedSong?.id === song.id && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
-                  </button>
-                ))}
+                    <Button size="icon" variant="ghost" onClick={toggleAudioPreview}>
+                      {audioPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => { setSelectedSong(null); if (audioRef.current) audioRef.current.pause(); setAudioPlaying(false); }}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : null}
+
+                {selectedSong && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Volume</label>
+                      <Slider value={audioVolume} onValueChange={setAudioVolume} max={100} step={1} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Start at ({audioStart[0]}s)</label>
+                      <Slider value={audioStart} onValueChange={setAudioStart} max={180} step={1} />
+                    </div>
+                  </div>
+                )}
+
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Search songs..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9" />
+                </div>
+
+                <ScrollArea className="h-48">
+                  <div className="space-y-1">
+                    {filteredSongs.slice(0, 50).map(song => (
+                      <button
+                        key={song.id}
+                        onClick={() => { setSelectedSong(song); setAudioPlaying(false); }}
+                        className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors hover:bg-muted/50 ${
+                          selectedSong?.id === song.id ? 'bg-primary/10 border border-primary/20' : ''
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {song.cover_url ? (
+                            <img src={song.cover_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <Music className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{song.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">{song.artist}</p>
+                        </div>
+                        {selectedSong?.id === song.id && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
               </div>
-            </ScrollArea>
-          </div>
+            </TabsContent>
+
+            {/* Edit Tab - Trimming, Adjustments, Transform */}
+            <TabsContent value="edit" className="space-y-4">
+              {/* Video Trimming */}
+              {mediaType === 'video' && videoDurationRaw > 0 && (
+                <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <Scissors className="h-4 w-4 text-primary" /> Trim Video
+                  </h3>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Start: {trimStart[0].toFixed(1)}s</label>
+                      <Slider value={trimStart} onValueChange={(v) => { setTrimStart(v); if (v[0] >= trimEnd[0]) setTrimEnd([v[0] + 1]); }} max={videoDurationRaw} step={0.1} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">End: {trimEnd[0].toFixed(1)}s</label>
+                      <Slider value={trimEnd} onValueChange={(v) => { setTrimEnd(v); if (v[0] <= trimStart[0]) setTrimStart([v[0] - 1]); }} max={videoDurationRaw} step={0.1} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Duration: {(trimEnd[0] - trimStart[0]).toFixed(1)}s</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Adjustments */}
+              <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <SlidersHorizontal className="h-4 w-4 text-primary" /> Adjustments
+                </h3>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-xs text-muted-foreground flex items-center gap-1"><Sun className="h-3 w-3" /> Brightness: {brightness[0]}%</label>
+                    <Slider value={brightness} onValueChange={setBrightness} min={50} max={150} step={1} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground flex items-center gap-1"><Contrast className="h-3 w-3" /> Contrast: {contrast[0]}%</label>
+                    <Slider value={contrast} onValueChange={setContrast} min={50} max={150} step={1} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground flex items-center gap-1"><Palette className="h-3 w-3" /> Saturation: {saturation[0]}%</label>
+                    <Slider value={saturation} onValueChange={setSaturation} min={0} max={200} step={1} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Transform */}
+              <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+                <h3 className="font-semibold text-sm">Transform</h3>
+                <div className="flex gap-2">
+                  <Button size="sm" variant={flipH ? 'default' : 'outline'} onClick={() => setFlipH(!flipH)} className="gap-1">
+                    <FlipHorizontal className="h-4 w-4" /> Flip
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setRotation(r => (r + 90) % 360)} className="gap-1">
+                    <RotateCcw className="h-4 w-4" /> Rotate
+                  </Button>
+                  {(flipH || rotation !== 0) && (
+                    <Button size="sm" variant="ghost" onClick={() => { setFlipH(false); setRotation(0); }} className="text-xs">
+                      Reset
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Text Tab */}
+            <TabsContent value="text" className="space-y-4">
+              <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Type className="h-4 w-4 text-primary" /> Add Text Overlay
+                </h3>
+                <Input placeholder="Enter text..." value={newText} onChange={e => setNewText(e.target.value)} maxLength={50} />
+                <div className="flex gap-1 flex-wrap">
+                  {TEXT_COLORS.map(c => (
+                    <button key={c} onClick={() => setTextColor(c)}
+                      className={`w-7 h-7 rounded-full border-2 transition-all ${textColor === c ? 'border-primary scale-110' : 'border-transparent'}`}
+                      style={{ backgroundColor: c }} />
+                  ))}
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Font Size: {textFontSize[0]}px</label>
+                  <Slider value={textFontSize} onValueChange={setTextFontSize} min={16} max={64} step={1} />
+                </div>
+                <div className="flex gap-1 flex-wrap">
+                  {FONT_FAMILIES.map(f => (
+                    <button key={f} onClick={() => setTextFont(f)}
+                      className={`px-2 py-1 text-xs rounded border transition-colors ${textFont === f ? 'border-primary bg-primary/10' : 'border-border'}`}
+                      style={{ fontFamily: f }}>{f.split(' ')[0]}</button>
+                  ))}
+                </div>
+                <Button size="sm" onClick={addTextOverlay} disabled={!newText.trim()} className="w-full gap-1">
+                  <Type className="h-3 w-3" /> Add Text
+                </Button>
+
+                {textOverlays.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-border">
+                    <p className="text-xs text-muted-foreground">Added texts:</p>
+                    {textOverlays.map(t => (
+                      <div key={t.id} className="flex items-center justify-between bg-muted/50 px-3 py-1.5 rounded">
+                        <span className="text-sm truncate" style={{ color: t.color, fontFamily: t.fontFamily }}>{t.text}</span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeTextOverlay(t.id)}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Filters Tab */}
+            <TabsContent value="filters" className="space-y-4">
+              <div className="bg-card border border-border rounded-xl p-4">
+                <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                  <Sparkles className="h-4 w-4 text-primary" /> Filters
+                </h3>
+                <div className="grid grid-cols-4 gap-2">
+                  {FILTERS.map(filter => (
+                    <button
+                      key={filter.value}
+                      onClick={() => setSelectedFilter(filter.value)}
+                      className={`p-2 rounded-lg border text-center transition-all ${
+                        selectedFilter === filter.value ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="w-full aspect-square rounded bg-muted mb-1 overflow-hidden">
+                        {mediaPreview ? (
+                          <img src={mediaPreview} alt="" className="w-full h-full object-cover" style={{ filter: filter.css || 'none' }} />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center" style={{ filter: filter.css || 'none' }}>
+                            <Palette className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-medium">{filter.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
 
           {/* Details */}
           <div className="bg-card border border-border rounded-xl p-4 space-y-4">
             <h2 className="font-semibold flex items-center gap-2">
               <Scissors className="h-4 w-4 text-primary" /> Details
             </h2>
-            <Input
-              placeholder="Title *"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              maxLength={100}
-            />
-            <Textarea
-              placeholder="Description (optional)"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              rows={2}
-              maxLength={500}
-            />
+            <Input placeholder="Title *" value={title} onChange={e => setTitle(e.target.value)} maxLength={100} />
+            <Textarea placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} rows={2} maxLength={500} />
           </div>
 
           {/* Publish */}
-          <Button
-            onClick={handlePublish}
-            disabled={publishing || !mediaFile || !title.trim()}
-            className="w-full"
-            size="lg"
-          >
+          <Button onClick={handlePublish} disabled={publishing || !mediaFile || !title.trim()} className="w-full" size="lg">
             {publishing ? (
               <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Publishing...</>
             ) : (
@@ -496,14 +727,9 @@ const CreateShort: React.FC = () => {
         </div>
       </div>
 
-      {/* Hidden audio element for preview */}
+      {/* Hidden audio element */}
       {selectedSong && (
-        <audio
-          ref={audioRef}
-          src={selectedSong.audio_url}
-          onEnded={() => setAudioPlaying(false)}
-          preload="metadata"
-        />
+        <audio ref={audioRef} src={selectedSong.audio_url} onEnded={() => setAudioPlaying(false)} preload="metadata" />
       )}
     </div>
   );
