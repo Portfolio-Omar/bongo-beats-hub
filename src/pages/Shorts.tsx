@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { sendEmail } from '@/lib/send-email';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -345,6 +346,14 @@ const ShortCard: React.FC<{ short: Short; isActive: boolean; onVideoEnded?: () =
       await supabase.from('short_likes').insert({ short_id: short.id, user_id: user.id });
       setLiked(true);
       setLikeCount(c => c + 1);
+      // Notify video owner via email
+      const likerName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Someone';
+      sendEmail('short_liked', undefined, {
+        owner_name: short.uploaded_by,
+        liker_name: likerName,
+        short_title: short.title,
+        uploaded_by: short.uploaded_by,
+      });
     }
   };
 

@@ -29,6 +29,8 @@ import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
 import Community from "./pages/Community";
 import Shorts from "./pages/Shorts";
+import CreateShort from "./pages/CreateShort";
+import Install from "./pages/Install";
 import Live from "./pages/Live";
 import ListeningRewardTracker from "./components/monetization/ListeningRewardTracker";
 import SecurityTracker from "./components/SecurityTracker";
@@ -66,6 +68,8 @@ const App = () => (
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/community" element={<Community />} />
                     <Route path="/shorts" element={<Shorts />} />
+                    <Route path="/create-short" element={<CreateShort />} />
+                    <Route path="/install" element={<Install />} />
                     <Route path="/live" element={<Live />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
