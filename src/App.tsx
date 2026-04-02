@@ -32,6 +32,7 @@ import Shorts from "./pages/Shorts";
 import CreateShort from "./pages/CreateShort";
 import Install from "./pages/Install";
 import Live from "./pages/Live";
+import Downloads from "./pages/Downloads";
 import ListeningRewardTracker from "./components/monetization/ListeningRewardTracker";
 import SecurityTracker from "./components/SecurityTracker";
 import LiveNotifier from "./components/live/LiveNotifier";
