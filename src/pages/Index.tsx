@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Play, Music2, Headphones, Heart, Sparkles, Mic2, Radio, LogIn, User, Trophy, Wallet, Zap,
-  ListMusic, Users, Clapperboard, BookOpen, MessageSquare, Download, BarChart3
+  ListMusic, Users, Clapperboard, BookOpen, MessageSquare, Download
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SongOfTheWeek from '@/components/ui-custom/SongOfTheWeek';

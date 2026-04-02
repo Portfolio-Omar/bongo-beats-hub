@@ -72,6 +72,7 @@ const App = () => (
                     <Route path="/create-short" element={<CreateShort />} />
                     <Route path="/install" element={<Install />} />
                     <Route path="/live" element={<Live />} />
+                    <Route path="/downloads" element={<Downloads />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>

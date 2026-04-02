@@ -51,7 +51,6 @@ const openDB = (): Promise<IDBDatabase> => {
 
 const Downloads: React.FC = () => {
   const { isAuthenticated } = useAuth();
-  const { playSong } = useAudio();
   const navigate = useNavigate();
   const [downloads, setDownloads] = useState<DownloadedSong[]>([]);
   const [availableSongs, setAvailableSongs] = useState<AvailableSong[]>([]);
