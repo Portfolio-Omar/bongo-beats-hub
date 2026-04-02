@@ -11,8 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Upload, Music, Play, Pause, Volume2, VolumeX, Loader2, 
   Image as ImageIcon, Video, Scissors, Search, Check, X, Eye,
-  Type, Palette, Sparkles, RotateCcw, FlipHorizontal, Crop,
-  ZoomIn, Sun, Contrast, SlidersHorizontal
+  Type, Palette, Sparkles, RotateCcw, FlipHorizontal,
+  Sun, Contrast, SlidersHorizontal, Smile, Sticker, Images, Clock, Move, GripVertical
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -36,6 +36,14 @@ interface TextOverlay {
   fontFamily: string;
 }
 
+interface StickerOverlay {
+  id: string;
+  emoji: string;
+  x: number;
+  y: number;
+  size: number;
+}
+
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const MAX_DURATION = 60;
 
@@ -53,15 +61,38 @@ const FILTERS = [
 const FONT_FAMILIES = ['Arial', 'Georgia', 'Impact', 'Courier New', 'Comic Sans MS'];
 const TEXT_COLORS = ['#ffffff', '#000000', '#ff0000', '#ffff00', '#00ff00', '#00bfff', '#ff69b4', '#ffa500'];
 
+const EMOJI_STICKERS = [
+  '😀', '😂', '🥰', '😎', '🤩', '🥳', '🔥', '❤️', '💯', '⭐',
+  '🎵', '🎶', '🎤', '🎧', '🎸', '🥁', '🎹', '🎺', '💃', '🕺',
+  '👑', '💎', '🌟', '✨', '🦋', '🌈', '🍀', '🌸', '🎉', '🎊',
+  '👍', '👏', '🙌', '💪', '🤘', '✌️', '🤙', '💥', '⚡', '🌊',
+];
+
+const STICKER_OVERLAYS = [
+  '🎭', '🎪', '🎨', '🖼️', '📸', '🎬', '🎥', '📹', '🎞️', '📽️',
+  '🏆', '🥇', '🎖️', '🏅', '🎗️', '📿', '💍', '👓', '🕶️', '🎩',
+];
+
+const DURATION_OPTIONS = [
+  { label: '15s', value: 15 },
+  { label: '30s', value: 30 },
+  { label: '45s', value: 45 },
+  { label: '60s', value: 60 },
+];
+
 const CreateShort: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   // Media state
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string>('');
-  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
-  const [mediaDuration, setMediaDuration] = useState(0);
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
+  const [mediaType, setMediaType] = useState<'image' | 'video' | 'slideshow' | null>(null);
+  const [mediaDuration, setMediaDuration] = useState(15);
+  const [shortLength, setShortLength] = useState(15);
+
+  // Slideshow
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
   // Video trimming
   const [trimStart, setTrimStart] = useState([0]);
@@ -74,12 +105,17 @@ const CreateShort: React.FC = () => {
   const [contrast, setContrast] = useState([100]);
   const [saturation, setSaturation] = useState([100]);
 
-  // Text overlays
+  // Text overlays with dragging
   const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
   const [newText, setNewText] = useState('');
   const [textColor, setTextColor] = useState('#ffffff');
   const [textFontSize, setTextFontSize] = useState([32]);
   const [textFont, setTextFont] = useState('Arial');
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  // Sticker overlays
+  const [stickerOverlays, setStickerOverlays] = useState<StickerOverlay[]>([]);
+  const [draggingStickerId, setDraggingStickerId] = useState<string | null>(null);
 
   // Flip/rotate
   const [flipH, setFlipH] = useState(false);
@@ -103,8 +139,8 @@ const CreateShort: React.FC = () => {
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch songs
   useEffect(() => {
     const fetchSongs = async () => {
       const { data } = await supabase
@@ -122,36 +158,43 @@ const CreateShort: React.FC = () => {
     s.artist.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Handle media file selection
+  // Handle media file selection (single or multiple for slideshow)
   const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
 
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error('File too large. Maximum 20MB allowed.');
+    const totalSize = files.reduce((s, f) => s + f.size, 0);
+    if (totalSize > MAX_FILE_SIZE) {
+      toast.error('Total file size exceeds 20MB limit.');
       return;
     }
 
-    const isVideo = file.type.startsWith('video/');
-    const isImage = file.type.startsWith('image/');
+    const firstFile = files[0];
+    const isVideo = firstFile.type.startsWith('video/');
+    const allImages = files.every(f => f.type.startsWith('image/'));
 
-    if (!isVideo && !isImage) {
-      toast.error('Please upload an image or video file.');
+    if (isVideo && files.length > 1) {
+      toast.error('Only one video file can be uploaded at a time.');
       return;
     }
 
-    setMediaFile(file);
-    setMediaType(isVideo ? 'video' : 'image');
-    setMediaPreview(URL.createObjectURL(file));
+    if (!isVideo && !allImages) {
+      toast.error('Please upload images or a single video file.');
+      return;
+    }
 
     if (isVideo) {
+      setMediaFiles([firstFile]);
+      setMediaType('video');
+      setMediaPreviews([URL.createObjectURL(firstFile)]);
+
       const video = document.createElement('video');
-      video.src = URL.createObjectURL(file);
+      video.src = URL.createObjectURL(firstFile);
       video.onloadedmetadata = () => {
         if (video.duration > MAX_DURATION) {
           toast.error('Video must be 1 minute or less.');
-          setMediaFile(null);
-          setMediaPreview('');
+          setMediaFiles([]);
+          setMediaPreviews([]);
           setMediaType(null);
           return;
         }
@@ -159,14 +202,32 @@ const CreateShort: React.FC = () => {
         setVideoDurationRaw(video.duration);
         setTrimStart([0]);
         setTrimEnd([Math.floor(video.duration)]);
+        setShortLength(Math.floor(video.duration));
       };
+    } else if (files.length > 1) {
+      setMediaFiles(files);
+      setMediaType('slideshow');
+      setMediaPreviews(files.map(f => URL.createObjectURL(f)));
+      setMediaDuration(shortLength);
+      toast.success(`${files.length} images loaded for slideshow`);
     } else {
-      setMediaDuration(15);
-      setVideoDurationRaw(0);
+      setMediaFiles([firstFile]);
+      setMediaType('image');
+      setMediaPreviews([URL.createObjectURL(firstFile)]);
+      setMediaDuration(shortLength);
     }
   };
 
-  // Play/pause audio preview
+  // Slideshow auto-rotate
+  useEffect(() => {
+    if (mediaType !== 'slideshow' || !previewMode || mediaPreviews.length < 2) return;
+    const interval = shortLength / mediaPreviews.length;
+    const timer = setInterval(() => {
+      setCurrentSlideIndex(prev => (prev + 1) % mediaPreviews.length);
+    }, interval * 1000);
+    return () => clearInterval(timer);
+  }, [mediaType, previewMode, mediaPreviews.length, shortLength]);
+
   const toggleAudioPreview = () => {
     if (!audioRef.current) return;
     if (audioPlaying) {
@@ -179,12 +240,9 @@ const CreateShort: React.FC = () => {
   };
 
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = audioVolume[0] / 100;
-    }
+    if (audioRef.current) audioRef.current.volume = audioVolume[0] / 100;
   }, [audioVolume]);
 
-  // Get combined CSS filter string
   const getCombinedFilter = useCallback(() => {
     const filterObj = FILTERS.find(f => f.value === selectedFilter);
     const base = filterObj?.css || '';
@@ -192,7 +250,6 @@ const CreateShort: React.FC = () => {
     return `${base} ${adjustments}`.trim();
   }, [selectedFilter, brightness, contrast, saturation]);
 
-  // Get transform string
   const getTransform = useCallback(() => {
     const parts: string[] = [];
     if (flipH) parts.push('scaleX(-1)');
@@ -214,11 +271,65 @@ const CreateShort: React.FC = () => {
     setNewText('');
   };
 
-  const removeTextOverlay = (id: string) => {
-    setTextOverlays(prev => prev.filter(t => t.id !== id));
+  const removeTextOverlay = (id: string) => setTextOverlays(prev => prev.filter(t => t.id !== id));
+
+  // Add sticker
+  const addSticker = (emoji: string) => {
+    setStickerOverlays(prev => [...prev, {
+      id: Date.now().toString(),
+      emoji,
+      x: 50, y: 50,
+      size: 48,
+    }]);
   };
 
-  // Toggle preview mode
+  const removeSticker = (id: string) => setStickerOverlays(prev => prev.filter(s => s.id !== id));
+
+  // Dragging for text overlays
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent, id: string, type: 'text' | 'sticker') => {
+    e.preventDefault();
+    if (type === 'text') setDraggingId(id);
+    else setDraggingStickerId(id);
+  };
+
+  const handleDragMove = useCallback((e: MouseEvent | TouchEvent) => {
+    if (!draggingId && !draggingStickerId) return;
+    if (!previewContainerRef.current) return;
+
+    const rect = previewContainerRef.current.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const x = Math.max(5, Math.min(95, ((clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(5, Math.min(95, ((clientY - rect.top) / rect.height) * 100));
+
+    if (draggingId) {
+      setTextOverlays(prev => prev.map(t => t.id === draggingId ? { ...t, x, y } : t));
+    }
+    if (draggingStickerId) {
+      setStickerOverlays(prev => prev.map(s => s.id === draggingStickerId ? { ...s, x, y } : s));
+    }
+  }, [draggingId, draggingStickerId]);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggingId(null);
+    setDraggingStickerId(null);
+  }, []);
+
+  useEffect(() => {
+    if (draggingId || draggingStickerId) {
+      window.addEventListener('mousemove', handleDragMove);
+      window.addEventListener('mouseup', handleDragEnd);
+      window.addEventListener('touchmove', handleDragMove);
+      window.addEventListener('touchend', handleDragEnd);
+      return () => {
+        window.removeEventListener('mousemove', handleDragMove);
+        window.removeEventListener('mouseup', handleDragEnd);
+        window.removeEventListener('touchmove', handleDragMove);
+        window.removeEventListener('touchend', handleDragEnd);
+      };
+    }
+  }, [draggingId, draggingStickerId, handleDragMove, handleDragEnd]);
+
   const handlePreview = () => {
     setPreviewMode(!previewMode);
     if (!previewMode) {
@@ -239,7 +350,6 @@ const CreateShort: React.FC = () => {
     }
   };
 
-  // Enforce trim end during preview
   useEffect(() => {
     const video = videoRef.current;
     if (!video || mediaType !== 'video') return;
@@ -255,16 +365,18 @@ const CreateShort: React.FC = () => {
 
   // Publish short
   const handlePublish = async () => {
-    if (!mediaFile || !title.trim() || !user) {
+    if (!mediaFiles.length || !title.trim() || !user) {
       toast.error('Please add media and a title');
       return;
     }
 
     setPublishing(true);
     try {
-      const ext = mediaFile.name.split('.').pop();
+      // Upload first file
+      const mainFile = mediaFiles[0];
+      const ext = mainFile.name.split('.').pop();
       const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('shorts').upload(path, mediaFile);
+      const { error: uploadError } = await supabase.storage.from('shorts').upload(path, mainFile);
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage.from('shorts').getPublicUrl(path);
@@ -272,9 +384,12 @@ const CreateShort: React.FC = () => {
 
       let finalVideoUrl = urlData.publicUrl;
 
-      if (mediaType === 'image' && selectedSong) {
-        toast.info('Creating video from image and audio...');
-        finalVideoUrl = await createVideoFromImage(urlData.publicUrl, selectedSong.audio_url);
+      if ((mediaType === 'image' || mediaType === 'slideshow') && selectedSong) {
+        toast.info('Creating high-quality video...');
+        finalVideoUrl = await createVideoFromImages(
+          mediaType === 'slideshow' ? mediaPreviews : [urlData.publicUrl],
+          selectedSong.audio_url
+        );
       }
 
       const { error } = await supabase.from('shorts').insert({
@@ -299,22 +414,24 @@ const CreateShort: React.FC = () => {
     }
   };
 
-  const createVideoFromImage = async (imageUrl: string, audioUrl: string): Promise<string> => {
+  const createVideoFromImages = async (imageUrls: string[], audioUrl: string): Promise<string> => {
     return new Promise(async (resolve, reject) => {
       try {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.src = imageUrl;
-        await new Promise<void>((r, rj) => { img.onload = () => r(); img.onerror = () => rj(new Error('Image load failed')); });
+        // Load all images
+        const images: HTMLImageElement[] = [];
+        for (const url of imageUrls) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.src = url;
+          await new Promise<void>((r, rj) => { img.onload = () => r(); img.onerror = () => rj(new Error('Image load failed')); });
+          images.push(img);
+        }
 
         const canvas = document.createElement('canvas');
-        canvas.width = 720;
-        canvas.height = 1280;
-        const ctx = canvas.getContext('2d')!;
-
-        const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
-        const x = (canvas.width - img.width * scale) / 2;
-        const y = (canvas.height - img.height * scale) / 2;
+        // High quality output
+        canvas.width = 1080;
+        canvas.height = 1920;
+        const ctx = canvas.getContext('2d', { alpha: false })!;
 
         const audio = new Audio(audioUrl);
         audio.crossOrigin = 'anonymous';
@@ -338,7 +455,10 @@ const CreateShort: React.FC = () => {
 
         const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
           ? 'video/webm;codecs=vp8,opus' : 'video/webm';
-        const recorder = new MediaRecorder(combinedStream, { mimeType });
+        const recorder = new MediaRecorder(combinedStream, { 
+          mimeType,
+          videoBitsPerSecond: 5000000 // 5 Mbps for high quality
+        });
         const chunks: Blob[] = [];
         recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
 
@@ -356,8 +476,9 @@ const CreateShort: React.FC = () => {
         audio.currentTime = audioStart[0];
         audio.play();
 
-        const duration = Math.min(mediaDuration || 15, MAX_DURATION) * 1000;
+        const duration = shortLength * 1000;
         const startTime = Date.now();
+        const slideInterval = images.length > 1 ? duration / images.length : duration;
 
         const drawFrame = () => {
           const elapsed = Date.now() - startTime;
@@ -366,19 +487,25 @@ const CreateShort: React.FC = () => {
             if (recorder.state === 'recording') recorder.stop();
             return;
           }
+
+          // Select current image (slideshow support)
+          const imgIndex = images.length > 1 
+            ? Math.min(Math.floor(elapsed / slideInterval), images.length - 1)
+            : 0;
+          const img = images[imgIndex];
+
           ctx.save();
           ctx.fillStyle = '#000';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          // Apply filter via canvas filter property
           ctx.filter = getCombinedFilter();
-          
-          // Apply transforms
           ctx.translate(canvas.width / 2, canvas.height / 2);
           if (flipH) ctx.scale(-1, 1);
           if (rotation) ctx.rotate((rotation * Math.PI) / 180);
           ctx.translate(-canvas.width / 2, -canvas.height / 2);
-          
+
+          const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+          const x = (canvas.width - img.width * scale) / 2;
+          const y = (canvas.height - img.height * scale) / 2;
           ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
           ctx.restore();
 
@@ -391,6 +518,16 @@ const CreateShort: React.FC = () => {
             ctx.shadowColor = 'rgba(0,0,0,0.7)';
             ctx.shadowBlur = 4;
             ctx.fillText(overlay.text, (overlay.x / 100) * canvas.width, (overlay.y / 100) * canvas.height);
+            ctx.restore();
+          });
+
+          // Draw sticker overlays
+          stickerOverlays.forEach(sticker => {
+            ctx.save();
+            ctx.font = `${sticker.size}px serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(sticker.emoji, (sticker.x / 100) * canvas.width, (sticker.y / 100) * canvas.height);
             ctx.restore();
           });
 
@@ -413,6 +550,10 @@ const CreateShort: React.FC = () => {
     );
   }
 
+  const currentPreview = mediaType === 'slideshow' 
+    ? mediaPreviews[currentSlideIndex] || mediaPreviews[0]
+    : mediaPreviews[0];
+
   return (
     <div className="container max-w-5xl py-6 sm:py-12">
       <h1 className="text-2xl sm:text-3xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
@@ -429,36 +570,81 @@ const CreateShort: React.FC = () => {
               Upload Media
             </h2>
             <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-              <Input type="file" accept="image/*,video/*" onChange={handleMediaSelect} className="hidden" id="media-upload" />
+              <Input type="file" accept="image/*,video/*" multiple onChange={handleMediaSelect} className="hidden" id="media-upload" />
               <label htmlFor="media-upload" className="cursor-pointer space-y-2 block">
                 <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Upload image or video (max 20MB, 1 min)</p>
-                {mediaFile && (
-                  <Badge variant="secondary" className="mt-2">
-                    {mediaFile.name} ({(mediaFile.size / (1024 * 1024)).toFixed(1)}MB)
-                  </Badge>
+                <p className="text-sm text-muted-foreground">Upload image(s) or video (max 20MB, 1 min)</p>
+                <p className="text-xs text-muted-foreground">Select multiple images for slideshow</p>
+                {mediaFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-1 justify-center mt-2">
+                    {mediaFiles.map((f, i) => (
+                      <Badge key={i} variant="secondary" className="text-xs">
+                        {f.name.slice(0, 15)}... ({(f.size / (1024 * 1024)).toFixed(1)}MB)
+                      </Badge>
+                    ))}
+                  </div>
                 )}
               </label>
             </div>
+
+            {/* Short length selector */}
+            {mediaType !== 'video' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-primary" /> Short Length
+                </label>
+                <div className="flex gap-2">
+                  {DURATION_OPTIONS.map(opt => (
+                    <Button key={opt.value} size="sm"
+                      variant={shortLength === opt.value ? 'default' : 'outline'}
+                      onClick={() => { setShortLength(opt.value); setMediaDuration(opt.value); }}
+                      className="flex-1"
+                    >
+                      {opt.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Slideshow thumbnails */}
+            {mediaType === 'slideshow' && mediaPreviews.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {mediaPreviews.map((preview, i) => (
+                  <button key={i} onClick={() => setCurrentSlideIndex(i)}
+                    className={`w-16 h-16 rounded-lg overflow-hidden border-2 flex-shrink-0 ${
+                      currentSlideIndex === i ? 'border-primary' : 'border-border'
+                    }`}>
+                    <img src={preview} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+                <div className="flex items-center pl-2">
+                  <Badge variant="secondary" className="text-xs whitespace-nowrap">
+                    <Images className="h-3 w-3 mr-1" />
+                    {mediaPreviews.length} slides
+                  </Badge>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Preview */}
-          {mediaPreview && (
+          {currentPreview && (
             <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <div className="aspect-[9/16] relative bg-black max-h-[450px] mx-auto overflow-hidden">
+              <div ref={previewContainerRef} className="aspect-[9/16] relative bg-black max-h-[450px] mx-auto overflow-hidden select-none">
                 <div style={{ filter: getCombinedFilter(), transform: getTransform() }} className="w-full h-full">
                   {mediaType === 'video' ? (
-                    <video ref={videoRef} src={mediaPreview} className="w-full h-full object-contain" loop muted={muteOriginal} playsInline />
+                    <video ref={videoRef} src={currentPreview} className="w-full h-full object-contain" loop muted={muteOriginal} playsInline />
                   ) : (
-                    <img src={mediaPreview} className="w-full h-full object-contain" alt="Preview" />
+                    <img src={currentPreview} className="w-full h-full object-contain" alt="Preview" draggable={false} />
                   )}
                 </div>
 
-                {/* Text overlays on preview */}
+                {/* Draggable text overlays */}
                 {textOverlays.map(overlay => (
                   <div
                     key={overlay.id}
-                    className="absolute pointer-events-none"
+                    className="absolute cursor-move touch-none"
                     style={{
                       left: `${overlay.x}%`, top: `${overlay.y}%`,
                       transform: 'translate(-50%, -50%)',
@@ -467,11 +653,53 @@ const CreateShort: React.FC = () => {
                       fontFamily: overlay.fontFamily,
                       fontWeight: 'bold',
                       textShadow: '2px 2px 4px rgba(0,0,0,0.7)',
+                      zIndex: 10,
                     }}
+                    onMouseDown={(e) => handleDragStart(e, overlay.id, 'text')}
+                    onTouchStart={(e) => handleDragStart(e, overlay.id, 'text')}
                   >
-                    {overlay.text}
+                    <div className="flex items-center gap-1">
+                      <Move className="h-3 w-3 opacity-50" />
+                      {overlay.text}
+                    </div>
                   </div>
                 ))}
+
+                {/* Draggable sticker overlays */}
+                {stickerOverlays.map(sticker => (
+                  <div
+                    key={sticker.id}
+                    className="absolute cursor-move touch-none"
+                    style={{
+                      left: `${sticker.x}%`, top: `${sticker.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                      fontSize: `${sticker.size * 0.7}px`,
+                      zIndex: 10,
+                    }}
+                    onMouseDown={(e) => handleDragStart(e, sticker.id, 'sticker')}
+                    onTouchStart={(e) => handleDragStart(e, sticker.id, 'sticker')}
+                  >
+                    {sticker.emoji}
+                  </div>
+                ))}
+
+                {/* Duration badge */}
+                <div className="absolute top-2 right-2">
+                  <Badge className="bg-black/60 text-white border-none text-xs">
+                    <Clock className="h-3 w-3 mr-1" />
+                    {mediaType === 'video' ? `${(trimEnd[0] - trimStart[0]).toFixed(0)}s` : `${shortLength}s`}
+                  </Badge>
+                </div>
+
+                {/* Slideshow indicator */}
+                {mediaType === 'slideshow' && (
+                  <div className="absolute top-2 left-2">
+                    <Badge className="bg-black/60 text-white border-none text-xs">
+                      <Images className="h-3 w-3 mr-1" />
+                      {currentSlideIndex + 1}/{mediaPreviews.length}
+                    </Badge>
+                  </div>
+                )}
 
                 {/* Preview controls */}
                 <div className="absolute bottom-2 left-2 right-2 flex justify-between">
@@ -493,17 +721,18 @@ const CreateShort: React.FC = () => {
         {/* Right: Tools & Details */}
         <div className="space-y-4">
           <Tabs defaultValue="audio" className="w-full">
-            <TabsList className="w-full grid grid-cols-4">
+            <TabsList className="w-full grid grid-cols-5">
               <TabsTrigger value="audio" className="text-xs gap-1"><Music className="h-3 w-3" /> Audio</TabsTrigger>
               <TabsTrigger value="edit" className="text-xs gap-1"><SlidersHorizontal className="h-3 w-3" /> Edit</TabsTrigger>
               <TabsTrigger value="text" className="text-xs gap-1"><Type className="h-3 w-3" /> Text</TabsTrigger>
+              <TabsTrigger value="stickers" className="text-xs gap-1"><Smile className="h-3 w-3" /> Stickers</TabsTrigger>
               <TabsTrigger value="filters" className="text-xs gap-1"><Sparkles className="h-3 w-3" /> Filters</TabsTrigger>
             </TabsList>
 
             {/* Audio Tab */}
             <TabsContent value="audio" className="space-y-4">
               <div className="bg-card border border-border rounded-xl p-4 space-y-4">
-                {selectedSong ? (
+                {selectedSong && (
                   <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
                     <div className="w-10 h-10 rounded bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <Music className="h-5 w-5 text-primary" />
@@ -519,7 +748,7 @@ const CreateShort: React.FC = () => {
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-                ) : null}
+                )}
 
                 {selectedSong && (
                   <div className="space-y-3">
@@ -542,19 +771,12 @@ const CreateShort: React.FC = () => {
                 <ScrollArea className="h-48">
                   <div className="space-y-1">
                     {filteredSongs.slice(0, 50).map(song => (
-                      <button
-                        key={song.id}
-                        onClick={() => { setSelectedSong(song); setAudioPlaying(false); }}
+                      <button key={song.id} onClick={() => { setSelectedSong(song); setAudioPlaying(false); }}
                         className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors hover:bg-muted/50 ${
                           selectedSong?.id === song.id ? 'bg-primary/10 border border-primary/20' : ''
-                        }`}
-                      >
+                        }`}>
                         <div className="w-8 h-8 rounded bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
-                          {song.cover_url ? (
-                            <img src={song.cover_url} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <Music className="h-4 w-4 text-muted-foreground" />
-                          )}
+                          {song.cover_url ? <img src={song.cover_url} alt="" className="w-full h-full object-cover" /> : <Music className="h-4 w-4 text-muted-foreground" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{song.title}</p>
@@ -568,9 +790,8 @@ const CreateShort: React.FC = () => {
               </div>
             </TabsContent>
 
-            {/* Edit Tab - Trimming, Adjustments, Transform */}
+            {/* Edit Tab */}
             <TabsContent value="edit" className="space-y-4">
-              {/* Video Trimming */}
               {mediaType === 'video' && videoDurationRaw > 0 && (
                 <div className="bg-card border border-border rounded-xl p-4 space-y-3">
                   <h3 className="font-semibold text-sm flex items-center gap-2">
@@ -590,7 +811,6 @@ const CreateShort: React.FC = () => {
                 </div>
               )}
 
-              {/* Adjustments */}
               <div className="bg-card border border-border rounded-xl p-4 space-y-3">
                 <h3 className="font-semibold text-sm flex items-center gap-2">
                   <SlidersHorizontal className="h-4 w-4 text-primary" /> Adjustments
@@ -611,7 +831,6 @@ const CreateShort: React.FC = () => {
                 </div>
               </div>
 
-              {/* Transform */}
               <div className="bg-card border border-border rounded-xl p-4 space-y-3">
                 <h3 className="font-semibold text-sm">Transform</h3>
                 <div className="flex gap-2">
@@ -622,9 +841,7 @@ const CreateShort: React.FC = () => {
                     <RotateCcw className="h-4 w-4" /> Rotate
                   </Button>
                   {(flipH || rotation !== 0) && (
-                    <Button size="sm" variant="ghost" onClick={() => { setFlipH(false); setRotation(0); }} className="text-xs">
-                      Reset
-                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setFlipH(false); setRotation(0); }} className="text-xs">Reset</Button>
                   )}
                 </div>
               </div>
@@ -636,6 +853,9 @@ const CreateShort: React.FC = () => {
                 <h3 className="font-semibold text-sm flex items-center gap-2">
                   <Type className="h-4 w-4 text-primary" /> Add Text Overlay
                 </h3>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Move className="h-3 w-3" /> Drag text on preview to reposition
+                </p>
                 <Input placeholder="Enter text..." value={newText} onChange={e => setNewText(e.target.value)} maxLength={50} />
                 <div className="flex gap-1 flex-wrap">
                   {TEXT_COLORS.map(c => (
@@ -661,7 +881,7 @@ const CreateShort: React.FC = () => {
 
                 {textOverlays.length > 0 && (
                   <div className="space-y-2 pt-2 border-t border-border">
-                    <p className="text-xs text-muted-foreground">Added texts:</p>
+                    <p className="text-xs text-muted-foreground">Added texts (drag to reposition):</p>
                     {textOverlays.map(t => (
                       <div key={t.id} className="flex items-center justify-between bg-muted/50 px-3 py-1.5 rounded">
                         <span className="text-sm truncate" style={{ color: t.color, fontFamily: t.fontFamily }}>{t.text}</span>
@@ -675,6 +895,55 @@ const CreateShort: React.FC = () => {
               </div>
             </TabsContent>
 
+            {/* Stickers & Emoji Tab */}
+            <TabsContent value="stickers" className="space-y-4">
+              <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Smile className="h-4 w-4 text-primary" /> Emoji Stamps
+                </h3>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Move className="h-3 w-3" /> Tap to add, drag on preview to move
+                </p>
+                <div className="grid grid-cols-10 gap-1">
+                  {EMOJI_STICKERS.map(emoji => (
+                    <button key={emoji} onClick={() => addSticker(emoji)}
+                      className="w-8 h-8 flex items-center justify-center text-lg rounded hover:bg-muted/50 transition-colors">
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Sticker className="h-4 w-4 text-primary" /> Sticker Overlays
+                </h3>
+                <div className="grid grid-cols-10 gap-1">
+                  {STICKER_OVERLAYS.map(emoji => (
+                    <button key={emoji} onClick={() => addSticker(emoji)}
+                      className="w-8 h-8 flex items-center justify-center text-lg rounded hover:bg-muted/50 transition-colors">
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {stickerOverlays.length > 0 && (
+                <div className="bg-card border border-border rounded-xl p-4 space-y-2">
+                  <p className="text-xs text-muted-foreground">Added stickers:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {stickerOverlays.map(s => (
+                      <button key={s.id} onClick={() => removeSticker(s.id)}
+                        className="flex items-center gap-1 px-2 py-1 rounded bg-muted/50 hover:bg-destructive/10 transition-colors">
+                        <span className="text-lg">{s.emoji}</span>
+                        <X className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+
             {/* Filters Tab */}
             <TabsContent value="filters" className="space-y-4">
               <div className="bg-card border border-border rounded-xl p-4">
@@ -683,16 +952,13 @@ const CreateShort: React.FC = () => {
                 </h3>
                 <div className="grid grid-cols-4 gap-2">
                   {FILTERS.map(filter => (
-                    <button
-                      key={filter.value}
-                      onClick={() => setSelectedFilter(filter.value)}
+                    <button key={filter.value} onClick={() => setSelectedFilter(filter.value)}
                       className={`p-2 rounded-lg border text-center transition-all ${
                         selectedFilter === filter.value ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-border hover:border-primary/50'
-                      }`}
-                    >
+                      }`}>
                       <div className="w-full aspect-square rounded bg-muted mb-1 overflow-hidden">
-                        {mediaPreview ? (
-                          <img src={mediaPreview} alt="" className="w-full h-full object-cover" style={{ filter: filter.css || 'none' }} />
+                        {currentPreview ? (
+                          <img src={currentPreview} alt="" className="w-full h-full object-cover" style={{ filter: filter.css || 'none' }} />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center" style={{ filter: filter.css || 'none' }}>
                             <Palette className="h-4 w-4 text-muted-foreground" />
@@ -716,8 +982,7 @@ const CreateShort: React.FC = () => {
             <Textarea placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} rows={2} maxLength={500} />
           </div>
 
-          {/* Publish */}
-          <Button onClick={handlePublish} disabled={publishing || !mediaFile || !title.trim()} className="w-full" size="lg">
+          <Button onClick={handlePublish} disabled={publishing || !mediaFiles.length || !title.trim()} className="w-full" size="lg">
             {publishing ? (
               <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Publishing...</>
             ) : (
@@ -727,7 +992,6 @@ const CreateShort: React.FC = () => {
         </div>
       </div>
 
-      {/* Hidden audio element */}
       {selectedSong && (
         <audio ref={audioRef} src={selectedSong.audio_url} onEnded={() => setAudioPlaying(false)} preload="metadata" />
       )}

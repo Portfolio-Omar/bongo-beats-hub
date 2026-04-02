@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
-import { Menu, Home, Music, Settings, Moon, Sun, MessageSquare, BookOpen, User, LogOut, ListMusic, Heart, LogIn, Wallet, Trophy, Users, Play, Radio, Clapperboard } from 'lucide-react';
+import { Menu, Home, Music, Settings, Moon, Sun, User, LogOut, Heart, LogIn, Download } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import logo from '@/assets/logo.png';
 
@@ -17,23 +17,15 @@ const Navbar: React.FC = () => {
   const navItems = [
     { name: 'Home', path: '/', icon: <Home className="h-4 w-4" /> },
     { name: 'Music', path: '/music', icon: <Music className="h-4 w-4" /> },
-    { name: 'Playlists', path: '/playlists', icon: <ListMusic className="h-4 w-4" /> },
-    { name: 'Community', path: '/community', icon: <Users className="h-4 w-4" /> },
-    { name: 'Shorts', path: '/shorts', icon: <Play className="h-4 w-4" /> },
-    { name: 'Create Short', path: '/create-short', icon: <Clapperboard className="h-4 w-4" /> },
-    { name: 'Live', path: '/live', icon: <Radio className="h-4 w-4" /> },
-    { name: 'Earn', path: '/monetization', icon: <Wallet className="h-4 w-4" /> },
-    { name: 'Leaderboard', path: '/leaderboard', icon: <Trophy className="h-4 w-4" /> },
-    { name: 'Blog', path: '/blog', icon: <BookOpen className="h-4 w-4" /> },
-    { name: 'Feedback', path: '/feedback', icon: <MessageSquare className="h-4 w-4" /> },
+    { name: 'Downloads', path: '/downloads', icon: <Download className="h-4 w-4" /> },
   ];
 
   return (
     <header className="fixed top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-14 items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="Bongo Old Skool" className="h-10 w-10 rounded-full object-cover" />
+            <img src={logo} alt="Bongo Old Skool" className="h-9 w-9 rounded-full object-cover" />
             <span className="font-heading font-bold text-lg hidden sm:block bg-gradient-to-r from-gold to-yellow-600 bg-clip-text text-transparent">
               Bongo Old Skool
             </span>
@@ -56,7 +48,7 @@ const Navbar: React.FC = () => {
             </Button>
 
             {isAuthenticated ? (
-              <div className="hidden md:flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-1">
                 <Link to="/profile">
                   <Button variant="ghost" size="icon" className="rounded-full h-9 w-9"><User className="h-4 w-4" /></Button>
                 </Link>
@@ -67,7 +59,7 @@ const Navbar: React.FC = () => {
                   <Button variant="ghost" size="icon" className="rounded-full h-9 w-9"><Settings className="h-4 w-4" /></Button>
                 </Link>
                 <Button variant="ghost" size="sm" onClick={signOut} className="gap-2">
-                  <LogOut className="h-4 w-4" />Sign Out
+                  <LogOut className="h-4 w-4" />
                 </Button>
               </div>
             ) : (
@@ -75,11 +67,6 @@ const Navbar: React.FC = () => {
                 <Link to="/auth">
                   <Button variant="outline" size="sm" className="gap-2 border-gold/50 hover:bg-gold/10">
                     <LogIn className="h-4 w-4" />Sign In
-                  </Button>
-                </Link>
-                <Link to="/auth">
-                  <Button size="sm" className="gap-2 bg-gold hover:bg-gold/90 text-gold-foreground">
-                    <User className="h-4 w-4" />Register
                   </Button>
                 </Link>
               </div>
@@ -126,13 +113,11 @@ const Navbar: React.FC = () => {
                         <LogOut className="h-4 w-4" /> Sign Out
                       </Button>
                     ) : (
-                      <div className="space-y-2">
-                        <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
-                          <Button className="w-full gap-2 bg-gold hover:bg-gold/90 text-gold-foreground">
-                            <User className="h-4 w-4" /> Register / Sign In
-                          </Button>
-                        </Link>
-                      </div>
+                      <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
+                        <Button className="w-full gap-2 bg-gold hover:bg-gold/90 text-gold-foreground">
+                          <User className="h-4 w-4" /> Register / Sign In
+                        </Button>
+                      </Link>
                     )}
                   </div>
                 </div>

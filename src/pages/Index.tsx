@@ -4,7 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
-import { Play, Music2, Headphones, Heart, Sparkles, Mic2, Radio, LogIn, User, Trophy, Wallet, Zap } from 'lucide-react';
+import { 
+  Play, Music2, Headphones, Heart, Sparkles, Mic2, Radio, LogIn, User, Trophy, Wallet, Zap,
+  ListMusic, Users, Clapperboard, BookOpen, MessageSquare, Download, BarChart3
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import SongOfTheWeek from '@/components/ui-custom/SongOfTheWeek';
 import RecentlyPlayed from '@/components/ui-custom/RecentlyPlayed';
@@ -83,6 +86,20 @@ const Index: React.FC = () => {
     }
   };
 
+  // Sections that were removed from nav, now on homepage
+  const quickLinks = [
+    { name: 'Playlists', path: '/playlists', icon: ListMusic, desc: 'Create & manage playlists', color: 'text-purple-500' },
+    { name: 'Community', path: '/community', icon: Users, desc: 'Chat with music lovers', color: 'text-blue-500' },
+    { name: 'Shorts', path: '/shorts', icon: Play, desc: 'Watch & create short videos', color: 'text-pink-500' },
+    { name: 'Create Short', path: '/create-short', icon: Clapperboard, desc: 'Make your own short', color: 'text-orange-500' },
+    { name: 'Live', path: '/live', icon: Radio, desc: 'Live streams & DJ sets', color: 'text-red-500' },
+    { name: 'Earn', path: '/monetization', icon: Wallet, desc: 'Earn KSh by listening', color: 'text-green-500' },
+    { name: 'Leaderboard', path: '/leaderboard', icon: Trophy, desc: 'Top earners & listeners', color: 'text-gold' },
+    { name: 'Blog', path: '/blog', icon: BookOpen, desc: 'Music stories & news', color: 'text-indigo-500' },
+    { name: 'Feedback', path: '/feedback', icon: MessageSquare, desc: 'Share your thoughts', color: 'text-teal-500' },
+    { name: 'Downloads', path: '/downloads', icon: Download, desc: 'Offline music library', color: 'text-cyan-500' },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -102,7 +119,7 @@ const Index: React.FC = () => {
           </motion.div>
 
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.6, delay: 0.2 }}>
-            <h1 className="text-3xl sm:text-3xl sm:text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-heading font-bold mb-6 bg-gradient-to-r from-gold via-yellow-500 to-gold bg-clip-text text-transparent">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-heading font-bold mb-6 bg-gradient-to-r from-gold via-yellow-500 to-gold bg-clip-text text-transparent">
               Welcome to Bongo Old Skool!
             </h1>
           </motion.div>
@@ -170,6 +187,34 @@ const Index: React.FC = () => {
           </div>
         </section>
       )}
+
+      {/* Quick Access Sections */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto max-w-6xl">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10">
+            <h2 className="text-3xl md:text-5xl font-heading font-bold mb-3">Explore Everything</h2>
+            <p className="text-muted-foreground">Quick access to all features</p>
+          </motion.div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            {quickLinks.map((link, i) => (
+              <motion.div key={link.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }} viewport={{ once: true }}>
+                <Link to={link.path}>
+                  <Card className="group hover:shadow-lg transition-all duration-300 border-border hover:border-primary/30 h-full">
+                    <CardContent className="p-4 text-center flex flex-col items-center gap-2">
+                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <link.icon className={`h-6 w-6 ${link.color}`} />
+                      </div>
+                      <h3 className="font-semibold text-sm">{link.name}</h3>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{link.desc}</p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Earn While Listening CTA */}
       <section className="py-16 px-4 bg-gradient-to-r from-primary/5 via-gold/5 to-primary/5">
@@ -248,11 +293,8 @@ const Index: React.FC = () => {
       </section>
 
       <SongOfTheWeek />
-
-      {/* Recently Played */}
       <RecentlyPlayed />
 
-      {/* Promoted Songs on Homepage */}
       <section className="py-12 px-4">
         <div className="container mx-auto max-w-7xl">
           <PromotedSongs />
