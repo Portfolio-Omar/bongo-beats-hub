@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useAudio } from '@/context/AudioContext';
+
 import { 
   Download, Play, Pause, Search, Trash2, Music, Wifi, WifiOff, 
   HardDrive, Loader2, CheckCircle 
