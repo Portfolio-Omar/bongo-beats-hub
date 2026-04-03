@@ -238,6 +238,52 @@ const CreateShort: React.FC = () => {
     return () => clearInterval(timer);
   }, [mediaType, previewMode, mediaPreviews.length, shortLength]);
 
+  // Camera mode functions
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 1080, height: 1920 }, audio: true });
+      cameraStreamRef.current = stream;
+      if (cameraVideoRef.current) { cameraVideoRef.current.srcObject = stream; cameraVideoRef.current.play(); }
+      setCameraMode(true);
+    } catch { toast.error('Could not access camera'); }
+  };
+
+  const stopCamera = () => {
+    cameraStreamRef.current?.getTracks().forEach(t => t.stop());
+    cameraStreamRef.current = null;
+    setCameraMode(false);
+    setIsRecording(false);
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+  };
+
+  const stopRecording = () => {
+    cameraRecorderRef.current?.stop();
+    setIsRecording(false);
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    if (audioRef.current) audioRef.current.pause();
+  };
+
+  const startRecording = () => {
+    if (!cameraStreamRef.current) return;
+    cameraChunksRef.current = [];
+    const recorder = new MediaRecorder(cameraStreamRef.current, { mimeType: 'video/webm' });
+    cameraRecorderRef.current = recorder;
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) cameraChunksRef.current.push(e.data); };
+    recorder.onstop = () => {
+      const blob = new Blob(cameraChunksRef.current, { type: 'video/webm' });
+      const file = new File([blob], 'camera-recording.webm', { type: 'video/webm' });
+      setMediaFiles([file]); setMediaType('video'); setMediaPreviews([URL.createObjectURL(blob)]);
+      setMediaDuration(recordingTime); setVideoDurationRaw(recordingTime);
+      setTrimStart([0]); setTrimEnd([Math.floor(recordingTime)]); setShortLength(Math.min(Math.floor(recordingTime), 60));
+      stopCamera();
+    };
+    recorder.start(); setIsRecording(true); setRecordingTime(0);
+    if (selectedSong && audioRef.current) { audioRef.current.currentTime = audioStart[0]; audioRef.current.play(); }
+    recordingTimerRef.current = setInterval(() => {
+      setRecordingTime(prev => { if (prev >= shortLength) { stopRecording(); return prev; } return prev + 0.1; });
+    }, 100);
+  };
+
   const toggleAudioPreview = () => {
     if (!audioRef.current) return;
     if (audioPlaying) {
