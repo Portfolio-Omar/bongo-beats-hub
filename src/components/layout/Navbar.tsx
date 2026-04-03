@@ -47,6 +47,11 @@ const Navbar: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {isAuthenticated && <GamificationWidget compact />}
+            <Button variant="ghost" size="icon" onClick={() => setLanguage(language === 'en' ? 'sw' : 'en')} 
+              className="rounded-full h-9 w-9" title={language === 'en' ? 'Switch to Swahili' : 'Switch to English'}>
+              <Globe className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full h-9 w-9">
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
