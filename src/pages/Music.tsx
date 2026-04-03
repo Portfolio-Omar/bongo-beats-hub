@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Download, Play, Search, Grid, List, Music2, Disc, Lock } from 'lucide-react';
+import VoiceSearchButton from '@/components/voice/VoiceSearchButton';
 import { motion } from 'framer-motion';
 import { Song } from '@/types/music';
 import BackgroundSlideshow from '@/components/ui-custom/BackgroundSlideshow';
