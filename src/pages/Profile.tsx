@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { User, Camera, CheckCircle, Clock, AlertCircle, CreditCard } from 'lucide-react';
+import GamificationWidget from '@/components/gamification/GamificationWidget';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { sendEmail } from '@/lib/send-email';
@@ -287,6 +288,9 @@ const Profile: React.FC = () => {
           </CardContent>
         )}
       </Card>
+      
+      {/* Gamification */}
+      <GamificationWidget />
     </div>
   );
 };

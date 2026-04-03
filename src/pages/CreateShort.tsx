@@ -136,6 +136,16 @@ const CreateShort: React.FC = () => {
   const [publishing, setPublishing] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
 
+  // Camera recording (Snapchat mode)
+  const [cameraMode, setCameraMode] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const cameraVideoRef = useRef<HTMLVideoElement>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+  const cameraRecorderRef = useRef<MediaRecorder | null>(null);
+  const cameraChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -227,6 +237,52 @@ const CreateShort: React.FC = () => {
     }, interval * 1000);
     return () => clearInterval(timer);
   }, [mediaType, previewMode, mediaPreviews.length, shortLength]);
+
+  // Camera mode functions
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 1080, height: 1920 }, audio: true });
+      cameraStreamRef.current = stream;
+      if (cameraVideoRef.current) { cameraVideoRef.current.srcObject = stream; cameraVideoRef.current.play(); }
+      setCameraMode(true);
+    } catch { toast.error('Could not access camera'); }
+  };
+
+  const stopCamera = () => {
+    cameraStreamRef.current?.getTracks().forEach(t => t.stop());
+    cameraStreamRef.current = null;
+    setCameraMode(false);
+    setIsRecording(false);
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+  };
+
+  const stopRecording = () => {
+    cameraRecorderRef.current?.stop();
+    setIsRecording(false);
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    if (audioRef.current) audioRef.current.pause();
+  };
+
+  const startRecording = () => {
+    if (!cameraStreamRef.current) return;
+    cameraChunksRef.current = [];
+    const recorder = new MediaRecorder(cameraStreamRef.current, { mimeType: 'video/webm' });
+    cameraRecorderRef.current = recorder;
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) cameraChunksRef.current.push(e.data); };
+    recorder.onstop = () => {
+      const blob = new Blob(cameraChunksRef.current, { type: 'video/webm' });
+      const file = new File([blob], 'camera-recording.webm', { type: 'video/webm' });
+      setMediaFiles([file]); setMediaType('video'); setMediaPreviews([URL.createObjectURL(blob)]);
+      setMediaDuration(recordingTime); setVideoDurationRaw(recordingTime);
+      setTrimStart([0]); setTrimEnd([Math.floor(recordingTime)]); setShortLength(Math.min(Math.floor(recordingTime), 60));
+      stopCamera();
+    };
+    recorder.start(); setIsRecording(true); setRecordingTime(0);
+    if (selectedSong && audioRef.current) { audioRef.current.currentTime = audioStart[0]; audioRef.current.play(); }
+    recordingTimerRef.current = setInterval(() => {
+      setRecordingTime(prev => { if (prev >= shortLength) { stopRecording(); return prev; } return prev + 0.1; });
+    }, 100);
+  };
 
   const toggleAudioPreview = () => {
     if (!audioRef.current) return;
@@ -569,23 +625,54 @@ const CreateShort: React.FC = () => {
               {mediaType === 'video' ? <Video className="h-4 w-4 text-primary" /> : <ImageIcon className="h-4 w-4 text-primary" />}
               Upload Media
             </h2>
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-              <Input type="file" accept="image/*,video/*" multiple onChange={handleMediaSelect} className="hidden" id="media-upload" />
-              <label htmlFor="media-upload" className="cursor-pointer space-y-2 block">
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Upload image(s) or video (max 20MB, 1 min)</p>
-                <p className="text-xs text-muted-foreground">Select multiple images for slideshow</p>
-                {mediaFiles.length > 0 && (
-                  <div className="flex flex-wrap gap-1 justify-center mt-2">
-                    {mediaFiles.map((f, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">
-                        {f.name.slice(0, 15)}... ({(f.size / (1024 * 1024)).toFixed(1)}MB)
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </label>
-            </div>
+
+            {/* Camera mode */}
+            {cameraMode ? (
+              <div className="relative rounded-lg overflow-hidden bg-black aspect-[9/16] max-h-[400px]">
+                <video ref={cameraVideoRef} className="w-full h-full object-cover" muted playsInline />
+                <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center gap-2">
+                  {isRecording && (
+                    <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold animate-pulse">
+                      ● REC {recordingTime.toFixed(1)}s / {shortLength}s
+                    </div>
+                  )}
+                  <button
+                    onMouseDown={startRecording} onMouseUp={stopRecording} onMouseLeave={isRecording ? stopRecording : undefined}
+                    onTouchStart={startRecording} onTouchEnd={stopRecording}
+                    className={`w-20 h-20 rounded-full border-4 border-white flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 scale-110' : 'bg-white/30'}`}>
+                    <div className={`rounded-full ${isRecording ? 'w-8 h-8 bg-red-700 rounded-md' : 'w-14 h-14 bg-red-500'}`} />
+                  </button>
+                  <p className="text-white/80 text-xs">{isRecording ? 'Release to stop' : 'Hold to record'}</p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={stopCamera} className="absolute top-2 right-2 text-white">✕</Button>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-2 mb-3">
+                  <Button variant="outline" size="sm" onClick={startCamera} className="flex-1 gap-2 border-gold/30">
+                    <Video className="h-4 w-4" /> Camera Record
+                  </Button>
+                  <span className="text-xs text-muted-foreground self-center">or</span>
+                </div>
+                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                  <Input type="file" accept="image/*,video/*" multiple onChange={handleMediaSelect} className="hidden" id="media-upload" />
+                  <label htmlFor="media-upload" className="cursor-pointer space-y-2 block">
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Upload image(s) or video (max 20MB, 1 min)</p>
+                    <p className="text-xs text-muted-foreground">Select multiple images for slideshow</p>
+                    {mediaFiles.length > 0 && (
+                      <div className="flex flex-wrap gap-1 justify-center mt-2">
+                        {mediaFiles.map((f, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs">
+                            {f.name.slice(0, 15)}... ({(f.size / (1024 * 1024)).toFixed(1)}MB)
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </label>
+                </div>
+              </>
+            )}
 
             {/* Short length selector */}
             {mediaType !== 'video' && (

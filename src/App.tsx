@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { AudioProvider } from "@/context/AudioContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 import Layout from "@/components/layout/Layout";
 import EnhancedAudioPlayer from "@/components/ui-custom/EnhancedAudioPlayer";
 import AIChatbot from "@/components/chat/AIChatbot";
@@ -33,9 +34,11 @@ import CreateShort from "./pages/CreateShort";
 import Install from "./pages/Install";
 import Live from "./pages/Live";
 import Downloads from "./pages/Downloads";
+import Messages from "./pages/Messages";
 import ListeningRewardTracker from "./components/monetization/ListeningRewardTracker";
 import SecurityTracker from "./components/SecurityTracker";
 import LiveNotifier from "./components/live/LiveNotifier";
+import GamificationTracker from "./components/gamification/GamificationTracker";
 
 const queryClient = new QueryClient();
 
@@ -44,47 +47,51 @@ const App = () => (
     <TooltipProvider>
       <AuthProvider>
         <AudioProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/player" element={<Player />} />
-              <Route path="*" element={
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/music" element={<Music />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/feedback" element={<Feedback />} />
-                    <Route path="/favorites" element={<Favorites />} />
-                    <Route path="/playlists" element={<Playlists />} />
-                    <Route path="/admin" element={<Admin />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/menu" element={<MobileMenu />} />
-                    <Route path="/blog" element={<Blog />} />
-                    <Route path="/blog/:slug" element={<BlogDetail />} />
-                    <Route path="/monetization" element={<Monetization />} />
-                    <Route path="/leaderboard" element={<Leaderboard />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/community" element={<Community />} />
-                    <Route path="/shorts" element={<Shorts />} />
-                    <Route path="/create-short" element={<CreateShort />} />
-                    <Route path="/install" element={<Install />} />
-                    <Route path="/live" element={<Live />} />
-                    <Route path="/downloads" element={<Downloads />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Layout>
-              } />
-            </Routes>
-            <EnhancedAudioPlayer />
-            <ListeningRewardTracker />
-            <SecurityTracker />
-            <ReferralNotifier />
-            <LiveNotifier />
-            <AIChatbot />
-          </BrowserRouter>
+          <LanguageProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/player" element={<Player />} />
+                <Route path="*" element={
+                  <Layout>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/music" element={<Music />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/feedback" element={<Feedback />} />
+                      <Route path="/favorites" element={<Favorites />} />
+                      <Route path="/playlists" element={<Playlists />} />
+                      <Route path="/admin" element={<Admin />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/menu" element={<MobileMenu />} />
+                      <Route path="/blog" element={<Blog />} />
+                      <Route path="/blog/:slug" element={<BlogDetail />} />
+                      <Route path="/monetization" element={<Monetization />} />
+                      <Route path="/leaderboard" element={<Leaderboard />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/community" element={<Community />} />
+                      <Route path="/shorts" element={<Shorts />} />
+                      <Route path="/create-short" element={<CreateShort />} />
+                      <Route path="/install" element={<Install />} />
+                      <Route path="/live" element={<Live />} />
+                      <Route path="/downloads" element={<Downloads />} />
+                      <Route path="/messages" element={<Messages />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Layout>
+                } />
+              </Routes>
+              <EnhancedAudioPlayer />
+              <ListeningRewardTracker />
+              <SecurityTracker />
+              <ReferralNotifier />
+              <LiveNotifier />
+              <GamificationTracker />
+              <AIChatbot />
+            </BrowserRouter>
+          </LanguageProvider>
         </AudioProvider>
       </AuthProvider>
     </TooltipProvider>

@@ -90,6 +90,7 @@ const Index: React.FC = () => {
   const quickLinks = [
     { name: 'Playlists', path: '/playlists', icon: ListMusic, desc: 'Create & manage playlists', color: 'text-purple-500' },
     { name: 'Community', path: '/community', icon: Users, desc: 'Chat with music lovers', color: 'text-blue-500' },
+    { name: 'Messages', path: '/messages', icon: MessageSquare, desc: 'Private chats & song sharing', color: 'text-violet-500' },
     { name: 'Shorts', path: '/shorts', icon: Play, desc: 'Watch & create short videos', color: 'text-pink-500' },
     { name: 'Create Short', path: '/create-short', icon: Clapperboard, desc: 'Make your own short', color: 'text-orange-500' },
     { name: 'Live', path: '/live', icon: Radio, desc: 'Live streams & DJ sets', color: 'text-red-500' },
