@@ -129,11 +129,14 @@ const Music = () => {
         {/* Search & Filters - Advanced */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
           className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="relative flex-1 max-w-lg">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input placeholder="Search by title, artist, genre, or year..."
-              value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-card border-gold/30 focus:border-gold" />
+          <div className="relative flex-1 max-w-lg flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input placeholder="Search by title, artist, genre, or year..."
+                value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-card border-gold/30 focus:border-gold" />
+            </div>
+            <VoiceSearchButton onResult={(text) => setSearchQuery(text)} />
           </div>
           <div className="flex gap-2 flex-wrap">
             <Select value={filterGenre} onValueChange={setFilterGenre}>

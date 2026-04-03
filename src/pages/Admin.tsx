@@ -272,6 +272,9 @@ const Admin: React.FC = () => {
               <TabsContent value="live" className="mt-0">
                 <TabErrorBoundary name="Live"><GoLiveStudio /></TabErrorBoundary>
               </TabsContent>
+              <TabsContent value="gamification" className="mt-0">
+                <TabErrorBoundary name="Gamification"><GamificationTab /></TabErrorBoundary>
+              </TabsContent>
             </div>
           </Tabs>
         </div>
