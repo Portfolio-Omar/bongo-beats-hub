@@ -4,20 +4,24 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
-import { Menu, Home, Music, Settings, Moon, Sun, User, LogOut, Heart, LogIn, Download } from 'lucide-react';
+import { Menu, Home, Music, Settings, Moon, Sun, User, LogOut, Heart, LogIn, Download, MessageSquare, Globe } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useLanguage } from '@/context/LanguageContext';
+import GamificationWidget from '@/components/gamification/GamificationWidget';
 import logo from '@/assets/logo.png';
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { name: 'Home', path: '/', icon: <Home className="h-4 w-4" /> },
-    { name: 'Music', path: '/music', icon: <Music className="h-4 w-4" /> },
-    { name: 'Downloads', path: '/downloads', icon: <Download className="h-4 w-4" /> },
+    { name: t('home'), path: '/', icon: <Home className="h-4 w-4" /> },
+    { name: t('music'), path: '/music', icon: <Music className="h-4 w-4" /> },
+    { name: t('downloads'), path: '/downloads', icon: <Download className="h-4 w-4" /> },
+    { name: t('messages'), path: '/messages', icon: <MessageSquare className="h-4 w-4" /> },
   ];
 
   return (
