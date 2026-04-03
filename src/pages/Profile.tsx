@@ -288,6 +288,9 @@ const Profile: React.FC = () => {
           </CardContent>
         )}
       </Card>
+      
+      {/* Gamification */}
+      <GamificationWidget />
     </div>
   );
 };
