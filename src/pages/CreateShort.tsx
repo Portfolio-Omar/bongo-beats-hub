@@ -579,23 +579,54 @@ const CreateShort: React.FC = () => {
               {mediaType === 'video' ? <Video className="h-4 w-4 text-primary" /> : <ImageIcon className="h-4 w-4 text-primary" />}
               Upload Media
             </h2>
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-              <Input type="file" accept="image/*,video/*" multiple onChange={handleMediaSelect} className="hidden" id="media-upload" />
-              <label htmlFor="media-upload" className="cursor-pointer space-y-2 block">
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Upload image(s) or video (max 20MB, 1 min)</p>
-                <p className="text-xs text-muted-foreground">Select multiple images for slideshow</p>
-                {mediaFiles.length > 0 && (
-                  <div className="flex flex-wrap gap-1 justify-center mt-2">
-                    {mediaFiles.map((f, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">
-                        {f.name.slice(0, 15)}... ({(f.size / (1024 * 1024)).toFixed(1)}MB)
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </label>
-            </div>
+
+            {/* Camera mode */}
+            {cameraMode ? (
+              <div className="relative rounded-lg overflow-hidden bg-black aspect-[9/16] max-h-[400px]">
+                <video ref={cameraVideoRef} className="w-full h-full object-cover" muted playsInline />
+                <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center gap-2">
+                  {isRecording && (
+                    <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold animate-pulse">
+                      ● REC {recordingTime.toFixed(1)}s / {shortLength}s
+                    </div>
+                  )}
+                  <button
+                    onMouseDown={startRecording} onMouseUp={stopRecording} onMouseLeave={isRecording ? stopRecording : undefined}
+                    onTouchStart={startRecording} onTouchEnd={stopRecording}
+                    className={`w-20 h-20 rounded-full border-4 border-white flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 scale-110' : 'bg-white/30'}`}>
+                    <div className={`rounded-full ${isRecording ? 'w-8 h-8 bg-red-700 rounded-md' : 'w-14 h-14 bg-red-500'}`} />
+                  </button>
+                  <p className="text-white/80 text-xs">{isRecording ? 'Release to stop' : 'Hold to record'}</p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={stopCamera} className="absolute top-2 right-2 text-white">✕</Button>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-2 mb-3">
+                  <Button variant="outline" size="sm" onClick={startCamera} className="flex-1 gap-2 border-gold/30">
+                    <Video className="h-4 w-4" /> Camera Record
+                  </Button>
+                  <span className="text-xs text-muted-foreground self-center">or</span>
+                </div>
+                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                  <Input type="file" accept="image/*,video/*" multiple onChange={handleMediaSelect} className="hidden" id="media-upload" />
+                  <label htmlFor="media-upload" className="cursor-pointer space-y-2 block">
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Upload image(s) or video (max 20MB, 1 min)</p>
+                    <p className="text-xs text-muted-foreground">Select multiple images for slideshow</p>
+                    {mediaFiles.length > 0 && (
+                      <div className="flex flex-wrap gap-1 justify-center mt-2">
+                        {mediaFiles.map((f, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs">
+                            {f.name.slice(0, 15)}... ({(f.size / (1024 * 1024)).toFixed(1)}MB)
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </label>
+                </div>
+              </>
+            )}
 
             {/* Short length selector */}
             {mediaType !== 'video' && (
