@@ -229,6 +229,9 @@ const Admin: React.FC = () => {
                 <TabsTrigger value="live" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                   <Radio className="h-4 w-4" /><span>Go Live</span>
                 </TabsTrigger>
+                <TabsTrigger value="gamification" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                  <Trophy className="h-4 w-4" /><span>Gamification</span>
+                </TabsTrigger>
               </TabsList>
             </div>
             
