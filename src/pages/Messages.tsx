@@ -42,6 +42,29 @@ const Messages: React.FC = () => {
     if (!isAuthenticated) navigate('/auth');
   }, [isAuthenticated]);
 
+  // Realtime subscription so new conversations and messages refresh automatically
+  useEffect(() => {
+    if (!user) return;
+    const ch = supabase
+      .channel(`messages-page-${user.id}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'private_messages',
+        filter: `receiver_id=eq.${user.id}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        queryClient.invalidateQueries({ queryKey: ['messages'] });
+      })
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'private_messages',
+        filter: `sender_id=eq.${user.id}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        queryClient.invalidateQueries({ queryKey: ['messages'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user?.id, queryClient]);
+
   // Get all users for search
   const { data: allUsers } = useQuery({
     queryKey: ['all-profiles'],
