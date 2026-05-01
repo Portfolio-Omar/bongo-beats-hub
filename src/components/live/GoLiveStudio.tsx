@@ -10,6 +10,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import LiveChat from './LiveChat';
 import DJMixer from './DJMixer';
+import SoundFXPad from './SoundFXPad';
+import LiveAnalyticsPanel from './LiveAnalyticsPanel';
+import LiveRequestQueue from './LiveRequestQueue';
 import { toast } from '@/hooks/use-toast';
 
 const GoLiveStudio: React.FC = () => {
@@ -101,24 +104,34 @@ const GoLiveStudio: React.FC = () => {
     if (!sessionId) return;
 
     try {
-      const fileName = `recordings/${sessionId}-${Date.now()}.webm`;
+      const fileName = `${sessionId}-${Date.now()}.webm`;
       const { error } = await supabase.storage
-        .from('music_videos')
+        .from('live-recordings')
         .upload(fileName, blob, { contentType: 'video/webm' });
 
       if (error) {
         console.error('Upload error:', error);
-        // Offer local download as fallback
         offerDownload(blob);
         return;
       }
 
-      const { data: urlData } = supabase.storage.from('music_videos').getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from('live-recordings').getPublicUrl(fileName);
+
+      // Save to new live_recordings table (admin can edit/publish)
+      await supabase.from('live_recordings').insert({
+        session_id: sessionId,
+        title: title || 'Live Recording',
+        recording_url: urlData.publicUrl,
+        recorded_by: user?.id,
+        is_published: false,
+      });
+
+      // Also keep legacy reference on live_sessions
       await supabase.from('live_sessions').update({
         recording_url: urlData.publicUrl,
       }).eq('id', sessionId);
 
-      toast({ title: '🎬 Recording saved!', description: 'Available in Past Performances' });
+      toast({ title: '🎬 Recording saved!', description: 'Review and publish from Admin → Recordings' });
     } catch (e) {
       console.error('Upload failed:', e);
       offerDownload(blob);
@@ -347,14 +360,19 @@ const GoLiveStudio: React.FC = () => {
           </Card>
 
           <DJMixer />
+          {isLive && <SoundFXPad />}
         </div>
 
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-3">
           {sessionId ? (
-            <LiveChat sessionId={sessionId} isAdmin />
+            <>
+              <LiveAnalyticsPanel sessionId={sessionId} viewerCount={viewerCount} />
+              <LiveChat sessionId={sessionId} isAdmin />
+              <LiveRequestQueue sessionId={sessionId} isAdmin />
+            </>
           ) : (
             <Card className="border-border/50 bg-card/80 backdrop-blur h-64 flex items-center justify-center">
-              <p className="text-sm text-muted-foreground">Chat will appear when you go live</p>
+              <p className="text-sm text-muted-foreground">Chat, analytics & requests appear when you go live</p>
             </Card>
           )}
         </div>

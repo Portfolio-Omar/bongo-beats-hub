@@ -13,6 +13,7 @@ import PaymentVerificationTab from '@/components/admin/PaymentVerificationTab';
 import ShortsManagementTab from '@/components/admin/ShortsManagementTab';
 import GoLiveStudio from '@/components/live/GoLiveStudio';
 import GamificationTab from '@/components/admin/GamificationTab';
+import RecordingsTab from '@/components/admin/RecordingsTab';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -232,6 +233,9 @@ const Admin: React.FC = () => {
                 <TabsTrigger value="gamification" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                   <Trophy className="h-4 w-4" /><span>Gamification</span>
                 </TabsTrigger>
+                <TabsTrigger value="recordings" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                  <Video className="h-4 w-4" /><span>Recordings</span>
+                </TabsTrigger>
               </TabsList>
             </div>
             
@@ -274,6 +278,9 @@ const Admin: React.FC = () => {
               </TabsContent>
               <TabsContent value="gamification" className="mt-0">
                 <TabErrorBoundary name="Gamification"><GamificationTab /></TabErrorBoundary>
+              </TabsContent>
+              <TabsContent value="recordings" className="mt-0">
+                <TabErrorBoundary name="Recordings"><RecordingsTab /></TabErrorBoundary>
               </TabsContent>
             </div>
           </Tabs>
