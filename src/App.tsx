@@ -35,10 +35,12 @@ import Install from "./pages/Install";
 import Live from "./pages/Live";
 import Downloads from "./pages/Downloads";
 import Messages from "./pages/Messages";
+import AudioRooms from "./pages/AudioRooms";
 import ListeningRewardTracker from "./components/monetization/ListeningRewardTracker";
 import SecurityTracker from "./components/SecurityTracker";
 import LiveNotifier from "./components/live/LiveNotifier";
 import GamificationTracker from "./components/gamification/GamificationTracker";
+import MessageNotifier from "./components/messaging/MessageNotifier";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +80,7 @@ const App = () => (
                       <Route path="/live" element={<Live />} />
                       <Route path="/downloads" element={<Downloads />} />
                       <Route path="/messages" element={<Messages />} />
+                      <Route path="/audio-rooms" element={<AudioRooms />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </Layout>
@@ -89,6 +92,7 @@ const App = () => (
               <ReferralNotifier />
               <LiveNotifier />
               <GamificationTracker />
+              <MessageNotifier />
               <AIChatbot />
             </BrowserRouter>
           </LanguageProvider>
