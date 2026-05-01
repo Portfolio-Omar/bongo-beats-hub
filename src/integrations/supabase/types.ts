@@ -104,6 +104,106 @@ export type Database = {
         }
         Relationships: []
       }
+      audio_room_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          room_id: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          room_id: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          room_id?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audio_room_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "audio_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audio_room_participants: {
+        Row: {
+          id: string
+          joined_at: string
+          room_id: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          room_id: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          room_id?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audio_room_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "audio_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audio_rooms: {
+        Row: {
+          created_at: string
+          current_song_id: string | null
+          description: string | null
+          host_id: string
+          id: string
+          is_active: boolean
+          name: string
+          participant_count: number
+        }
+        Insert: {
+          created_at?: string
+          current_song_id?: string | null
+          description?: string | null
+          host_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          participant_count?: number
+        }
+        Update: {
+          created_at?: string
+          current_song_id?: string | null
+          description?: string | null
+          host_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          participant_count?: number
+        }
+        Relationships: []
+      }
       badge_definitions: {
         Row: {
           category: string
@@ -628,10 +728,38 @@ export type Database = {
           },
         ]
       }
+      live_analytics: {
+        Row: {
+          chat_messages_count: number
+          id: string
+          reactions_count: number
+          session_id: string
+          snapshot_at: string
+          viewer_count: number
+        }
+        Insert: {
+          chat_messages_count?: number
+          id?: string
+          reactions_count?: number
+          session_id: string
+          snapshot_at?: string
+          viewer_count?: number
+        }
+        Update: {
+          chat_messages_count?: number
+          id?: string
+          reactions_count?: number
+          session_id?: string
+          snapshot_at?: string
+          viewer_count?: number
+        }
+        Relationships: []
+      }
       live_chat_messages: {
         Row: {
           created_at: string
           id: string
+          is_hidden: boolean
           is_pinned: boolean
           message: string
           session_id: string
@@ -642,6 +770,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_hidden?: boolean
           is_pinned?: boolean
           message: string
           session_id: string
@@ -652,6 +781,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_hidden?: boolean
           is_pinned?: boolean
           message?: string
           session_id?: string
@@ -701,6 +831,59 @@ export type Database = {
           },
         ]
       }
+      live_recordings: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_seconds: number | null
+          id: string
+          is_published: boolean
+          recorded_by: string | null
+          recording_url: string
+          session_id: string | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_published?: boolean
+          recorded_by?: string | null
+          recording_url: string
+          session_id?: string | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_published?: boolean
+          recorded_by?: string | null
+          recording_url?: string
+          session_id?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_recordings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       live_sessions: {
         Row: {
           artist_name: string
@@ -743,6 +926,48 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string
           viewer_count?: number
+        }
+        Relationships: []
+      }
+      live_song_requests: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          position: number
+          session_id: string
+          song_artist: string | null
+          song_id: string | null
+          song_title: string
+          status: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          position?: number
+          session_id: string
+          song_artist?: string | null
+          song_id?: string | null
+          song_title: string
+          status?: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          position?: number
+          session_id?: string
+          song_artist?: string | null
+          song_id?: string | null
+          song_title?: string
+          status?: string
+          user_id?: string
+          user_name?: string
         }
         Relationships: []
       }
