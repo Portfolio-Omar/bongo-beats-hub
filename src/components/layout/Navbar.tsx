@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
-import { Menu, Home, Music, Settings, Moon, Sun, User, LogOut, Heart, LogIn, Download, MessageSquare, Globe } from 'lucide-react';
+import { Menu, Home, Music, Settings, Moon, Sun, User, LogOut, Heart, LogIn, Download, MessageSquare, Globe, Headphones } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useLanguage } from '@/context/LanguageContext';
 import GamificationWidget from '@/components/gamification/GamificationWidget';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { Badge } from '@/components/ui/badge';
 import logo from '@/assets/logo.png';
 
 const Navbar: React.FC = () => {
@@ -16,12 +18,14 @@ const Navbar: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const unreadCount = useUnreadMessages();
 
   const navItems = [
     { name: t('home'), path: '/', icon: <Home className="h-4 w-4" /> },
     { name: t('music'), path: '/music', icon: <Music className="h-4 w-4" /> },
+    { name: 'Rooms', path: '/audio-rooms', icon: <Headphones className="h-4 w-4" /> },
     { name: t('downloads'), path: '/downloads', icon: <Download className="h-4 w-4" /> },
-    { name: t('messages'), path: '/messages', icon: <MessageSquare className="h-4 w-4" /> },
+    { name: t('messages'), path: '/messages', icon: <MessageSquare className="h-4 w-4" />, badge: unreadCount },
   ];
 
   return (
@@ -36,11 +40,16 @@ const Navbar: React.FC = () => {
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
+            {navItems.map((item: any) => (
               <Link key={item.path} to={item.path}>
                 <Button variant="ghost" size="sm"
-                  className={cn("gap-2 transition-all", location.pathname === item.path && "bg-primary/10 text-primary")}>
+                  className={cn("gap-2 transition-all relative", location.pathname === item.path && "bg-primary/10 text-primary")}>
                   {item.icon}{item.name}
+                  {item.badge ? (
+                    <Badge className="ml-1 h-4 min-w-[16px] px-1 text-[10px] bg-red-500 text-white border-0">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </Badge>
+                  ) : null}
                 </Button>
               </Link>
             ))}
@@ -94,11 +103,16 @@ const Navbar: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex-1 py-4 space-y-1 px-2">
-                    {navItems.map((item) => (
+                    {navItems.map((item: any) => (
                       <Link key={item.path} to={item.path} onClick={() => setMobileMenuOpen(false)}>
                         <Button variant="ghost"
-                          className={cn("w-full justify-start gap-3", location.pathname === item.path && "bg-primary/10 text-primary")}>
+                          className={cn("w-full justify-start gap-3 relative", location.pathname === item.path && "bg-primary/10 text-primary")}>
                           {item.icon}{item.name}
+                          {item.badge ? (
+                            <Badge className="ml-auto h-4 min-w-[16px] px-1 text-[10px] bg-red-500 text-white border-0">
+                              {item.badge > 99 ? '99+' : item.badge}
+                            </Badge>
+                          ) : null}
                         </Button>
                       </Link>
                     ))}
