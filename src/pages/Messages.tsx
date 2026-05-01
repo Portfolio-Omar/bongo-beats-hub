@@ -100,6 +100,13 @@ const Messages: React.FC = () => {
     refetchInterval: 5000,
   });
 
+  // Auto-open most recent conversation (WhatsApp-style)
+  useEffect(() => {
+    if (!selectedUser && conversations && conversations.length > 0) {
+      setSelectedUser(conversations[0].userId);
+    }
+  }, [conversations, selectedUser]);
+
   // Get messages for selected conversation
   const { data: messages } = useQuery({
     queryKey: ['messages', user?.id, selectedUser],
