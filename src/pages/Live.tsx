@@ -64,6 +64,19 @@ const Live: React.FC = () => {
     },
   });
 
+  const { data: publishedRecordings } = useQuery({
+    queryKey: ['published-recordings'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('live_recordings')
+        .select('*')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      return data || [];
+    },
+  });
+
   useEffect(() => {
     const live = liveSessions?.find(s => s.status === 'live');
     if (live && !activeSession) {
@@ -278,6 +291,28 @@ const Live: React.FC = () => {
                       {session.started_at && ` • ${getDurationBetween(session.started_at, session.ended_at)}`}
                     </p>
                   )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </motion.section>
+      )}
+      {publishedRecordings && publishedRecordings.length > 0 && (
+        <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
+            <Play className="h-5 w-5 text-primary" /> Published Recordings
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {publishedRecordings.map((rec: any) => (
+              <Card key={rec.id} className="border-border/50 bg-card/80 backdrop-blur hover:border-primary/30 transition-colors overflow-hidden">
+                <video src={rec.recording_url} controls className="w-full aspect-video bg-black"
+                  onPlay={() => supabase.from('live_recordings').update({ view_count: (rec.view_count || 0) + 1 }).eq('id', rec.id)} />
+                <CardContent className="p-3">
+                  <h3 className="font-semibold text-sm">{rec.title}</h3>
+                  {rec.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{rec.description}</p>}
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {format(new Date(rec.created_at), 'PPp')} • 👁 {rec.view_count || 0}
+                  </p>
                 </CardContent>
               </Card>
             ))}
