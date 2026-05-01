@@ -10,6 +10,7 @@ import { useViewer } from '@/hooks/useLiveStream';
 import LiveChat from '@/components/live/LiveChat';
 import LiveReactions from '@/components/live/LiveReactions';
 import CountdownTimer from '@/components/live/CountdownTimer';
+import LiveRequestQueue from '@/components/live/LiveRequestQueue';
 import { format } from 'date-fns';
 
 interface LiveSession {
@@ -174,8 +175,9 @@ const Live: React.FC = () => {
               </CardContent>
             </Card>
           </div>
-          <div className="lg:col-span-1 min-h-[400px]">
+          <div className="lg:col-span-1 space-y-3 min-h-[400px]">
             <LiveChat sessionId={liveSession.id} />
+            <LiveRequestQueue sessionId={liveSession.id} />
           </div>
         </div>
       ) : playingRecording ? (
