@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getLiveAudioContext, getLiveBusDestination } from '@/lib/live-audio-bus';
 
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -73,14 +74,41 @@ export function useBroadcaster(sessionId: string | null) {
     }
   }, [screenStream]);
 
+  const buildBroadcastTracks = useCallback(() => {
+    // Mix mic + DJ bus into one audio track so listeners get both.
+    const ctx = getLiveAudioContext();
+    const bus = getLiveBusDestination();
+    const mixDest = ctx.createMediaStreamDestination();
+
+    // Pipe DJ bus into mix
+    try {
+      const djSrc = ctx.createMediaStreamSource(bus.stream);
+      djSrc.connect(mixDest);
+    } catch (e) { console.warn('DJ bus tap failed', e); }
+
+    // Pipe mic into mix
+    const micStream = localStreamRef.current;
+    if (micStream && micStream.getAudioTracks().length > 0) {
+      try {
+        const micOnly = new MediaStream(micStream.getAudioTracks());
+        const micSrc = ctx.createMediaStreamSource(micOnly);
+        micSrc.connect(mixDest);
+      } catch (e) { console.warn('Mic tap failed', e); }
+    }
+
+    const audioTrack = mixDest.stream.getAudioTracks()[0];
+    const videoTrack = micStream?.getVideoTracks()[0];
+    return { audioTrack, videoTrack };
+  }, []);
+
   const createPeerForViewer = useCallback(async (viewerId: string, channel: ReturnType<typeof supabase.channel>) => {
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     peersRef.current.set(viewerId, pc);
 
-    const stream = localStreamRef.current;
-    if (stream) {
-      stream.getTracks().forEach(track => pc.addTrack(track, stream));
-    }
+    const { audioTrack, videoTrack } = buildBroadcastTracks();
+    const outStream = new MediaStream();
+    if (audioTrack) { outStream.addTrack(audioTrack); pc.addTrack(audioTrack, outStream); }
+    if (videoTrack) { outStream.addTrack(videoTrack); pc.addTrack(videoTrack, outStream); }
 
     pc.onicecandidate = (e) => {
       if (e.candidate) {
@@ -100,7 +128,7 @@ export function useBroadcaster(sessionId: string | null) {
     await pc.setLocalDescription(offer);
     channel.send({ type: 'broadcast', event: 'offer', payload: { sdp: offer, from: 'broadcaster', to: viewerId } });
     setViewerCount(peersRef.current.size);
-  }, []);
+  }, [buildBroadcastTracks]);
 
   const goLive = useCallback(async () => {
     if (!sessionId) return;
