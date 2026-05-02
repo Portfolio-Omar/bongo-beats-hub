@@ -28,6 +28,7 @@ const GoLiveStudio: React.FC = () => {
   const [liveDuration, setLiveDuration] = useState(0);
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('');
+  const [maxMinutes, setMaxMinutes] = useState<number>(60); // auto-stop after N minutes
   const [isRecording, setIsRecording] = useState(false);
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -171,7 +172,7 @@ const GoLiveStudio: React.FC = () => {
 
   useEffect(() => {
     if (sessionId && !isLive) {
-      goLive();
+      goLive(maxMinutes);
     }
   }, [sessionId]);
 
