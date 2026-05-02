@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Eye, EyeOff, Trash2, Save, Film } from 'lucide-react';
+import { Eye, EyeOff, Trash2, Save, Film, Download, Share2, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -107,20 +107,43 @@ const RecordingsTab: React.FC = () => {
                       </div>
                     </>
                   ) : (
-                    <div className="flex gap-1">
-                      <Button size="sm" variant="outline" className="flex-1 h-7 text-xs"
-                        onClick={() => setEditing(p => ({ ...p, [rec.id]: { title: rec.title, description: rec.description || '' } }))}>
-                        Edit
-                      </Button>
-                      <Button size="sm" variant={rec.is_published ? 'secondary' : 'default'} className="flex-1 h-7 text-xs"
-                        onClick={() => togglePublish(rec)}>
-                        {rec.is_published ? <><EyeOff className="h-3 w-3 mr-1" /> Unpublish</> : <><Eye className="h-3 w-3 mr-1" /> Publish</>}
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7"
-                        onClick={() => deleteRecording(rec.id)}>
-                        <Trash2 className="h-3 w-3 text-destructive" />
-                      </Button>
-                    </div>
+                    <>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" className="flex-1 h-7 text-xs"
+                          onClick={() => setEditing(p => ({ ...p, [rec.id]: { title: rec.title, description: rec.description || '' } }))}>
+                          Edit
+                        </Button>
+                        <Button size="sm" variant={rec.is_published ? 'secondary' : 'default'} className="flex-1 h-7 text-xs"
+                          onClick={() => togglePublish(rec)}>
+                          {rec.is_published ? <><EyeOff className="h-3 w-3 mr-1" /> Unpublish</> : <><Eye className="h-3 w-3 mr-1" /> Publish</>}
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7"
+                          onClick={() => deleteRecording(rec.id)}>
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" asChild>
+                          <a href={rec.recording_url} download={`${rec.title}.webm`}>
+                            <Download className="h-3 w-3 mr-1" /> Download
+                          </a>
+                        </Button>
+                        <Button size="sm" variant="outline" className="flex-1 h-7 text-xs"
+                          onClick={async () => {
+                            const url = `${window.location.origin}/recordings/${rec.id}`;
+                            try {
+                              if (navigator.share) await navigator.share({ title: rec.title, url });
+                              else { await navigator.clipboard.writeText(url); toast.success('Link copied!'); }
+                            } catch {}
+                          }}>
+                          <Share2 className="h-3 w-3 mr-1" /> Share
+                        </Button>
+                        <Button size="sm" variant="outline" className="flex-1 h-7 text-xs"
+                          onClick={() => window.open(`/recordings/${rec.id}`, '_blank')}>
+                          <BarChart3 className="h-3 w-3 mr-1" /> Stats
+                        </Button>
+                      </div>
+                    </>
                   )}
                 </CardContent>
               </Card>

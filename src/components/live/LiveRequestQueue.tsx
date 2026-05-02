@@ -93,6 +93,12 @@ const LiveRequestQueue: React.FC<Props> = ({ sessionId, isAdmin = false }) => {
 
   const pending = requests.filter(r => r.status === 'pending');
   const accepted = requests.filter(r => r.status === 'accepted');
+  const history = requests.filter(r => r.status === 'played' || r.status === 'rejected').slice(0, 10);
+
+  // User's own pending request — show position + wait
+  const myPending = user ? pending.find(r => r.user_id === user.id) : null;
+  const myPosition = myPending ? pending.findIndex(r => r.id === myPending.id) + 1 : 0;
+  const estimatedWaitMin = myPending ? (accepted.length * 3) + (myPosition * 3) : 0;
 
   return (
     <Card className="border-border/50 bg-card/80 backdrop-blur">
@@ -112,9 +118,15 @@ const LiveRequestQueue: React.FC<Props> = ({ sessionId, isAdmin = false }) => {
               placeholder="Artist (optional)" className="h-8 text-xs" />
             <Input value={message} onChange={e => setMessage(e.target.value)}
               placeholder="Shoutout/message (optional)" className="h-8 text-xs" />
-            <Button onClick={submitRequest} size="sm" className="w-full h-8">
-              <Plus className="h-3 w-3 mr-1" /> Request Song
+            <Button onClick={submitRequest} size="sm" className="w-full h-8" disabled={!!myPending}>
+              <Plus className="h-3 w-3 mr-1" /> {myPending ? 'Request Pending' : 'Request Song'}
             </Button>
+            {myPending && (
+              <div className="text-[10px] bg-primary/10 border border-primary/30 rounded p-1.5 mt-1">
+                <div className="font-bold text-primary">📍 You're #{myPosition} in queue</div>
+                <div className="text-muted-foreground">Estimated wait: ~{estimatedWaitMin} min</div>
+              </div>
+            )}
           </div>
         )}
 
@@ -148,11 +160,14 @@ const LiveRequestQueue: React.FC<Props> = ({ sessionId, isAdmin = false }) => {
             {pending.length > 0 && (
               <div className="text-[10px] font-bold text-muted-foreground px-1 mt-2">REQUESTS</div>
             )}
-            {pending.map(r => (
-              <div key={r.id} className="p-2 rounded bg-accent/40 text-xs">
+            {pending.map((r, idx) => (
+              <div key={r.id} className={`p-2 rounded text-xs ${r.user_id === user?.id ? 'bg-primary/15 border border-primary/40' : 'bg-accent/40'}`}>
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold truncate">{r.song_title}</div>
+                    <div className="font-semibold truncate flex items-center gap-1">
+                      <span className="text-muted-foreground text-[10px]">#{idx + 1}</span>
+                      {r.song_title}
+                    </div>
                     {r.song_artist && <div className="text-muted-foreground truncate">{r.song_artist}</div>}
                     <div className="text-[10px] text-muted-foreground">by {r.user_name}</div>
                     {r.message && <div className="text-[10px] italic mt-0.5">"{r.message}"</div>}
@@ -167,6 +182,19 @@ const LiveRequestQueue: React.FC<Props> = ({ sessionId, isAdmin = false }) => {
                       </Button>
                     </div>
                   ) : null}
+                </div>
+              </div>
+            ))}
+
+            {history.length > 0 && (
+              <div className="text-[10px] font-bold text-muted-foreground px-1 mt-2">HISTORY</div>
+            )}
+            {history.map(r => (
+              <div key={r.id} className="p-1.5 rounded bg-muted/30 text-[11px] opacity-70">
+                <div className="flex items-center gap-2">
+                  <span>{r.status === 'played' ? '✅' : '❌'}</span>
+                  <span className="truncate flex-1">{r.song_title}</span>
+                  <span className="text-[10px] text-muted-foreground">{r.user_name}</span>
                 </div>
               </div>
             ))}

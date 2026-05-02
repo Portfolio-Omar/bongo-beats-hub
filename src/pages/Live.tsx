@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Maximize, Minimize, Radio, Users, Clock, Eye, Play } from 'lucide-react';
+import { Maximize, Minimize, Radio, Users, Clock, Eye, Play, Volume2, VolumeX, Share2, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -12,6 +12,7 @@ import LiveReactions from '@/components/live/LiveReactions';
 import CountdownTimer from '@/components/live/CountdownTimer';
 import LiveRequestQueue from '@/components/live/LiveRequestQueue';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface LiveSession {
   id: string;
@@ -32,6 +33,7 @@ const Live: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [playingRecording, setPlayingRecording] = useState<LiveSession | null>(null);
+  const [isMuted, setIsMuted] = useState(true); // start muted to satisfy autoplay policy
   const videoRef = useRef<HTMLVideoElement>(null);
   const replayVideoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -148,7 +150,18 @@ const Live: React.FC = () => {
           <div className="lg:col-span-2">
             <Card ref={containerRef} className="border-border/50 bg-card/80 backdrop-blur overflow-hidden relative">
               <div className="relative aspect-video bg-black">
-                <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                <video ref={videoRef} autoPlay playsInline muted={isMuted} className="w-full h-full object-cover" />
+                {isMuted && connected && (
+                  <button
+                    onClick={() => { setIsMuted(false); if (videoRef.current) videoRef.current.muted = false; }}
+                    className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 text-white hover:bg-black/50 transition"
+                  >
+                    <div className="bg-primary text-primary-foreground rounded-full px-6 py-3 flex items-center gap-2 shadow-xl">
+                      <Volume2 className="h-5 w-5" />
+                      <span className="font-semibold">Tap to unmute</span>
+                    </div>
+                  </button>
+                )}
                 <div className="absolute top-0 left-0 right-0 p-3 bg-gradient-to-b from-black/60 to-transparent">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -168,9 +181,14 @@ const Live: React.FC = () => {
                 <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
                   <div className="flex items-center justify-between">
                     <h3 className="text-white font-semibold text-lg">{liveSession.title}</h3>
-                    <Button size="icon" variant="ghost" onClick={toggleFullscreen} className="text-white hover:bg-white/20">
-                      {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button size="icon" variant="ghost" onClick={() => { setIsMuted(m => { const n = !m; if (videoRef.current) videoRef.current.muted = n; return n; }); }} className="text-white hover:bg-white/20">
+                        {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={toggleFullscreen} className="text-white hover:bg-white/20">
+                        {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+                      </Button>
+                    </div>
                   </div>
                 </div>
                 {!connected && (
@@ -303,19 +321,45 @@ const Live: React.FC = () => {
             <Play className="h-5 w-5 text-primary" /> Published Recordings
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {publishedRecordings.map((rec: any) => (
-              <Card key={rec.id} className="border-border/50 bg-card/80 backdrop-blur hover:border-primary/30 transition-colors overflow-hidden">
-                <video src={rec.recording_url} controls className="w-full aspect-video bg-black"
-                  onPlay={() => supabase.from('live_recordings').update({ view_count: (rec.view_count || 0) + 1 }).eq('id', rec.id)} />
-                <CardContent className="p-3">
-                  <h3 className="font-semibold text-sm">{rec.title}</h3>
-                  {rec.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{rec.description}</p>}
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {format(new Date(rec.created_at), 'PPp')} • 👁 {rec.view_count || 0}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+            {publishedRecordings.map((rec: any) => {
+              const shareUrl = `${window.location.origin}/recordings/${rec.id}`;
+              const handleShare = async () => {
+                try {
+                  if (navigator.share) {
+                    await navigator.share({ title: rec.title, url: shareUrl });
+                  } else {
+                    await navigator.clipboard.writeText(shareUrl);
+                    toast.success('Share link copied!');
+                  }
+                } catch {}
+              };
+              return (
+                <Card key={rec.id} className="border-border/50 bg-card/80 backdrop-blur hover:border-primary/30 transition-colors overflow-hidden">
+                  <video src={rec.recording_url} controls className="w-full aspect-video bg-black"
+                    onPlay={() => supabase.from('live_recordings').update({ view_count: (rec.view_count || 0) + 1 }).eq('id', rec.id)} />
+                  <CardContent className="p-3 space-y-2">
+                    <h3 className="font-semibold text-sm">{rec.title}</h3>
+                    {rec.description && <p className="text-xs text-muted-foreground line-clamp-2">{rec.description}</p>}
+                    <p className="text-[10px] text-muted-foreground">
+                      {format(new Date(rec.created_at), 'PPp')} • 👁 {rec.view_count || 0}
+                    </p>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => window.location.href = `/recordings/${rec.id}`}>
+                        <Eye className="h-3 w-3 mr-1" /> Details
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleShare}>
+                        <Share2 className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" asChild>
+                        <a href={rec.recording_url} download={`${rec.title}.webm`}>
+                          <Download className="h-3 w-3" />
+                        </a>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </motion.section>
       )}

@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getLiveAudioContext, getLiveBusDestination } from '@/lib/live-audio-bus';
 
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -14,6 +15,7 @@ export function useBroadcaster(sessionId: string | null) {
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startMedia = useCallback(async (videoDeviceId?: string, audioDeviceId?: string) => {
     try {
@@ -73,14 +75,41 @@ export function useBroadcaster(sessionId: string | null) {
     }
   }, [screenStream]);
 
+  const buildBroadcastTracks = useCallback(() => {
+    // Mix mic + DJ bus into one audio track so listeners get both.
+    const ctx = getLiveAudioContext();
+    const bus = getLiveBusDestination();
+    const mixDest = ctx.createMediaStreamDestination();
+
+    // Pipe DJ bus into mix
+    try {
+      const djSrc = ctx.createMediaStreamSource(bus.stream);
+      djSrc.connect(mixDest);
+    } catch (e) { console.warn('DJ bus tap failed', e); }
+
+    // Pipe mic into mix
+    const micStream = localStreamRef.current;
+    if (micStream && micStream.getAudioTracks().length > 0) {
+      try {
+        const micOnly = new MediaStream(micStream.getAudioTracks());
+        const micSrc = ctx.createMediaStreamSource(micOnly);
+        micSrc.connect(mixDest);
+      } catch (e) { console.warn('Mic tap failed', e); }
+    }
+
+    const audioTrack = mixDest.stream.getAudioTracks()[0];
+    const videoTrack = micStream?.getVideoTracks()[0];
+    return { audioTrack, videoTrack };
+  }, []);
+
   const createPeerForViewer = useCallback(async (viewerId: string, channel: ReturnType<typeof supabase.channel>) => {
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     peersRef.current.set(viewerId, pc);
 
-    const stream = localStreamRef.current;
-    if (stream) {
-      stream.getTracks().forEach(track => pc.addTrack(track, stream));
-    }
+    const { audioTrack, videoTrack } = buildBroadcastTracks();
+    const outStream = new MediaStream();
+    if (audioTrack) { outStream.addTrack(audioTrack); pc.addTrack(audioTrack, outStream); }
+    if (videoTrack) { outStream.addTrack(videoTrack); pc.addTrack(videoTrack, outStream); }
 
     pc.onicecandidate = (e) => {
       if (e.candidate) {
@@ -100,9 +129,29 @@ export function useBroadcaster(sessionId: string | null) {
     await pc.setLocalDescription(offer);
     channel.send({ type: 'broadcast', event: 'offer', payload: { sdp: offer, from: 'broadcaster', to: viewerId } });
     setViewerCount(peersRef.current.size);
-  }, []);
+  }, [buildBroadcastTracks]);
 
-  const goLive = useCallback(async () => {
+  const stopLive = useCallback(async () => {
+    if (autoStopTimerRef.current) { clearTimeout(autoStopTimerRef.current); autoStopTimerRef.current = null; }
+    peersRef.current.forEach(pc => pc.close());
+    peersRef.current.clear();
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+    localStreamRef.current?.getTracks().forEach(t => t.stop());
+    screenStream?.getTracks().forEach(t => t.stop());
+    setLocalStream(null);
+    setScreenStream(null);
+    setIsLive(false);
+    setViewerCount(0);
+
+    if (sessionId) {
+      await supabase.from('live_sessions').update({ status: 'ended', ended_at: new Date().toISOString() }).eq('id', sessionId);
+    }
+  }, [sessionId, screenStream]);
+
+  const goLive = useCallback(async (maxMinutes?: number) => {
     if (!sessionId) return;
 
     const channel = supabase.channel(`live-${sessionId}`);
@@ -137,26 +186,14 @@ export function useBroadcaster(sessionId: string | null) {
 
     await supabase.from('live_sessions').update({ status: 'live', started_at: new Date().toISOString() }).eq('id', sessionId);
     setIsLive(true);
-  }, [sessionId, createPeerForViewer]);
 
-  const stopLive = useCallback(async () => {
-    peersRef.current.forEach(pc => pc.close());
-    peersRef.current.clear();
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
+    // Auto-stop after maxMinutes (if provided)
+    if (maxMinutes && maxMinutes > 0) {
+      autoStopTimerRef.current = setTimeout(() => {
+        stopLive();
+      }, maxMinutes * 60 * 1000);
     }
-    localStream?.getTracks().forEach(t => t.stop());
-    screenStream?.getTracks().forEach(t => t.stop());
-    setLocalStream(null);
-    setScreenStream(null);
-    setIsLive(false);
-    setViewerCount(0);
-
-    if (sessionId) {
-      await supabase.from('live_sessions').update({ status: 'ended', ended_at: new Date().toISOString() }).eq('id', sessionId);
-    }
-  }, [sessionId, localStream, screenStream]);
+  }, [sessionId, createPeerForViewer, stopLive]);
 
   useEffect(() => {
     return () => {
