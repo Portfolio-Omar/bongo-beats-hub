@@ -181,9 +181,14 @@ const Live: React.FC = () => {
                 <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
                   <div className="flex items-center justify-between">
                     <h3 className="text-white font-semibold text-lg">{liveSession.title}</h3>
-                    <Button size="icon" variant="ghost" onClick={toggleFullscreen} className="text-white hover:bg-white/20">
-                      {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button size="icon" variant="ghost" onClick={() => { setIsMuted(m => { const n = !m; if (videoRef.current) videoRef.current.muted = n; return n; }); }} className="text-white hover:bg-white/20">
+                        {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={toggleFullscreen} className="text-white hover:bg-white/20">
+                        {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+                      </Button>
+                    </div>
                   </div>
                 </div>
                 {!connected && (
