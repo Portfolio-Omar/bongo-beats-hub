@@ -15,6 +15,7 @@ export function useBroadcaster(sessionId: string | null) {
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startMedia = useCallback(async (videoDeviceId?: string, audioDeviceId?: string) => {
     try {
@@ -130,7 +131,27 @@ export function useBroadcaster(sessionId: string | null) {
     setViewerCount(peersRef.current.size);
   }, [buildBroadcastTracks]);
 
-  const goLive = useCallback(async () => {
+  const stopLive = useCallback(async () => {
+    if (autoStopTimerRef.current) { clearTimeout(autoStopTimerRef.current); autoStopTimerRef.current = null; }
+    peersRef.current.forEach(pc => pc.close());
+    peersRef.current.clear();
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+    localStreamRef.current?.getTracks().forEach(t => t.stop());
+    screenStream?.getTracks().forEach(t => t.stop());
+    setLocalStream(null);
+    setScreenStream(null);
+    setIsLive(false);
+    setViewerCount(0);
+
+    if (sessionId) {
+      await supabase.from('live_sessions').update({ status: 'ended', ended_at: new Date().toISOString() }).eq('id', sessionId);
+    }
+  }, [sessionId, screenStream]);
+
+  const goLive = useCallback(async (maxMinutes?: number) => {
     if (!sessionId) return;
 
     const channel = supabase.channel(`live-${sessionId}`);
@@ -165,26 +186,14 @@ export function useBroadcaster(sessionId: string | null) {
 
     await supabase.from('live_sessions').update({ status: 'live', started_at: new Date().toISOString() }).eq('id', sessionId);
     setIsLive(true);
-  }, [sessionId, createPeerForViewer]);
 
-  const stopLive = useCallback(async () => {
-    peersRef.current.forEach(pc => pc.close());
-    peersRef.current.clear();
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
+    // Auto-stop after maxMinutes (if provided)
+    if (maxMinutes && maxMinutes > 0) {
+      autoStopTimerRef.current = setTimeout(() => {
+        stopLive();
+      }, maxMinutes * 60 * 1000);
     }
-    localStream?.getTracks().forEach(t => t.stop());
-    screenStream?.getTracks().forEach(t => t.stop());
-    setLocalStream(null);
-    setScreenStream(null);
-    setIsLive(false);
-    setViewerCount(0);
-
-    if (sessionId) {
-      await supabase.from('live_sessions').update({ status: 'ended', ended_at: new Date().toISOString() }).eq('id', sessionId);
-    }
-  }, [sessionId, localStream, screenStream]);
+  }, [sessionId, createPeerForViewer, stopLive]);
 
   useEffect(() => {
     return () => {
