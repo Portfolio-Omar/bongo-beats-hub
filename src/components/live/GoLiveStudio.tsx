@@ -326,6 +326,13 @@ const GoLiveStudio: React.FC = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  <div className="sm:col-span-2 flex items-center gap-2">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">Auto-end after</label>
+                    <Input type="number" min={5} max={480} value={maxMinutes}
+                      onChange={e => setMaxMinutes(Math.max(5, parseInt(e.target.value) || 60))}
+                      className="h-9 text-sm w-24" />
+                    <span className="text-xs text-muted-foreground">minutes</span>
+                  </div>
                 </div>
               )}
 
