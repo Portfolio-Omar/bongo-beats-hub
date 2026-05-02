@@ -321,19 +321,45 @@ const Live: React.FC = () => {
             <Play className="h-5 w-5 text-primary" /> Published Recordings
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {publishedRecordings.map((rec: any) => (
-              <Card key={rec.id} className="border-border/50 bg-card/80 backdrop-blur hover:border-primary/30 transition-colors overflow-hidden">
-                <video src={rec.recording_url} controls className="w-full aspect-video bg-black"
-                  onPlay={() => supabase.from('live_recordings').update({ view_count: (rec.view_count || 0) + 1 }).eq('id', rec.id)} />
-                <CardContent className="p-3">
-                  <h3 className="font-semibold text-sm">{rec.title}</h3>
-                  {rec.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{rec.description}</p>}
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {format(new Date(rec.created_at), 'PPp')} • 👁 {rec.view_count || 0}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+            {publishedRecordings.map((rec: any) => {
+              const shareUrl = `${window.location.origin}/recordings/${rec.id}`;
+              const handleShare = async () => {
+                try {
+                  if (navigator.share) {
+                    await navigator.share({ title: rec.title, url: shareUrl });
+                  } else {
+                    await navigator.clipboard.writeText(shareUrl);
+                    toast.success('Share link copied!');
+                  }
+                } catch {}
+              };
+              return (
+                <Card key={rec.id} className="border-border/50 bg-card/80 backdrop-blur hover:border-primary/30 transition-colors overflow-hidden">
+                  <video src={rec.recording_url} controls className="w-full aspect-video bg-black"
+                    onPlay={() => supabase.from('live_recordings').update({ view_count: (rec.view_count || 0) + 1 }).eq('id', rec.id)} />
+                  <CardContent className="p-3 space-y-2">
+                    <h3 className="font-semibold text-sm">{rec.title}</h3>
+                    {rec.description && <p className="text-xs text-muted-foreground line-clamp-2">{rec.description}</p>}
+                    <p className="text-[10px] text-muted-foreground">
+                      {format(new Date(rec.created_at), 'PPp')} • 👁 {rec.view_count || 0}
+                    </p>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => window.location.href = `/recordings/${rec.id}`}>
+                        <Eye className="h-3 w-3 mr-1" /> Details
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleShare}>
+                        <Share2 className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" asChild>
+                        <a href={rec.recording_url} download={`${rec.title}.webm`}>
+                          <Download className="h-3 w-3" />
+                        </a>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </motion.section>
       )}
