@@ -150,7 +150,18 @@ const Live: React.FC = () => {
           <div className="lg:col-span-2">
             <Card ref={containerRef} className="border-border/50 bg-card/80 backdrop-blur overflow-hidden relative">
               <div className="relative aspect-video bg-black">
-                <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                <video ref={videoRef} autoPlay playsInline muted={isMuted} className="w-full h-full object-cover" />
+                {isMuted && connected && (
+                  <button
+                    onClick={() => { setIsMuted(false); if (videoRef.current) videoRef.current.muted = false; }}
+                    className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 text-white hover:bg-black/50 transition"
+                  >
+                    <div className="bg-primary text-primary-foreground rounded-full px-6 py-3 flex items-center gap-2 shadow-xl">
+                      <Volume2 className="h-5 w-5" />
+                      <span className="font-semibold">Tap to unmute</span>
+                    </div>
+                  </button>
+                )}
                 <div className="absolute top-0 left-0 right-0 p-3 bg-gradient-to-b from-black/60 to-transparent">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
