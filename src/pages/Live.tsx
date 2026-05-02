@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Maximize, Minimize, Radio, Users, Clock, Eye, Play } from 'lucide-react';
+import { Maximize, Minimize, Radio, Users, Clock, Eye, Play, Volume2, VolumeX, Share2, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -12,6 +12,7 @@ import LiveReactions from '@/components/live/LiveReactions';
 import CountdownTimer from '@/components/live/CountdownTimer';
 import LiveRequestQueue from '@/components/live/LiveRequestQueue';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface LiveSession {
   id: string;
@@ -32,6 +33,7 @@ const Live: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [playingRecording, setPlayingRecording] = useState<LiveSession | null>(null);
+  const [isMuted, setIsMuted] = useState(true); // start muted to satisfy autoplay policy
   const videoRef = useRef<HTMLVideoElement>(null);
   const replayVideoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
