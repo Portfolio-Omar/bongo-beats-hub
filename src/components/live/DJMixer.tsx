@@ -8,6 +8,7 @@ import { Play, Pause, Volume2, Disc3, Music, Waves, GripVertical, SkipForward, S
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Song } from '@/types/music';
+import { getLiveAudioContext, tapToLiveBus } from '@/lib/live-audio-bus';
 
 interface DeckState {
   song: Song | null;
@@ -91,7 +92,8 @@ const DJMixer: React.FC = () => {
 
   const initAudioCtx = useCallback(() => {
     if (ctxRef.current) return ctxRef.current;
-    const ctx = new AudioContext();
+    // Use the shared live-audio context so DJ output can be routed to listeners.
+    const ctx = getLiveAudioContext();
     ctxRef.current = ctx;
     return ctx;
   }, []);
@@ -119,6 +121,9 @@ const DJMixer: React.FC = () => {
     lpf.connect(delay).connect(feedback).connect(delay);
     delay.connect(delayGain).connect(gain);
     lpf.connect(convolver).connect(reverbGain).connect(gain);
+
+    // Tap deck output into the live broadcast bus so listeners hear DJ music.
+    tapToLiveBus(gain);
 
     return { gain, bass, mid, treble, delay, delayGain, feedback, convolver, reverbGain, dryGain, lpf };
   }, []);
