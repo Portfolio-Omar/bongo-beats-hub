@@ -13,7 +13,7 @@ import {
   Play, Pause, Heart, MessageSquare, Share2, Download,
   Radio, Clock, Search, Send, Trash2,
 } from 'lucide-react';
-import { Helmet } from 'react-helmet-async';
+
 
 type Podcast = {
   id: string;
@@ -154,12 +154,13 @@ const Podcasts: React.FC = () => {
     !search || p.title.toLowerCase().includes(search.toLowerCase()) ||
     p.description?.toLowerCase().includes(search.toLowerCase()));
 
+  useEffect(() => {
+    document.title = 'Podcasts — Bongo Old Skool';
+  }, []);
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <Helmet>
-        <title>Podcasts — Bongo Old Skool</title>
-        <meta name="description" content="Listen to discussions, interviews and stories about classic 2000s Bongo Flava music."/>
-      </Helmet>
+
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-4xl md:text-5xl font-heading bg-gradient-to-r from-gold to-yellow-600 bg-clip-text text-transparent mb-2">
           Bongo Podcasts
