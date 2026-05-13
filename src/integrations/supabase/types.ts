@@ -2002,12 +2002,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      admin_login: { Args: { pin: string }; Returns: boolean }
       award_points: {
         Args: { _action: string; _points: number; _user_id: string }
         Returns: Json
       }
-      check_admin: { Args: never; Returns: boolean }
       check_song_exists: {
         Args: { _artist: string; _title: string }
         Returns: boolean
@@ -2026,7 +2024,6 @@ export type Database = {
         Returns: undefined
       }
       increment_video_view: { Args: { _video_id: string }; Returns: undefined }
-      is_admin: { Args: { pin: string }; Returns: boolean }
       is_registered_user: { Args: { _user_id: string }; Returns: boolean }
       process_listen_reward: {
         Args: {
