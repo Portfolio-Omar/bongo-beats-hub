@@ -1157,6 +1157,130 @@ export type Database = {
         }
         Relationships: []
       }
+      podcast_comments: {
+        Row: {
+          comment: string
+          created_at: string
+          id: string
+          podcast_id: string
+          user_avatar: string | null
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          id?: string
+          podcast_id: string
+          user_avatar?: string | null
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          id?: string
+          podcast_id?: string
+          user_avatar?: string | null
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "podcast_comments_podcast_id_fkey"
+            columns: ["podcast_id"]
+            isOneToOne: false
+            referencedRelation: "podcasts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      podcast_likes: {
+        Row: {
+          created_at: string
+          id: string
+          podcast_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          podcast_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          podcast_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "podcast_likes_podcast_id_fkey"
+            columns: ["podcast_id"]
+            isOneToOne: false
+            referencedRelation: "podcasts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      podcasts: {
+        Row: {
+          audio_url: string
+          author_id: string | null
+          author_name: string | null
+          comment_count: number
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          download_count: number
+          duration_seconds: number | null
+          id: string
+          like_count: number
+          published: boolean
+          tags: string[] | null
+          title: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          audio_url: string
+          author_id?: string | null
+          author_name?: string | null
+          comment_count?: number
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          download_count?: number
+          duration_seconds?: number | null
+          id?: string
+          like_count?: number
+          published?: boolean
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          audio_url?: string
+          author_id?: string | null
+          author_name?: string | null
+          comment_count?: number
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          download_count?: number
+          duration_seconds?: number | null
+          id?: string
+          like_count?: number
+          published?: boolean
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: []
+      }
       poll_options: {
         Row: {
           created_at: string
@@ -2018,6 +2142,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_podcast_download: { Args: { _id: string }; Returns: undefined }
+      increment_podcast_view: { Args: { _id: string }; Returns: undefined }
       increment_short_view: { Args: { _short_id: string }; Returns: undefined }
       increment_song_view: {
         Args: { _song_id: string; _view_date?: string }

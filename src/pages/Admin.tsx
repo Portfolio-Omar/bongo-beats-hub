@@ -14,6 +14,7 @@ import ShortsManagementTab from '@/components/admin/ShortsManagementTab';
 import GoLiveStudio from '@/components/live/GoLiveStudio';
 import GamificationTab from '@/components/admin/GamificationTab';
 import RecordingsTab from '@/components/admin/RecordingsTab';
+import PodcastStudio from '@/components/admin/PodcastStudio';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -236,6 +237,9 @@ const Admin: React.FC = () => {
                 <TabsTrigger value="recordings" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                   <Video className="h-4 w-4" /><span>Recordings</span>
                 </TabsTrigger>
+                <TabsTrigger value="podcasts" className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                  <Radio className="h-4 w-4" /><span>Podcasts</span>
+                </TabsTrigger>
               </TabsList>
             </div>
             
@@ -281,6 +285,9 @@ const Admin: React.FC = () => {
               </TabsContent>
               <TabsContent value="recordings" className="mt-0">
                 <TabErrorBoundary name="Recordings"><RecordingsTab /></TabErrorBoundary>
+              </TabsContent>
+              <TabsContent value="podcasts" className="mt-0">
+                <TabErrorBoundary name="Podcasts"><PodcastStudio /></TabErrorBoundary>
               </TabsContent>
             </div>
           </Tabs>

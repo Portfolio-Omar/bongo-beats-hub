@@ -37,6 +37,7 @@ import Downloads from "./pages/Downloads";
 import Messages from "./pages/Messages";
 import AudioRooms from "./pages/AudioRooms";
 import RecordingDetail from "./pages/RecordingDetail";
+import Podcasts from "./pages/Podcasts";
 import ListeningRewardTracker from "./components/monetization/ListeningRewardTracker";
 import SecurityTracker from "./components/SecurityTracker";
 import LiveNotifier from "./components/live/LiveNotifier";
@@ -83,6 +84,7 @@ const App = () => (
                       <Route path="/messages" element={<Messages />} />
                       <Route path="/audio-rooms" element={<AudioRooms />} />
                       <Route path="/recordings/:id" element={<RecordingDetail />} />
+                      <Route path="/podcasts" element={<Podcasts />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </Layout>
