@@ -3,11 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import professorJay from '@/assets/artist-professor-jay.jpg';
 import diamondPlatnumz from '@/assets/artist-diamond-platnumz.jpg';
 import alikiba from '@/assets/artist-alikiba.jpg';
+import mrNice from '@/assets/artist-mr-nice.jpg';
+import ladyJaydee from '@/assets/artist-lady-jaydee.jpg';
+import ay from '@/assets/artist-ay.jpg';
 
 const backgroundImages = [
-  professorJay,
   diamondPlatnumz,
   alikiba,
+  mrNice,
+  ladyJaydee,
+  ay,
+  professorJay,
 ];
 
 const BackgroundSlideshow = () => {
@@ -17,7 +23,6 @@ const BackgroundSlideshow = () => {
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % backgroundImages.length);
     }, 8000);
-
     return () => clearInterval(interval);
   }, []);
 

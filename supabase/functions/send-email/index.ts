@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const SITE_NAME = "Bongo Old Skool";
 const SITE_URL = "https://oldskoool.netlify.app";
-const LOGO_URL = "https://fyspaszcchdknujhwpfs.supabase.co/storage/v1/object/public/avatars/site-logo.png";
+const LOGO_URL = "https://bongo-beats-hub.lovable.app/logo.png";
 const ADMIN_EMAIL = "omaryw003@gmail.com";
 
 const baseTemplate = (content: string) => {
