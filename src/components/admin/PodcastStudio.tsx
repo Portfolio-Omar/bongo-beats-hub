@@ -10,8 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
   Mic, Square, Pause, Play, Upload, Trash2, Music2, Save,
-  Headphones, Radio, Volume2,
+  Headphones, Radio, Volume2, Sparkles, Wand2,
 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type Podcast = {
   id: string;
