@@ -320,6 +320,8 @@ const PodcastStudio: React.FC = () => {
     const { error } = await (supabase as any).from('podcasts').delete().eq('id', p.id);
     if (error) toast.error(error.message);
     else { toast.success('Deleted'); loadPodcasts(); }
+  };
+
   const aiAssist = async () => {
     setAiLoading(true);
     try {
@@ -339,6 +341,7 @@ const PodcastStudio: React.FC = () => {
     } finally { setAiLoading(false); }
   };
 
+  return (
     <div className="space-y-6">
       <Card className="p-6 space-y-5">
         <div className="flex items-center gap-2">
