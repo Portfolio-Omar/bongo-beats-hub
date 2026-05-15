@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -8,12 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import {
   Play, Pause, Heart, MessageSquare, Share2, Download,
-  Radio, Clock, Search, Send, Trash2,
+  Radio, Clock, Search, Send, Trash2, SkipBack, SkipForward, Rss, Sparkles,
 } from 'lucide-react';
-
 
 type Podcast = {
   id: string;
@@ -42,19 +43,35 @@ const fmt = (s: number) => {
   return `${m}:${sec.toString().padStart(2, '0')}`;
 };
 
+const SUPABASE_FN_BASE = 'https://fyspaszcchdknujhwpfs.supabase.co/functions/v1';
+
 const Podcasts: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
+  const [params, setParams] = useSearchParams();
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [tagFilter, setTagFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'liked' | 'longest'>('recent');
+  const [autoplay, setAutoplay] = useState(true);
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
   const [newComment, setNewComment] = useState<Record<string, string>>({});
   const [likes, setLikes] = useState<Record<string, boolean>>({});
   const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
-  const audioRefs = React.useRef<Record<string, HTMLAudioElement | null>>({});
+  const [isAdmin, setIsAdmin] = useState(false);
+  const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // Waveform refs
+  const canvasRefs = useRef<Record<string, HTMLCanvasElement | null>>({});
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const wfRafRef = useRef<number | null>(null);
+  const sourceMapRef = useRef<Map<HTMLAudioElement, MediaElementAudioSourceNode>>(new Map());
 
   useEffect(() => {
+    document.title = 'Podcasts — Bongo Old Skool';
     (async () => {
       const { data } = await (supabase as any).from('podcasts').select('*')
         .eq('published', true).order('created_at', { ascending: false });
@@ -64,9 +81,58 @@ const Podcasts: React.FC = () => {
         const { data: liked } = await (supabase as any).from('podcast_likes')
           .select('podcast_id').eq('user_id', user.id);
         if (liked) setLikes(Object.fromEntries(liked.map((l: any) => [l.podcast_id, true])));
+        const { data: roleRow } = await (supabase as any).from('user_roles')
+          .select('role').eq('user_id', user.id).eq('role', 'admin').maybeSingle();
+        setIsAdmin(!!roleRow);
       }
     })();
   }, [user]);
+
+  // Deep link: ?ep=<id> auto-plays the episode
+  useEffect(() => {
+    const ep = params.get('ep');
+    if (!ep || podcasts.length === 0) return;
+    const target = podcasts.find(p => p.id === ep);
+    if (!target) return;
+    setTimeout(() => {
+      const card = cardRefs.current[ep];
+      card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const el = audioRefs.current[ep];
+      if (el) {
+        el.play().then(() => {
+          setActiveId(ep);
+          (supabase as any).rpc('increment_podcast_view', { _id: ep });
+        }).catch(() => {});
+      }
+    }, 300);
+  }, [params, podcasts]);
+
+  const allTags = useMemo(() => {
+    const s = new Set<string>();
+    podcasts.forEach(p => p.tags?.forEach(t => s.add(t)));
+    return Array.from(s).sort();
+  }, [podcasts]);
+
+  const filtered = useMemo(() => {
+    let list = podcasts.filter(p => {
+      const q = search.toLowerCase();
+      if (q && !(
+        p.title.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q) ||
+        p.author_name?.toLowerCase().includes(q) ||
+        p.tags?.some(t => t.toLowerCase().includes(q))
+      )) return false;
+      if (tagFilter !== 'all' && !(p.tags || []).includes(tagFilter)) return false;
+      return true;
+    });
+    list = [...list].sort((a, b) => {
+      if (sortBy === 'popular') return b.view_count - a.view_count;
+      if (sortBy === 'liked') return b.like_count - a.like_count;
+      if (sortBy === 'longest') return (b.duration_seconds || 0) - (a.duration_seconds || 0);
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+    return list;
+  }, [podcasts, search, tagFilter, sortBy]);
 
   const loadComments = async (id: string) => {
     const { data } = await (supabase as any).from('podcast_comments')
@@ -74,19 +140,86 @@ const Podcasts: React.FC = () => {
     setComments(c => ({ ...c, [id]: (data as Comment[]) || [] }));
   };
 
-  const togglePlay = async (p: Podcast) => {
+  const stopWaveform = () => {
+    if (wfRafRef.current) cancelAnimationFrame(wfRafRef.current);
+    wfRafRef.current = null;
+  };
+
+  const startWaveform = (id: string, el: HTMLAudioElement) => {
+    try {
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
+      const ctx = audioCtxRef.current;
+      let src = sourceMapRef.current.get(el);
+      if (!src) {
+        src = ctx.createMediaElementSource(el);
+        sourceMapRef.current.set(el, src);
+      }
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      analyserRef.current = analyser;
+      src.disconnect();
+      src.connect(analyser);
+      analyser.connect(ctx.destination);
+
+      const canvas = canvasRefs.current[id];
+      if (!canvas) return;
+      const cctx = canvas.getContext('2d');
+      if (!cctx) return;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const draw = () => {
+        if (!analyserRef.current) return;
+        analyserRef.current.getByteFrequencyData(data);
+        const w = canvas.width, h = canvas.height;
+        cctx.clearRect(0, 0, w, h);
+        const bars = 48;
+        const step = Math.floor(data.length / bars);
+        for (let i = 0; i < bars; i++) {
+          const v = data[i * step] / 255;
+          const bh = Math.max(2, v * h);
+          const grad = cctx.createLinearGradient(0, h - bh, 0, h);
+          grad.addColorStop(0, '#f0d78c');
+          grad.addColorStop(1, '#b8860b');
+          cctx.fillStyle = grad;
+          const bw = w / bars - 2;
+          cctx.fillRect(i * (w / bars), h - bh, bw, bh);
+        }
+        wfRafRef.current = requestAnimationFrame(draw);
+      };
+      draw();
+    } catch (e) { /* CORS or already connected — ignore */ }
+  };
+
+  const playEpisode = async (p: Podcast) => {
     const el = audioRefs.current[p.id];
     if (!el) return;
     Object.entries(audioRefs.current).forEach(([id, a]) => { if (id !== p.id && a) { a.pause(); } });
-    if (el.paused) {
-      await el.play().catch(() => {});
-      setActiveId(p.id);
-      await (supabase as any).rpc('increment_podcast_view', { _id: p.id });
-      setPodcasts(ps => ps.map(x => x.id === p.id ? { ...x, view_count: x.view_count + 1 } : x));
-    } else {
-      el.pause();
-      setActiveId(null);
-    }
+    stopWaveform();
+    try { await el.play(); } catch { return; }
+    setActiveId(p.id);
+    setParams(prev => { const n = new URLSearchParams(prev); n.set('ep', p.id); return n; }, { replace: true });
+    await (supabase as any).rpc('increment_podcast_view', { _id: p.id });
+    setPodcasts(ps => ps.map(x => x.id === p.id ? { ...x, view_count: x.view_count + 1 } : x));
+    startWaveform(p.id, el);
+  };
+
+  const togglePlay = async (p: Podcast) => {
+    const el = audioRefs.current[p.id];
+    if (!el) return;
+    if (el.paused) { await playEpisode(p); }
+    else { el.pause(); setActiveId(null); stopWaveform(); }
+  };
+
+  const playByOffset = (offset: number) => {
+    if (!activeId) return;
+    const idx = filtered.findIndex(p => p.id === activeId);
+    const next = filtered[idx + offset];
+    if (next) playEpisode(next);
+  };
+
+  const handleEnded = (p: Podcast) => {
+    setActiveId(null);
+    stopWaveform();
+    if (autoplay) playByOffset(1);
   };
 
   const toggleLike = async (p: Podcast) => {
@@ -110,7 +243,7 @@ const Podcasts: React.FC = () => {
         await (navigator as any).share({ title: p.title, text: p.description || 'Listen on Bongo Old Skool', url });
       } else {
         await navigator.clipboard.writeText(url);
-        toast.success('Link copied');
+        toast.success('Episode link copied');
       }
     } catch {}
   };
@@ -145,50 +278,76 @@ const Podcasts: React.FC = () => {
   };
 
   const deleteComment = async (id: string, podcastId: string) => {
-    await (supabase as any).from('podcast_comments').delete().eq('id', id);
+    const { error } = await (supabase as any).from('podcast_comments').delete().eq('id', id);
+    if (error) { toast.error(error.message); return; }
     setComments(c => ({ ...c, [podcastId]: (c[podcastId] || []).filter(x => x.id !== id) }));
     setPodcasts(ps => ps.map(x => x.id === podcastId ? { ...x, comment_count: Math.max(0, x.comment_count - 1) } : x));
   };
 
-  const filtered = podcasts.filter(p =>
-    !search || p.title.toLowerCase().includes(search.toLowerCase()) ||
-    p.description?.toLowerCase().includes(search.toLowerCase()));
-
-  useEffect(() => {
-    document.title = 'Podcasts — Bongo Old Skool';
-  }, []);
+  const copyRss = async () => {
+    const url = `${SUPABASE_FN_BASE}/podcast-rss`;
+    try { await navigator.clipboard.writeText(url); toast.success('RSS feed URL copied'); } catch {}
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <h1 className="text-4xl md:text-5xl font-heading bg-gradient-to-r from-gold to-yellow-600 bg-clip-text text-transparent mb-2">
-          Bongo Podcasts
-        </h1>
-        <p className="text-muted-foreground">Stories, interviews & throwback discussions from the golden era of Bongo Flava.</p>
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+        <div className="flex items-start justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-heading bg-gradient-to-r from-gold to-yellow-600 bg-clip-text text-transparent mb-2">
+              Bongo Podcasts
+            </h1>
+            <p className="text-muted-foreground">Stories, interviews & throwback discussions from the golden era of Bongo Flava.</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={copyRss} className="gap-2">
+            <Rss className="h-4 w-4 text-orange-500"/> RSS Feed
+          </Button>
+        </div>
       </motion.div>
 
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
-        <Input value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search episodes…" className="pl-9"/>
+      <div className="grid md:grid-cols-[1fr_180px_180px_auto] gap-2 mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
+          <Input value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search episodes, creators, topics, tags…" className="pl-9"/>
+        </div>
+        <Select value={tagFilter} onValueChange={setTagFilter}>
+          <SelectTrigger><SelectValue placeholder="Tag"/></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All tags</SelectItem>
+            {allTags.map(t => <SelectItem key={t} value={t}>#{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+          <SelectTrigger><SelectValue/></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="recent">Most recent</SelectItem>
+            <SelectItem value="popular">Most played</SelectItem>
+            <SelectItem value="liked">Most liked</SelectItem>
+            <SelectItem value="longest">Longest first</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant={autoplay ? 'default' : 'outline'} onClick={() => setAutoplay(a => !a)} className="gap-2">
+          <Sparkles className="h-4 w-4"/> Autoplay {autoplay ? 'on' : 'off'}
+        </Button>
       </div>
 
       {loading ? <p className="text-center text-muted-foreground py-12">Loading…</p>
         : filtered.length === 0 ? (
           <Card className="p-12 text-center">
             <Radio className="h-12 w-12 mx-auto text-muted-foreground mb-3"/>
-            <p className="text-muted-foreground">No podcasts published yet. Check back soon!</p>
+            <p className="text-muted-foreground">No podcasts match your filters.</p>
           </Card>
         ) : (
         <div className="space-y-4">
           {filtered.map((p, i) => {
             const isActive = activeId === p.id;
             const isOpen = openComments[p.id];
+            const myIdx = filtered.findIndex(x => x.id === p.id);
             return (
               <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}>
-                <Card className="overflow-hidden">
+                transition={{ delay: i * 0.04 }} ref={el => (cardRefs.current[p.id] = el)}>
+                <Card className={`overflow-hidden transition-shadow ${isActive ? 'ring-2 ring-primary shadow-lg' : ''}`}>
                   <div className="p-4 md:p-5 flex flex-col md:flex-row gap-4">
                     <div className="relative w-full md:w-40 h-40 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-primary/30 to-primary/5">
                       {p.cover_url
@@ -206,18 +365,32 @@ const Podcasts: React.FC = () => {
                       <h2 className="text-xl font-bold mb-1">{p.title}</h2>
                       {p.author_name && <p className="text-xs text-muted-foreground mb-2">By {p.author_name}</p>}
                       {p.description && <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{p.description}</p>}
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3 flex-wrap">
                         <span className="flex items-center gap-1"><Clock className="h-3 w-3"/>{fmt(p.duration_seconds || 0)}</span>
                         <span>{p.view_count} plays</span>
-                        {p.tags && p.tags.length > 0 && p.tags.slice(0, 3).map(t =>
-                          <Badge key={t} variant="secondary" className="text-[10px]">#{t}</Badge>)}
+                        {p.tags && p.tags.length > 0 && p.tags.slice(0, 4).map(t =>
+                          <Badge key={t} variant="secondary" className="text-[10px] cursor-pointer"
+                            onClick={() => setTagFilter(t)}>#{t}</Badge>)}
                       </div>
 
+                      {isActive && (
+                        <canvas ref={el => (canvasRefs.current[p.id] = el)} width={520} height={48}
+                          className="w-full h-12 mb-2 rounded bg-muted/30"/>
+                      )}
+
                       <audio ref={el => (audioRefs.current[p.id] = el)} src={p.audio_url}
-                        controls preload="none" className="w-full h-10"
-                        onEnded={() => setActiveId(null)}/>
+                        controls preload="none" className="w-full h-10" crossOrigin="anonymous"
+                        onEnded={() => handleEnded(p)} onPause={() => { if (activeId === p.id) stopWaveform(); }}/>
 
                       <div className="flex flex-wrap gap-2 mt-3">
+                        <Button size="sm" variant="outline" disabled={myIdx <= 0}
+                          onClick={() => playEpisode(filtered[myIdx - 1])} className="gap-1">
+                          <SkipBack className="h-3.5 w-3.5"/> Prev
+                        </Button>
+                        <Button size="sm" variant="outline" disabled={myIdx >= filtered.length - 1}
+                          onClick={() => playEpisode(filtered[myIdx + 1])} className="gap-1">
+                          Next <SkipForward className="h-3.5 w-3.5"/>
+                        </Button>
                         <Button size="sm" variant={likes[p.id] ? 'default' : 'outline'} onClick={() => toggleLike(p)} className="gap-1">
                           <Heart className={`h-3.5 w-3.5 ${likes[p.id] ? 'fill-current' : ''}`}/> {p.like_count}
                         </Button>
@@ -258,8 +431,10 @@ const Podcasts: React.FC = () => {
                               <div className="flex items-center gap-2">
                                 <span className="font-medium text-xs">{c.user_name}</span>
                                 <span className="text-[10px] text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</span>
-                                {user?.id === c.user_id && (
-                                  <button onClick={() => deleteComment(c.id, p.id)} className="ml-auto text-muted-foreground hover:text-destructive">
+                                {(user?.id === c.user_id || isAdmin) && (
+                                  <button onClick={() => deleteComment(c.id, p.id)}
+                                    title={isAdmin && user?.id !== c.user_id ? 'Moderate (delete)' : 'Delete'}
+                                    className="ml-auto text-muted-foreground hover:text-destructive">
                                     <Trash2 className="h-3 w-3"/>
                                   </button>
                                 )}
