@@ -432,6 +432,24 @@ const PodcastStudio: React.FC = () => {
 
         {/* Metadata */}
         <div className="grid md:grid-cols-2 gap-4">
+          <div className="md:col-span-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">Recording bitrate</Label>
+              <Select value={String(bitrate)} onValueChange={(v) => setBitrate(Number(v))}>
+                <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue/></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="96000">96 kbps · Voice</SelectItem>
+                  <SelectItem value="128000">128 kbps · Standard</SelectItem>
+                  <SelectItem value="192000">192 kbps · High</SelectItem>
+                  <SelectItem value="256000">256 kbps · Studio</SelectItem>
+                  <SelectItem value="320000">320 kbps · Max</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="button" variant="outline" size="sm" disabled={aiLoading} onClick={aiAssist} className="gap-2">
+              <Wand2 className="h-3.5 w-3.5"/> {aiLoading ? 'Thinking…' : 'AI: title, description & tags'}
+            </Button>
+          </div>
           <div>
             <Label>Title *</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Episode title"/>
@@ -442,7 +460,7 @@ const PodcastStudio: React.FC = () => {
           </div>
           <div className="md:col-span-2">
             <Label>Description</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4}
               placeholder="What's this episode about?"/>
           </div>
           <div>
