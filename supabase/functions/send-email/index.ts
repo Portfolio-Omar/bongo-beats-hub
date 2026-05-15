@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { SMTPClient } from "https://deno.land/x/denomailer/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { LOGO_BASE64 } from "../_shared/logo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,7 +10,8 @@ const corsHeaders = {
 
 const SITE_NAME = "Bongo Old Skool";
 const SITE_URL = "https://oldskoool.netlify.app";
-const LOGO_URL = "https://bongo-beats-hub.lovable.app/logo.png";
+// Referenced via inline attachment (cid:logo) — works in Gmail/Outlook.
+const LOGO_URL = "cid:logo";
 const ADMIN_EMAIL = "omaryw003@gmail.com";
 
 const baseTemplate = (content: string) => {
@@ -382,6 +384,16 @@ serve(async (req) => {
       to: recipient,
       subject: template.subject,
       html: template.html,
+      attachments: [
+        {
+          filename: "logo.png",
+          contentType: "image/png",
+          encoding: "base64",
+          content: LOGO_BASE64,
+          contentDisposition: "inline",
+          contentId: "logo",
+        } as any,
+      ],
     });
 
     await client.close();

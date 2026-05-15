@@ -10,8 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
   Mic, Square, Pause, Play, Upload, Trash2, Music2, Save,
-  Headphones, Radio, Volume2,
+  Headphones, Radio, Volume2, Sparkles, Wand2,
 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type Podcast = {
   id: string;
@@ -73,6 +74,8 @@ const PodcastStudio: React.FC = () => {
 
   const [items, setItems] = useState<Podcast[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bitrate, setBitrate] = useState<number>(192000);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const loadPodcasts = async () => {
     setLoading(true);
@@ -164,7 +167,7 @@ const PodcastStudio: React.FC = () => {
       const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
         : 'audio/webm';
-      const rec = new MediaRecorder(dest.stream, { mimeType: mime, audioBitsPerSecond: 192000 });
+      const rec = new MediaRecorder(dest.stream, { mimeType: mime, audioBitsPerSecond: bitrate });
       chunksRef.current = [];
       rec.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       rec.onstop = () => {
@@ -319,6 +322,25 @@ const PodcastStudio: React.FC = () => {
     else { toast.success('Deleted'); loadPodcasts(); }
   };
 
+  const aiAssist = async () => {
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('podcast-ai-assist', {
+        body: { topic: title || tags || 'Bongo Flava throwback episode', currentTitle: title },
+      });
+      if (error) throw error;
+      const r: any = data;
+      if (r?.title) setTitle(r.title);
+      if (r?.description) setDescription(
+        (r.description || '') + (Array.isArray(r.notes) ? `\n\nHighlights:\n• ${r.notes.join('\n• ')}` : '')
+      );
+      if (Array.isArray(r?.tags)) setTags(r.tags.join(', '));
+      toast.success('AI metadata generated');
+    } catch (e: any) {
+      toast.error(e?.message || 'AI assist failed');
+    } finally { setAiLoading(false); }
+  };
+
   return (
     <div className="space-y-6">
       <Card className="p-6 space-y-5">
@@ -410,6 +432,24 @@ const PodcastStudio: React.FC = () => {
 
         {/* Metadata */}
         <div className="grid md:grid-cols-2 gap-4">
+          <div className="md:col-span-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">Recording bitrate</Label>
+              <Select value={String(bitrate)} onValueChange={(v) => setBitrate(Number(v))}>
+                <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue/></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="96000">96 kbps · Voice</SelectItem>
+                  <SelectItem value="128000">128 kbps · Standard</SelectItem>
+                  <SelectItem value="192000">192 kbps · High</SelectItem>
+                  <SelectItem value="256000">256 kbps · Studio</SelectItem>
+                  <SelectItem value="320000">320 kbps · Max</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="button" variant="outline" size="sm" disabled={aiLoading} onClick={aiAssist} className="gap-2">
+              <Wand2 className="h-3.5 w-3.5"/> {aiLoading ? 'Thinking…' : 'AI: title, description & tags'}
+            </Button>
+          </div>
           <div>
             <Label>Title *</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Episode title"/>
@@ -420,7 +460,7 @@ const PodcastStudio: React.FC = () => {
           </div>
           <div className="md:col-span-2">
             <Label>Description</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4}
               placeholder="What's this episode about?"/>
           </div>
           <div>

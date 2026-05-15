@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.fetch-lyrics]
 verify_jwt = false
+
+[functions.podcast-rss]
+verify_jwt = false
+
+[functions.podcast-ai-assist]
+verify_jwt = false
