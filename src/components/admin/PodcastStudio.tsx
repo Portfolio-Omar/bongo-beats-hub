@@ -74,6 +74,8 @@ const PodcastStudio: React.FC = () => {
 
   const [items, setItems] = useState<Podcast[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bitrate, setBitrate] = useState<number>(192000);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const loadPodcasts = async () => {
     setLoading(true);
