@@ -320,9 +320,25 @@ const PodcastStudio: React.FC = () => {
     const { error } = await (supabase as any).from('podcasts').delete().eq('id', p.id);
     if (error) toast.error(error.message);
     else { toast.success('Deleted'); loadPodcasts(); }
+  const aiAssist = async () => {
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('podcast-ai-assist', {
+        body: { topic: title || tags || 'Bongo Flava throwback episode', currentTitle: title },
+      });
+      if (error) throw error;
+      const r: any = data;
+      if (r?.title) setTitle(r.title);
+      if (r?.description) setDescription(
+        (r.description || '') + (Array.isArray(r.notes) ? `\n\nHighlights:\n• ${r.notes.join('\n• ')}` : '')
+      );
+      if (Array.isArray(r?.tags)) setTags(r.tags.join(', '));
+      toast.success('AI metadata generated');
+    } catch (e: any) {
+      toast.error(e?.message || 'AI assist failed');
+    } finally { setAiLoading(false); }
   };
 
-  return (
     <div className="space-y-6">
       <Card className="p-6 space-y-5">
         <div className="flex items-center gap-2">
