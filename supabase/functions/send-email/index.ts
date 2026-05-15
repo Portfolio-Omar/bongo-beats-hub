@@ -384,6 +384,16 @@ serve(async (req) => {
       to: recipient,
       subject: template.subject,
       html: template.html,
+      attachments: [
+        {
+          filename: "logo.png",
+          contentType: "image/png",
+          encoding: "base64",
+          content: LOGO_BASE64,
+          contentDisposition: "inline",
+          contentId: "logo",
+        } as any,
+      ],
     });
 
     await client.close();
