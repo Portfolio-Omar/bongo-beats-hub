@@ -296,6 +296,7 @@ const Podcasts: React.FC = () => {
   const handleEnded = (p: Podcast) => {
     setActiveId(null);
     stopWaveform();
+    recordProgress(p, true);
     if (autoplay) playByOffset(1);
   };
 
