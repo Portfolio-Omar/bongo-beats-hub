@@ -184,6 +184,7 @@ const Podcasts: React.FC = () => {
     } catch { return null; }
   }, [podcasts]);
 
+  const allTags = useMemo(() => {
     const s = new Set<string>();
     podcasts.forEach(p => p.tags?.forEach(t => s.add(t)));
     return Array.from(s).sort();
