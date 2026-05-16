@@ -58,6 +58,7 @@ const Navbar: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {isAuthenticated && <NotificationBell />}
             {isAuthenticated && <GamificationWidget compact />}
             <Button variant="ghost" size="icon" onClick={() => setLanguage(language === 'en' ? 'sw' : 'en')} 
               className="rounded-full h-9 w-9" title={language === 'en' ? 'Switch to Swahili' : 'Switch to English'}>
