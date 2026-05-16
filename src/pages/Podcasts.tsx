@@ -458,6 +458,7 @@ const Podcasts: React.FC = () => {
 
                       <audio ref={el => (audioRefs.current[p.id] = el)} src={p.audio_url}
                         controls preload="none" className="w-full h-10" crossOrigin="anonymous"
+                        onTimeUpdate={() => handleTimeUpdate(p)}
                         onEnded={() => handleEnded(p)} onPause={() => { if (activeId === p.id) stopWaveform(); }}/>
 
                       <div className="flex flex-wrap gap-2 mt-3">
