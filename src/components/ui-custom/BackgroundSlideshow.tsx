@@ -1,25 +1,15 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import professorJay from '@/assets/artist-professor-jay.jpg';
 import diamondPlatnumz from '@/assets/artist-diamond-platnumz.jpg';
 import alikiba from '@/assets/artist-alikiba.jpg';
-import mrNice from '@/assets/artist-mr-nice.jpg';
-import ladyJaydee from '@/assets/artist-lady-jaydee.jpg';
-import ay from '@/assets/artist-ay.jpg';
 
-const backgroundImages = [
-  diamondPlatnumz,
-  alikiba,
-  mrNice,
-  ladyJaydee,
-  ay,
-  professorJay,
-];
+const backgroundImages = [diamondPlatnumz, alikiba];
 
 const BackgroundSlideshow = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
+    if (backgroundImages.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % backgroundImages.length);
     }, 8000);
@@ -34,7 +24,7 @@ const BackgroundSlideshow = () => {
           initial={{ opacity: 0, scale: 1.1 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 1.5, ease: "easeInOut" }}
+          transition={{ duration: 1.5, ease: 'easeInOut' }}
           className="absolute inset-0"
         >
           <div

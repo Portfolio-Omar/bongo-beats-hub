@@ -1224,6 +1224,42 @@ export type Database = {
           },
         ]
       }
+      podcast_listen_events: {
+        Row: {
+          completed: boolean
+          created_at: string
+          event_type: string
+          id: string
+          podcast_id: string
+          position_from: number
+          position_to: number
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          event_type?: string
+          id?: string
+          podcast_id: string
+          position_from?: number
+          position_to?: number
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          event_type?: string
+          id?: string
+          podcast_id?: string
+          position_from?: number
+          position_to?: number
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       podcasts: {
         Row: {
           audio_url: string
@@ -2029,6 +2065,39 @@ export type Database = {
           updated_at?: string
           user_id?: string
           xp?: number
+        }
+        Relationships: []
+      }
+      user_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read?: boolean
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }

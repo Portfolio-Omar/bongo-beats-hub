@@ -63,6 +63,11 @@ const Podcasts: React.FC = () => {
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+  // Listen tracking refs
+  const sessionIdRef = useRef<string>(Math.random().toString(36).slice(2) + Date.now().toString(36));
+  const lastPosRef = useRef<Record<string, number>>({});
+  const flushTimerRef = useRef<Record<string, number | null>>({});
+
   // Waveform refs
   const canvasRefs = useRef<Record<string, HTMLCanvasElement | null>>({});
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -106,6 +111,78 @@ const Podcasts: React.FC = () => {
       }
     }, 300);
   }, [params, podcasts]);
+
+  // Listen tracking: flush a progress event every ~10s while playing
+  const recordProgress = async (p: Podcast, completed = false) => {
+    const el = audioRefs.current[p.id];
+    if (!el) return;
+    const to = el.currentTime || 0;
+    const from = lastPosRef.current[p.id] ?? to;
+    if (Math.abs(to - from) < 2 && !completed) return;
+    lastPosRef.current[p.id] = to;
+    try {
+      await (supabase as any).from('podcast_listen_events').insert({
+        podcast_id: p.id,
+        user_id: user?.id || null,
+        session_id: sessionIdRef.current,
+        position_from: Math.max(0, from),
+        position_to: to,
+        event_type: completed ? 'complete' : 'progress',
+        completed,
+      });
+    } catch {}
+    // Continue-listening pointer
+    try {
+      if (to > 30 && (el.duration && to / el.duration < 0.95)) {
+        localStorage.setItem('podcast:continue', JSON.stringify({
+          id: p.id, title: p.title, position: to, at: Date.now(),
+        }));
+      } else if (completed) {
+        localStorage.removeItem('podcast:continue');
+      }
+    } catch {}
+  };
+
+  const handleTimeUpdate = (p: Podcast) => {
+    if (flushTimerRef.current[p.id]) return;
+    flushTimerRef.current[p.id] = window.setTimeout(() => {
+      flushTimerRef.current[p.id] = null;
+      recordProgress(p);
+    }, 10000) as unknown as number;
+  };
+
+  // Personalized "For You" — derive top tags from liked + history, recommend others
+  const forYou = useMemo(() => {
+    const interestTagCount = new Map<string, number>();
+    podcasts.forEach(p => {
+      if (likes[p.id]) p.tags?.forEach(t => interestTagCount.set(t, (interestTagCount.get(t) || 0) + 2));
+    });
+    if (interestTagCount.size === 0) return [] as Podcast[];
+    const score = (p: Podcast) => {
+      let s = 0;
+      p.tags?.forEach(t => { s += interestTagCount.get(t) || 0; });
+      s += Math.log10((p.view_count || 0) + 1);
+      return s;
+    };
+    return [...podcasts]
+      .filter(p => !likes[p.id])
+      .map(p => ({ p, s: score(p) }))
+      .filter(x => x.s > 0)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, 8)
+      .map(x => x.p);
+  }, [podcasts, likes]);
+
+  // Continue listening from localStorage
+  const continueItem = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('podcast:continue');
+      if (!raw) return null;
+      const c = JSON.parse(raw);
+      const p = podcasts.find(x => x.id === c.id);
+      return p ? { p, position: c.position as number } : null;
+    } catch { return null; }
+  }, [podcasts]);
 
   const allTags = useMemo(() => {
     const s = new Set<string>();
@@ -219,6 +296,7 @@ const Podcasts: React.FC = () => {
   const handleEnded = (p: Podcast) => {
     setActiveId(null);
     stopWaveform();
+    recordProgress(p, true);
     if (autoplay) playByOffset(1);
   };
 
@@ -332,6 +410,46 @@ const Podcasts: React.FC = () => {
         </Button>
       </div>
 
+      {continueItem && (
+        <Card className="p-4 mb-4 bg-gradient-to-r from-primary/10 to-transparent border-primary/30">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-muted-foreground">Continue listening</p>
+              <p className="font-medium truncate">{continueItem.p.title}</p>
+              <p className="text-xs text-muted-foreground">From {fmt(continueItem.position)}</p>
+            </div>
+            <Button size="sm" onClick={() => {
+              const el = audioRefs.current[continueItem.p.id];
+              if (el) el.currentTime = continueItem.position;
+              playEpisode(continueItem.p);
+            }} className="gap-1"><Play className="h-3.5 w-3.5"/>Resume</Button>
+          </div>
+        </Card>
+      )}
+
+      {forYou.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary"/> For You
+          </h2>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {forYou.map(p => (
+              <button key={p.id} onClick={() => {
+                cardRefs.current[p.id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                playEpisode(p);
+              }} className="flex-shrink-0 w-40 text-left group">
+                <div className="w-40 h-40 rounded-lg overflow-hidden bg-muted">
+                  {p.cover_url ? <img src={p.cover_url} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform"/>
+                    : <div className="w-full h-full flex items-center justify-center"><Radio className="h-10 w-10 text-primary/50"/></div>}
+                </div>
+                <p className="text-sm font-medium mt-2 line-clamp-2">{p.title}</p>
+                <p className="text-xs text-muted-foreground">{p.view_count} plays</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loading ? <p className="text-center text-muted-foreground py-12">Loading…</p>
         : filtered.length === 0 ? (
           <Card className="p-12 text-center">
@@ -380,6 +498,7 @@ const Podcasts: React.FC = () => {
 
                       <audio ref={el => (audioRefs.current[p.id] = el)} src={p.audio_url}
                         controls preload="none" className="w-full h-10" crossOrigin="anonymous"
+                        onTimeUpdate={() => handleTimeUpdate(p)}
                         onEnded={() => handleEnded(p)} onPause={() => { if (activeId === p.id) stopWaveform(); }}/>
 
                       <div className="flex flex-wrap gap-2 mt-3">
