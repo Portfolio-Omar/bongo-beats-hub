@@ -112,7 +112,78 @@ const Podcasts: React.FC = () => {
     }, 300);
   }, [params, podcasts]);
 
-  const allTags = useMemo(() => {
+  // Listen tracking: flush a progress event every ~10s while playing
+  const recordProgress = async (p: Podcast, completed = false) => {
+    const el = audioRefs.current[p.id];
+    if (!el) return;
+    const to = el.currentTime || 0;
+    const from = lastPosRef.current[p.id] ?? to;
+    if (Math.abs(to - from) < 2 && !completed) return;
+    lastPosRef.current[p.id] = to;
+    try {
+      await (supabase as any).from('podcast_listen_events').insert({
+        podcast_id: p.id,
+        user_id: user?.id || null,
+        session_id: sessionIdRef.current,
+        position_from: Math.max(0, from),
+        position_to: to,
+        event_type: completed ? 'complete' : 'progress',
+        completed,
+      });
+    } catch {}
+    // Continue-listening pointer
+    try {
+      if (to > 30 && (el.duration && to / el.duration < 0.95)) {
+        localStorage.setItem('podcast:continue', JSON.stringify({
+          id: p.id, title: p.title, position: to, at: Date.now(),
+        }));
+      } else if (completed) {
+        localStorage.removeItem('podcast:continue');
+      }
+    } catch {}
+  };
+
+  const handleTimeUpdate = (p: Podcast) => {
+    if (flushTimerRef.current[p.id]) return;
+    flushTimerRef.current[p.id] = window.setTimeout(() => {
+      flushTimerRef.current[p.id] = null;
+      recordProgress(p);
+    }, 10000) as unknown as number;
+  };
+
+  // Personalized "For You" — derive top tags from liked + history, recommend others
+  const forYou = useMemo(() => {
+    const interestTagCount = new Map<string, number>();
+    podcasts.forEach(p => {
+      if (likes[p.id]) p.tags?.forEach(t => interestTagCount.set(t, (interestTagCount.get(t) || 0) + 2));
+    });
+    if (interestTagCount.size === 0) return [] as Podcast[];
+    const score = (p: Podcast) => {
+      let s = 0;
+      p.tags?.forEach(t => { s += interestTagCount.get(t) || 0; });
+      s += Math.log10((p.view_count || 0) + 1);
+      return s;
+    };
+    return [...podcasts]
+      .filter(p => !likes[p.id])
+      .map(p => ({ p, s: score(p) }))
+      .filter(x => x.s > 0)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, 8)
+      .map(x => x.p);
+  }, [podcasts, likes]);
+
+  // Continue listening from localStorage
+  const continueItem = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('podcast:continue');
+      if (!raw) return null;
+      const c = JSON.parse(raw);
+      const p = podcasts.find(x => x.id === c.id);
+      return p ? { p, position: c.position as number } : null;
+    } catch { return null; }
+  }, [podcasts]);
+
     const s = new Set<string>();
     podcasts.forEach(p => p.tags?.forEach(t => s.add(t)));
     return Array.from(s).sort();
