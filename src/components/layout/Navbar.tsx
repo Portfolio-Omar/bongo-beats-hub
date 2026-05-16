@@ -11,6 +11,7 @@ import GamificationWidget from '@/components/gamification/GamificationWidget';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { Badge } from '@/components/ui/badge';
 import logo from '@/assets/logo.png';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, signOut } = useAuth();
