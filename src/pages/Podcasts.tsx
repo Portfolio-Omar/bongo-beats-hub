@@ -410,6 +410,46 @@ const Podcasts: React.FC = () => {
         </Button>
       </div>
 
+      {continueItem && (
+        <Card className="p-4 mb-4 bg-gradient-to-r from-primary/10 to-transparent border-primary/30">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-muted-foreground">Continue listening</p>
+              <p className="font-medium truncate">{continueItem.p.title}</p>
+              <p className="text-xs text-muted-foreground">From {fmt(continueItem.position)}</p>
+            </div>
+            <Button size="sm" onClick={() => {
+              const el = audioRefs.current[continueItem.p.id];
+              if (el) el.currentTime = continueItem.position;
+              playEpisode(continueItem.p);
+            }} className="gap-1"><Play className="h-3.5 w-3.5"/>Resume</Button>
+          </div>
+        </Card>
+      )}
+
+      {forYou.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary"/> For You
+          </h2>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {forYou.map(p => (
+              <button key={p.id} onClick={() => {
+                cardRefs.current[p.id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                playEpisode(p);
+              }} className="flex-shrink-0 w-40 text-left group">
+                <div className="w-40 h-40 rounded-lg overflow-hidden bg-muted">
+                  {p.cover_url ? <img src={p.cover_url} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform"/>
+                    : <div className="w-full h-full flex items-center justify-center"><Radio className="h-10 w-10 text-primary/50"/></div>}
+                </div>
+                <p className="text-sm font-medium mt-2 line-clamp-2">{p.title}</p>
+                <p className="text-xs text-muted-foreground">{p.view_count} plays</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loading ? <p className="text-center text-muted-foreground py-12">Loading…</p>
         : filtered.length === 0 ? (
           <Card className="p-12 text-center">
