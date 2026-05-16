@@ -63,6 +63,11 @@ const Podcasts: React.FC = () => {
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+  // Listen tracking refs
+  const sessionIdRef = useRef<string>(Math.random().toString(36).slice(2) + Date.now().toString(36));
+  const lastPosRef = useRef<Record<string, number>>({});
+  const flushTimerRef = useRef<Record<string, number | null>>({});
+
   // Waveform refs
   const canvasRefs = useRef<Record<string, HTMLCanvasElement | null>>({});
   const audioCtxRef = useRef<AudioContext | null>(null);
