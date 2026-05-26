@@ -405,6 +405,26 @@ const AIChatbot: React.FC = () => {
                             ))}
                           </div>
                         )}
+
+                        {/* Podcast Results */}
+                        {message.podcasts && message.podcasts.length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            {message.podcasts.map((p) => (
+                              <Link
+                                key={p.id}
+                                to={`/podcasts?ep=${p.id}`}
+                                className="flex items-center gap-3 p-3 bg-card rounded-lg border border-amber-500/30 hover:border-amber-500 transition-colors"
+                              >
+                                <img src={p.cover_url || '/placeholder.svg'} alt="" className="w-12 h-12 rounded object-cover" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-sm truncate">🎙️ {p.title}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{p.author_name || 'Podcast'}</p>
+                                </div>
+                                <Play className="h-4 w-4 text-amber-500" />
+                              </Link>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   ))}
