@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Upload, FileText, Trash2, Music, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase, rpcFunctions } from '@/integrations/supabase/client';
+import { cleanSongName, parseArtistAndTitle } from '@/lib/song-name-cleaner';
 
 interface SongUpload {
   file: File;
@@ -36,18 +37,9 @@ const BatchUploadSongs: React.FC = () => {
         return;
       }
       
-      let title = '';
-      let artist = '';
-      
-      const fileName = file.name.replace(/\.[^/.]+$/, "");
-      const splitName = fileName.split(' - ');
-      
-      if (splitName.length >= 2) {
-        artist = splitName[0].trim();
-        title = splitName[1].trim();
-      } else {
-        title = fileName;
-      }
+      const { artist: parsedArtist, title: parsedTitle } = parseArtistAndTitle(file.name);
+      const title = parsedTitle;
+      const artist = parsedArtist;
       
       newUploads.push({
         file,
@@ -205,8 +197,8 @@ const BatchUploadSongs: React.FC = () => {
         const { data, error } = await supabase
           .from('songs')
           .insert({
-            title: songUploads[i].title,
-            artist: songUploads[i].artist,
+            title: cleanSongName(songUploads[i].title),
+            artist: cleanSongName(songUploads[i].artist),
             genre: songUploads[i].genre || null,
             year: songUploads[i].year || null,
             cover_url: coverUrl,

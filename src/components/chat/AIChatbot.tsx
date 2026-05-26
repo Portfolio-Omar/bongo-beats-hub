@@ -13,12 +13,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { Song } from '@/types/music';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
+import { Link } from 'react-router-dom';
+import { useLanguage } from '@/context/LanguageContext';
+
+interface Podcast {
+  id: string;
+  title: string;
+  description: string | null;
+  author_name: string | null;
+  cover_url: string | null;
+  audio_url: string;
+}
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   songs?: Song[];
+  podcasts?: Podcast[];
 }
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -50,21 +62,45 @@ const AIChatbot: React.FC = () => {
     }
   }, [isOpen]);
 
+  const { language } = useLanguage();
+
+  // Strip noisy/ambiguous filler words before searching
+  const sanitizeQuery = (q: string): string => {
+    return q
+      .toLowerCase()
+      .replace(/\b(find|search|play|song|songs|artist|music|looking for|give me|show me|please|can you|find me|the|a|an|of|by|for|me|some)\b/g, ' ')
+      .replace(/[^a-z0-9\s']/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
   const searchSongs = async (query: string): Promise<Song[]> => {
-    const searchTerms = query.toLowerCase();
-    
+    const term = sanitizeQuery(query);
+    if (!term) return [];
+    const tokens = term.split(' ').filter(t => t.length > 1).slice(0, 4);
+    const or = tokens.flatMap(t => [`title.ilike.%${t}%`, `artist.ilike.%${t}%`, `genre.ilike.%${t}%`]).join(',');
     const { data, error } = await supabase
       .from('songs')
       .select('*')
       .eq('published', true)
-      .or(`title.ilike.%${searchTerms}%,artist.ilike.%${searchTerms}%,genre.ilike.%${searchTerms}%`)
-      .limit(5);
+      .or(or || `title.ilike.%${term}%,artist.ilike.%${term}%,genre.ilike.%${term}%`)
+      .limit(6);
+    if (error) { console.error('Search error:', error); return []; }
+    return data || [];
+  };
 
-    if (error) {
-      console.error('Search error:', error);
-      return [];
-    }
-
+  const searchPodcasts = async (query: string): Promise<Podcast[]> => {
+    const term = sanitizeQuery(query);
+    if (!term) return [];
+    const tokens = term.split(' ').filter(t => t.length > 1).slice(0, 4);
+    const or = tokens.flatMap(t => [`title.ilike.%${t}%`, `description.ilike.%${t}%`, `author_name.ilike.%${t}%`]).join(',');
+    const { data, error } = await supabase
+      .from('podcasts')
+      .select('id,title,description,author_name,cover_url,audio_url')
+      .eq('published', true)
+      .or(or || `title.ilike.%${term}%`)
+      .limit(4);
+    if (error) { console.error('Podcast search error:', error); return []; }
     return data || [];
   };
 
@@ -82,16 +118,11 @@ const AIChatbot: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Check if user is searching for songs
-      const searchKeywords = ['find', 'search', 'play', 'song', 'artist', 'music', 'looking for', 'give me', 'show me'];
-      const isSearchQuery = searchKeywords.some(keyword => 
-        input.toLowerCase().includes(keyword)
-      );
-
-      let foundSongs: Song[] = [];
-      if (isSearchQuery) {
-        foundSongs = await searchSongs(input);
-      }
+      // Always search both songs and podcasts in parallel — the DB returns nothing for irrelevant queries
+      const [foundSongs, foundPodcasts] = await Promise.all([
+        searchSongs(input),
+        searchPodcasts(input),
+      ]);
 
       // Call AI for response
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/music-chat`, {
@@ -102,7 +133,9 @@ const AIChatbot: React.FC = () => {
         },
         body: JSON.stringify({
           messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })),
-          foundSongs: foundSongs.map(s => ({ title: s.title, artist: s.artist, genre: s.genre }))
+          foundSongs: foundSongs.map(s => ({ title: s.title, artist: s.artist, genre: s.genre })),
+          foundPodcasts: foundPodcasts.map(p => ({ title: p.title, author: p.author_name })),
+          language,
         }),
       });
 
@@ -129,7 +162,8 @@ const AIChatbot: React.FC = () => {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: '',
-        songs: foundSongs.length > 0 ? foundSongs : undefined
+        songs: foundSongs.length > 0 ? foundSongs : undefined,
+        podcasts: foundPodcasts.length > 0 ? foundPodcasts : undefined,
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -175,11 +209,11 @@ const AIChatbot: React.FC = () => {
         }
       }
 
-      // Ensure final message has songs attached
-      setMessages(prev => 
-        prev.map(m => 
-          m.id === assistantMessage.id 
-            ? { ...m, content: assistantContent, songs: foundSongs.length > 0 ? foundSongs : undefined }
+      // Ensure final message has songs/podcasts attached
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === assistantMessage.id
+            ? { ...m, content: assistantContent, songs: foundSongs.length > 0 ? foundSongs : undefined, podcasts: foundPodcasts.length > 0 ? foundPodcasts : undefined }
             : m
         )
       );
@@ -368,6 +402,26 @@ const AIChatbot: React.FC = () => {
                                   </Button>
                                 </div>
                               </motion.div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Podcast Results */}
+                        {message.podcasts && message.podcasts.length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            {message.podcasts.map((p) => (
+                              <Link
+                                key={p.id}
+                                to={`/podcasts?ep=${p.id}`}
+                                className="flex items-center gap-3 p-3 bg-card rounded-lg border border-amber-500/30 hover:border-amber-500 transition-colors"
+                              >
+                                <img src={p.cover_url || '/placeholder.svg'} alt="" className="w-12 h-12 rounded object-cover" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-sm truncate">🎙️ {p.title}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{p.author_name || 'Podcast'}</p>
+                                </div>
+                                <Play className="h-4 w-4 text-amber-500" />
+                              </Link>
                             ))}
                           </div>
                         )}

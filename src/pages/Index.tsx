@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Play, Music2, Headphones, Heart, Sparkles, Mic2, Radio, LogIn, User, Trophy, Wallet, Zap,
-  ListMusic, Users, Clapperboard, BookOpen, MessageSquare, Download
+  ListMusic, Users, Clapperboard, BookOpen, MessageSquare, Download, Mic
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SongOfTheWeek from '@/components/ui-custom/SongOfTheWeek';
@@ -88,6 +88,9 @@ const Index: React.FC = () => {
 
   // Sections that were removed from nav, now on homepage
   const quickLinks = [
+    { name: 'Podcasts', path: '/podcasts', icon: Mic, desc: 'Bongo Old Skool podcasts', color: 'text-amber-500' },
+    { name: 'Rooms', path: '/audio-rooms', icon: Headphones, desc: 'Live audio listening rooms', color: 'text-sky-500' },
+    { name: 'Downloads', path: '/downloads', icon: Download, desc: 'Offline music library', color: 'text-cyan-500' },
     { name: 'Playlists', path: '/playlists', icon: ListMusic, desc: 'Create & manage playlists', color: 'text-purple-500' },
     { name: 'Community', path: '/community', icon: Users, desc: 'Chat with music lovers', color: 'text-blue-500' },
     { name: 'Messages', path: '/messages', icon: MessageSquare, desc: 'Private chats & song sharing', color: 'text-violet-500' },
@@ -98,7 +101,6 @@ const Index: React.FC = () => {
     { name: 'Leaderboard', path: '/leaderboard', icon: Trophy, desc: 'Top earners & listeners', color: 'text-gold' },
     { name: 'Blog', path: '/blog', icon: BookOpen, desc: 'Music stories & news', color: 'text-indigo-500' },
     { name: 'Feedback', path: '/feedback', icon: MessageSquare, desc: 'Share your thoughts', color: 'text-teal-500' },
-    { name: 'Downloads', path: '/downloads', icon: Download, desc: 'Offline music library', color: 'text-cyan-500' },
   ];
 
   return (
@@ -135,13 +137,17 @@ const Index: React.FC = () => {
           </motion.div>
           
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center">
+            className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
             <Button size="lg" asChild className="text-lg px-8 py-6 bg-gold hover:bg-gold/90 text-gold-foreground font-heading">
               <Link to="/music"><Music2 className="mr-2 h-5 w-5" />Take Me to the Music</Link>
             </Button>
             <Button size="lg" variant="outline" onClick={handleRandomPlay}
               className="text-lg px-8 py-6 border-gold/50 hover:bg-gold/10 font-heading">
               <Headphones className="mr-2 h-5 w-5" />Play a Random Old Skool Hit
+            </Button>
+            <Button size="lg" asChild variant="secondary"
+              className="text-lg px-8 py-6 font-heading bg-amber-500/90 hover:bg-amber-500 text-white">
+              <Link to="/podcasts"><Mic className="mr-2 h-5 w-5" />Listen to Podcasts</Link>
             </Button>
           </motion.div>
 

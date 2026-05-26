@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, foundSongs } = await req.json();
+    const { messages, foundSongs, foundPodcasts, language } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -51,15 +51,19 @@ Popular artists on the platform include:
 
 When users search for music, I will provide you with matching songs from the database. Reference these results in your response.
 
-Keep responses concise, friendly, and helpful. Use emojis sparingly to add personality.`;
+Keep responses concise, friendly, and helpful. Use emojis sparingly to add personality.${language === 'sw' ? '\n\nReply ENTIRELY in Swahili (Kiswahili). Use warm, conversational Tanzanian Swahili.' : ''}`;
 
-    // Add found songs context if available
     if (foundSongs && foundSongs.length > 0) {
-      systemPrompt += `\n\nI found these songs matching the user's query:\n${foundSongs.map((s: any, i: number) => `${i + 1}. "${s.title}" by ${s.artist}${s.genre ? ` (${s.genre})` : ''}`).join('\n')}\n\nMention these results naturally in your response. The user will see play/download buttons next to each song.`;
-    } else if (messages[messages.length - 1]?.content.toLowerCase().includes('song') || 
-               messages[messages.length - 1]?.content.toLowerCase().includes('find') ||
-               messages[messages.length - 1]?.content.toLowerCase().includes('search')) {
-      systemPrompt += `\n\nNo songs were found matching the user's query. Suggest they try different search terms or browse the music library at /music.`;
+      systemPrompt += `\n\nSongs matching the user's query (already shown with play/download buttons):\n${foundSongs.map((s: any, i: number) => `${i + 1}. "${s.title}" by ${s.artist}${s.genre ? ` (${s.genre})` : ''}`).join('\n')}\nMention them naturally — don't repeat the full list.`;
+    }
+    if (foundPodcasts && foundPodcasts.length > 0) {
+      systemPrompt += `\n\nMatching podcast episodes (shown as clickable cards):\n${foundPodcasts.map((p: any, i: number) => `${i + 1}. "${p.title}"${p.author ? ` by ${p.author}` : ''}`).join('\n')}`;
+    }
+    if ((!foundSongs || foundSongs.length === 0) && (!foundPodcasts || foundPodcasts.length === 0)) {
+      const lastMsg = messages[messages.length - 1]?.content?.toLowerCase() || '';
+      if (/(song|find|search|play|podcast|artist|music)/.test(lastMsg)) {
+        systemPrompt += `\n\nNo songs or podcasts matched. Suggest browsing /music or /podcasts.`;
+      }
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
