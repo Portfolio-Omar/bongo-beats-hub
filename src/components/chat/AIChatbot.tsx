@@ -13,12 +13,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { Song } from '@/types/music';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
+import { Link } from 'react-router-dom';
+import { useLanguage } from '@/context/LanguageContext';
+
+interface Podcast {
+  id: string;
+  title: string;
+  description: string | null;
+  author_name: string | null;
+  cover_url: string | null;
+  audio_url: string;
+}
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   songs?: Song[];
+  podcasts?: Podcast[];
 }
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -50,21 +62,45 @@ const AIChatbot: React.FC = () => {
     }
   }, [isOpen]);
 
+  const { language } = useLanguage();
+
+  // Strip noisy/ambiguous filler words before searching
+  const sanitizeQuery = (q: string): string => {
+    return q
+      .toLowerCase()
+      .replace(/\b(find|search|play|song|songs|artist|music|looking for|give me|show me|please|can you|find me|the|a|an|of|by|for|me|some)\b/g, ' ')
+      .replace(/[^a-z0-9\s']/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
   const searchSongs = async (query: string): Promise<Song[]> => {
-    const searchTerms = query.toLowerCase();
-    
+    const term = sanitizeQuery(query);
+    if (!term) return [];
+    const tokens = term.split(' ').filter(t => t.length > 1).slice(0, 4);
+    const or = tokens.flatMap(t => [`title.ilike.%${t}%`, `artist.ilike.%${t}%`, `genre.ilike.%${t}%`]).join(',');
     const { data, error } = await supabase
       .from('songs')
       .select('*')
       .eq('published', true)
-      .or(`title.ilike.%${searchTerms}%,artist.ilike.%${searchTerms}%,genre.ilike.%${searchTerms}%`)
-      .limit(5);
+      .or(or || `title.ilike.%${term}%,artist.ilike.%${term}%,genre.ilike.%${term}%`)
+      .limit(6);
+    if (error) { console.error('Search error:', error); return []; }
+    return data || [];
+  };
 
-    if (error) {
-      console.error('Search error:', error);
-      return [];
-    }
-
+  const searchPodcasts = async (query: string): Promise<Podcast[]> => {
+    const term = sanitizeQuery(query);
+    if (!term) return [];
+    const tokens = term.split(' ').filter(t => t.length > 1).slice(0, 4);
+    const or = tokens.flatMap(t => [`title.ilike.%${t}%`, `description.ilike.%${t}%`, `author_name.ilike.%${t}%`]).join(',');
+    const { data, error } = await supabase
+      .from('podcasts')
+      .select('id,title,description,author_name,cover_url,audio_url')
+      .eq('published', true)
+      .or(or || `title.ilike.%${term}%`)
+      .limit(4);
+    if (error) { console.error('Podcast search error:', error); return []; }
     return data || [];
   };
 
