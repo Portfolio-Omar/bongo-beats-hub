@@ -118,16 +118,11 @@ const AIChatbot: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Check if user is searching for songs
-      const searchKeywords = ['find', 'search', 'play', 'song', 'artist', 'music', 'looking for', 'give me', 'show me'];
-      const isSearchQuery = searchKeywords.some(keyword => 
-        input.toLowerCase().includes(keyword)
-      );
-
-      let foundSongs: Song[] = [];
-      if (isSearchQuery) {
-        foundSongs = await searchSongs(input);
-      }
+      // Always search both songs and podcasts in parallel — the DB returns nothing for irrelevant queries
+      const [foundSongs, foundPodcasts] = await Promise.all([
+        searchSongs(input),
+        searchPodcasts(input),
+      ]);
 
       // Call AI for response
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/music-chat`, {
@@ -138,7 +133,9 @@ const AIChatbot: React.FC = () => {
         },
         body: JSON.stringify({
           messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })),
-          foundSongs: foundSongs.map(s => ({ title: s.title, artist: s.artist, genre: s.genre }))
+          foundSongs: foundSongs.map(s => ({ title: s.title, artist: s.artist, genre: s.genre })),
+          foundPodcasts: foundPodcasts.map(p => ({ title: p.title, author: p.author_name })),
+          language,
         }),
       });
 
@@ -165,7 +162,8 @@ const AIChatbot: React.FC = () => {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: '',
-        songs: foundSongs.length > 0 ? foundSongs : undefined
+        songs: foundSongs.length > 0 ? foundSongs : undefined,
+        podcasts: foundPodcasts.length > 0 ? foundPodcasts : undefined,
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -211,11 +209,11 @@ const AIChatbot: React.FC = () => {
         }
       }
 
-      // Ensure final message has songs attached
-      setMessages(prev => 
-        prev.map(m => 
-          m.id === assistantMessage.id 
-            ? { ...m, content: assistantContent, songs: foundSongs.length > 0 ? foundSongs : undefined }
+      // Ensure final message has songs/podcasts attached
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === assistantMessage.id
+            ? { ...m, content: assistantContent, songs: foundSongs.length > 0 ? foundSongs : undefined, podcasts: foundPodcasts.length > 0 ? foundPodcasts : undefined }
             : m
         )
       );
