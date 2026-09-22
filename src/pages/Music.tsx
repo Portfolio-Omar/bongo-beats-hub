@@ -252,7 +252,52 @@ const Music = () => {
           </div>
         </motion.div>
 
-        <p className="text-sm text-muted-foreground mb-4">{sortedSongs.length} songs found</p>
+        {/* Bulk download bar */}
+        <div className="mb-4 rounded-lg border border-gold/30 bg-card/80 backdrop-blur p-3">
+          {!selectMode ? (
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <p className="text-sm text-muted-foreground">{sortedSongs.length} songs found</p>
+              <Button variant="outline" size="sm" className="gap-2 border-gold/40 hover:bg-gold/10"
+                onClick={() => setSelectMode(true)}>
+                <Package className="h-4 w-4" /> Bulk download (ZIP)
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckSquare className="h-4 w-4 text-gold" />
+                  <span className="font-medium">{selectedIds.length}/{effectiveLimit} selected</span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => { setSelectMode(false); setSelectedIds([]); }} disabled={zipping}>
+                  <X className="h-4 w-4 mr-1" /> Cancel
+                </Button>
+              </div>
+              <div className="flex items-end gap-2 flex-wrap">
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">How many songs? (max {MAX_BULK})</label>
+                  <Input type="number" min={1} max={MAX_BULK} value={bulkLimit}
+                    onChange={(e) => {
+                      const v = Math.min(Math.max(parseInt(e.target.value) || 1, 1), MAX_BULK);
+                      setBulkLimit(v);
+                      setSelectedIds(prev => prev.slice(0, v));
+                    }}
+                    className="w-28 bg-background border-gold/30" />
+                </div>
+                <Button variant="outline" size="sm" className="border-gold/40" onClick={selectFirstN} disabled={zipping}>
+                  Auto-select {effectiveLimit}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])} disabled={zipping}>Clear</Button>
+                <Button size="sm" className="gap-2 bg-gold hover:bg-gold/90 text-gold-foreground"
+                  onClick={handleBulkDownload} disabled={zipping || selectedIds.length === 0}>
+                  {zipping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  {zipping ? `Zipping ${zipProgress}%` : `Download ZIP (${selectedIds.length})`}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Tap songs below to select them.</p>
+            </div>
+          )}
+        </div>
 
         {/* Songs Display */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}
