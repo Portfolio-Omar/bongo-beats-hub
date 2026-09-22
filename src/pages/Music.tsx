@@ -309,11 +309,17 @@ const Music = () => {
             <motion.div key={song.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: Math.min(index * 0.02, 0.5) }}>
               {viewMode === 'grid' ? (
-                <Card className={`group hover:shadow-2xl transition-all duration-300 cursor-pointer border-gold/20 hover:border-gold/50 ${
+                <Card onClick={selectMode ? () => toggleSelect(song.id) : undefined}
+                  className={`group hover:shadow-2xl transition-all duration-300 cursor-pointer border-gold/20 hover:border-gold/50 ${
                   currentSong?.id === song.id ? 'ring-2 ring-gold shadow-lg shadow-gold/20' : ''
-                }`}>
+                } ${selectMode && selectedIds.includes(song.id) ? 'ring-2 ring-gold bg-gold/5' : ''}`}>
                   <CardContent className="p-0">
                     <div className="relative">
+                      {selectMode && (
+                        <div className="absolute top-2 left-2 z-10 bg-background/90 rounded p-1">
+                          <Checkbox checked={selectedIds.includes(song.id)} onCheckedChange={() => toggleSelect(song.id)} />
+                        </div>
+                      )}
                       <img src={song.cover_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80'}
                         alt={`${song.title} cover`} className="w-full h-48 object-cover rounded-t-lg" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-t-lg flex items-center justify-center">
