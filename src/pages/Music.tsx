@@ -9,7 +9,9 @@ import { useAudio } from "@/context/AudioContext";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Download, Play, Search, Grid, List, Music2, Disc, Lock } from 'lucide-react';
+import { Download, Play, Search, Grid, List, Music2, Disc, Lock, Package, X, Loader2, CheckSquare } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import JSZip from 'jszip';
 import VoiceSearchButton from '@/components/voice/VoiceSearchButton';
 import { motion } from 'framer-motion';
 import { Song } from '@/types/music';
@@ -30,6 +32,12 @@ const Music = () => {
   const [filterYear, setFilterYear] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [selectedArtist, setSelectedArtist] = useState<string | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkLimit, setBulkLimit] = useState(10);
+  const [zipping, setZipping] = useState(false);
+  const [zipProgress, setZipProgress] = useState(0);
+  const MAX_BULK = 20;
   const { toast } = useToast();
   const { playSong, currentSong, isPlaying } = useAudio();
   const { isAuthenticated } = useAuth();
@@ -84,6 +92,75 @@ const Music = () => {
       toast({ title: "Download started", description: `${song.title} by ${song.artist}` });
     } catch {
       toast({ title: "Download failed", description: "Unable to download", variant: "destructive" });
+    }
+  };
+
+  const effectiveLimit = Math.min(Math.max(bulkLimit || 1, 1), MAX_BULK);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= effectiveLimit) {
+        sonnerToast.error(`You can select up to ${effectiveLimit} songs`);
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const selectFirstN = () => {
+    setSelectedIds(sortedSongs.slice(0, effectiveLimit).map(s => s.id));
+  };
+
+  const handleBulkDownload = async () => {
+    if (!isAuthenticated) {
+      sonnerToast.error('Please sign in to download songs');
+      navigate('/auth');
+      return;
+    }
+    const chosen = (songs || []).filter(s => selectedIds.includes(s.id)).slice(0, MAX_BULK);
+    if (chosen.length === 0) {
+      sonnerToast.error('Select at least one song');
+      return;
+    }
+    setZipping(true);
+    setZipProgress(0);
+    try {
+      const zip = new JSZip();
+      let done = 0;
+      let failed = 0;
+      for (const song of chosen) {
+        try {
+          const res = await fetch(song.audio_url);
+          if (!res.ok) throw new Error('fetch failed');
+          const blob = await res.blob();
+          const safe = `${song.artist} - ${song.title}`.replace(/[^\w\s.-]/g, '_');
+          zip.file(`${safe}.mp3`, blob);
+          await supabase.from('songs').update({ download_count: (song.download_count || 0) + 1 }).eq('id', song.id);
+        } catch {
+          failed++;
+        }
+        done++;
+        setZipProgress(Math.round((done / chosen.length) * 100));
+      }
+      if (done === failed) throw new Error('all failed');
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `bongo-old-skool-${chosen.length}-songs.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      sonnerToast.success(`Zip ready with ${chosen.length - failed} song${chosen.length - failed === 1 ? '' : 's'}${failed ? ` (${failed} skipped)` : ''}`);
+      setSelectedIds([]);
+      setSelectMode(false);
+    } catch {
+      sonnerToast.error('Bulk download failed. Please try again.');
+    } finally {
+      setZipping(false);
+      setZipProgress(0);
     }
   };
 
@@ -175,7 +252,52 @@ const Music = () => {
           </div>
         </motion.div>
 
-        <p className="text-sm text-muted-foreground mb-4">{sortedSongs.length} songs found</p>
+        {/* Bulk download bar */}
+        <div className="mb-4 rounded-lg border border-gold/30 bg-card/80 backdrop-blur p-3">
+          {!selectMode ? (
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <p className="text-sm text-muted-foreground">{sortedSongs.length} songs found</p>
+              <Button variant="outline" size="sm" className="gap-2 border-gold/40 hover:bg-gold/10"
+                onClick={() => setSelectMode(true)}>
+                <Package className="h-4 w-4" /> Bulk download (ZIP)
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckSquare className="h-4 w-4 text-gold" />
+                  <span className="font-medium">{selectedIds.length}/{effectiveLimit} selected</span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => { setSelectMode(false); setSelectedIds([]); }} disabled={zipping}>
+                  <X className="h-4 w-4 mr-1" /> Cancel
+                </Button>
+              </div>
+              <div className="flex items-end gap-2 flex-wrap">
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">How many songs? (max {MAX_BULK})</label>
+                  <Input type="number" min={1} max={MAX_BULK} value={bulkLimit}
+                    onChange={(e) => {
+                      const v = Math.min(Math.max(parseInt(e.target.value) || 1, 1), MAX_BULK);
+                      setBulkLimit(v);
+                      setSelectedIds(prev => prev.slice(0, v));
+                    }}
+                    className="w-28 bg-background border-gold/30" />
+                </div>
+                <Button variant="outline" size="sm" className="border-gold/40" onClick={selectFirstN} disabled={zipping}>
+                  Auto-select {effectiveLimit}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])} disabled={zipping}>Clear</Button>
+                <Button size="sm" className="gap-2 bg-gold hover:bg-gold/90 text-gold-foreground"
+                  onClick={handleBulkDownload} disabled={zipping || selectedIds.length === 0}>
+                  {zipping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  {zipping ? `Zipping ${zipProgress}%` : `Download ZIP (${selectedIds.length})`}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Tap songs below to select them.</p>
+            </div>
+          )}
+        </div>
 
         {/* Songs Display */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}
@@ -187,11 +309,17 @@ const Music = () => {
             <motion.div key={song.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: Math.min(index * 0.02, 0.5) }}>
               {viewMode === 'grid' ? (
-                <Card className={`group hover:shadow-2xl transition-all duration-300 cursor-pointer border-gold/20 hover:border-gold/50 ${
+                <Card onClick={selectMode ? () => toggleSelect(song.id) : undefined}
+                  className={`group hover:shadow-2xl transition-all duration-300 cursor-pointer border-gold/20 hover:border-gold/50 ${
                   currentSong?.id === song.id ? 'ring-2 ring-gold shadow-lg shadow-gold/20' : ''
-                }`}>
+                } ${selectMode && selectedIds.includes(song.id) ? 'ring-2 ring-gold bg-gold/5' : ''}`}>
                   <CardContent className="p-0">
                     <div className="relative">
+                      {selectMode && (
+                        <div className="absolute top-2 left-2 z-10 bg-background/90 rounded p-1">
+                          <Checkbox checked={selectedIds.includes(song.id)} onCheckedChange={() => toggleSelect(song.id)} />
+                        </div>
+                      )}
                       <img src={song.cover_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80'}
                         alt={`${song.title} cover`} className="w-full h-48 object-cover rounded-t-lg" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-t-lg flex items-center justify-center">
@@ -233,11 +361,15 @@ const Music = () => {
                 </Card>
               ) : (
                 /* Compact list view */
-                <Card className={`group hover:shadow-md transition-all duration-200 border-gold/10 hover:border-gold/30 ${
+                <Card onClick={selectMode ? () => toggleSelect(song.id) : undefined}
+                  className={`group hover:shadow-md transition-all duration-200 border-gold/10 hover:border-gold/30 ${
                   currentSong?.id === song.id ? 'ring-1 ring-gold bg-gold/5' : ''
-                }`}>
+                } ${selectMode ? 'cursor-pointer' : ''} ${selectMode && selectedIds.includes(song.id) ? 'ring-1 ring-gold bg-gold/10' : ''}`}>
                   <CardContent className="p-2 sm:p-3">
                     <div className="flex items-center gap-3">
+                      {selectMode && (
+                        <Checkbox checked={selectedIds.includes(song.id)} onCheckedChange={() => toggleSelect(song.id)} />
+                      )}
                       <div className="relative flex-shrink-0">
                         <img src={song.cover_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=80&h=80&q=80'}
                           alt="" className="w-10 h-10 object-cover rounded" />
