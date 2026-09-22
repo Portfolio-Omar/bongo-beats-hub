@@ -95,6 +95,75 @@ const Music = () => {
     }
   };
 
+  const effectiveLimit = Math.min(Math.max(bulkLimit || 1, 1), MAX_BULK);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= effectiveLimit) {
+        sonnerToast.error(`You can select up to ${effectiveLimit} songs`);
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const selectFirstN = () => {
+    setSelectedIds(sortedSongs.slice(0, effectiveLimit).map(s => s.id));
+  };
+
+  const handleBulkDownload = async () => {
+    if (!isAuthenticated) {
+      sonnerToast.error('Please sign in to download songs');
+      navigate('/auth');
+      return;
+    }
+    const chosen = (songs || []).filter(s => selectedIds.includes(s.id)).slice(0, MAX_BULK);
+    if (chosen.length === 0) {
+      sonnerToast.error('Select at least one song');
+      return;
+    }
+    setZipping(true);
+    setZipProgress(0);
+    try {
+      const zip = new JSZip();
+      let done = 0;
+      let failed = 0;
+      for (const song of chosen) {
+        try {
+          const res = await fetch(song.audio_url);
+          if (!res.ok) throw new Error('fetch failed');
+          const blob = await res.blob();
+          const safe = `${song.artist} - ${song.title}`.replace(/[^\w\s.-]/g, '_');
+          zip.file(`${safe}.mp3`, blob);
+          await supabase.from('songs').update({ download_count: (song.download_count || 0) + 1 }).eq('id', song.id);
+        } catch {
+          failed++;
+        }
+        done++;
+        setZipProgress(Math.round((done / chosen.length) * 100));
+      }
+      if (done === failed) throw new Error('all failed');
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `bongo-old-skool-${chosen.length}-songs.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      sonnerToast.success(`Zip ready with ${chosen.length - failed} song${chosen.length - failed === 1 ? '' : 's'}${failed ? ` (${failed} skipped)` : ''}`);
+      setSelectedIds([]);
+      setSelectMode(false);
+    } catch {
+      sonnerToast.error('Bulk download failed. Please try again.');
+    } finally {
+      setZipping(false);
+      setZipProgress(0);
+    }
+  };
+
   const handlePlaySong = async (song: Song) => {
     playSong(song, sortedSongs);
     try { await supabase.rpc('increment_song_view', { _song_id: song.id }); } catch {}
