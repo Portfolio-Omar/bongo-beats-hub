@@ -361,11 +361,15 @@ const Music = () => {
                 </Card>
               ) : (
                 /* Compact list view */
-                <Card className={`group hover:shadow-md transition-all duration-200 border-gold/10 hover:border-gold/30 ${
+                <Card onClick={selectMode ? () => toggleSelect(song.id) : undefined}
+                  className={`group hover:shadow-md transition-all duration-200 border-gold/10 hover:border-gold/30 ${
                   currentSong?.id === song.id ? 'ring-1 ring-gold bg-gold/5' : ''
-                }`}>
+                } ${selectMode ? 'cursor-pointer' : ''} ${selectMode && selectedIds.includes(song.id) ? 'ring-1 ring-gold bg-gold/10' : ''}`}>
                   <CardContent className="p-2 sm:p-3">
                     <div className="flex items-center gap-3">
+                      {selectMode && (
+                        <Checkbox checked={selectedIds.includes(song.id)} onCheckedChange={() => toggleSelect(song.id)} />
+                      )}
                       <div className="relative flex-shrink-0">
                         <img src={song.cover_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=80&h=80&q=80'}
                           alt="" className="w-10 h-10 object-cover rounded" />
