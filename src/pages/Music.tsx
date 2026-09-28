@@ -265,25 +265,15 @@ const Music = () => {
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 text-sm">
                   <CheckSquare className="h-4 w-4 text-gold" />
-                  <span className="font-medium">{selectedIds.length}/{effectiveLimit} selected</span>
+                  <span className="font-medium">{selectedIds.length} selected</span>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => { setSelectMode(false); setSelectedIds([]); }} disabled={zipping}>
                   <X className="h-4 w-4 mr-1" /> Cancel
                 </Button>
               </div>
               <div className="flex items-end gap-2 flex-wrap">
-                <div>
-                  <label className="text-xs text-muted-foreground block mb-1">How many songs? (max {MAX_BULK})</label>
-                  <Input type="number" min={1} max={MAX_BULK} value={bulkLimit}
-                    onChange={(e) => {
-                      const v = Math.min(Math.max(parseInt(e.target.value) || 1, 1), MAX_BULK);
-                      setBulkLimit(v);
-                      setSelectedIds(prev => prev.slice(0, v));
-                    }}
-                    className="w-28 bg-background border-gold/30" />
-                </div>
-                <Button variant="outline" size="sm" className="border-gold/40" onClick={selectFirstN} disabled={zipping}>
-                  Auto-select {effectiveLimit}
+                <Button variant="outline" size="sm" className="border-gold/40" onClick={toggleSelectAll} disabled={zipping}>
+                  {selectedIds.length >= sortedSongs.length ? 'Deselect all' : `Select all (${sortedSongs.length})`}
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])} disabled={zipping}>Clear</Button>
                 <Button size="sm" className="gap-2 bg-gold hover:bg-gold/90 text-gold-foreground"
