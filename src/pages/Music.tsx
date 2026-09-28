@@ -34,10 +34,8 @@ const Music = () => {
   const [selectedArtist, setSelectedArtist] = useState<string | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [bulkLimit, setBulkLimit] = useState(10);
   const [zipping, setZipping] = useState(false);
   const [zipProgress, setZipProgress] = useState(0);
-  const MAX_BULK = 20;
   const { toast } = useToast();
   const { playSong, currentSong, isPlaying } = useAudio();
   const { isAuthenticated } = useAuth();
@@ -95,21 +93,19 @@ const Music = () => {
     }
   };
 
-  const effectiveLimit = Math.min(Math.max(bulkLimit || 1, 1), MAX_BULK);
-
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
       if (prev.includes(id)) return prev.filter(x => x !== id);
-      if (prev.length >= effectiveLimit) {
-        sonnerToast.error(`You can select up to ${effectiveLimit} songs`);
-        return prev;
-      }
       return [...prev, id];
     });
   };
 
-  const selectFirstN = () => {
-    setSelectedIds(sortedSongs.slice(0, effectiveLimit).map(s => s.id));
+  const toggleSelectAll = () => {
+    if (selectedIds.length >= sortedSongs.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(sortedSongs.map(s => s.id));
+    }
   };
 
   const handleBulkDownload = async () => {
@@ -118,7 +114,7 @@ const Music = () => {
       navigate('/auth');
       return;
     }
-    const chosen = (songs || []).filter(s => selectedIds.includes(s.id)).slice(0, MAX_BULK);
+    const chosen = (songs || []).filter(s => selectedIds.includes(s.id));
     if (chosen.length === 0) {
       sonnerToast.error('Select at least one song');
       return;
@@ -267,25 +263,15 @@ const Music = () => {
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 text-sm">
                   <CheckSquare className="h-4 w-4 text-gold" />
-                  <span className="font-medium">{selectedIds.length}/{effectiveLimit} selected</span>
+                  <span className="font-medium">{selectedIds.length} selected</span>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => { setSelectMode(false); setSelectedIds([]); }} disabled={zipping}>
                   <X className="h-4 w-4 mr-1" /> Cancel
                 </Button>
               </div>
               <div className="flex items-end gap-2 flex-wrap">
-                <div>
-                  <label className="text-xs text-muted-foreground block mb-1">How many songs? (max {MAX_BULK})</label>
-                  <Input type="number" min={1} max={MAX_BULK} value={bulkLimit}
-                    onChange={(e) => {
-                      const v = Math.min(Math.max(parseInt(e.target.value) || 1, 1), MAX_BULK);
-                      setBulkLimit(v);
-                      setSelectedIds(prev => prev.slice(0, v));
-                    }}
-                    className="w-28 bg-background border-gold/30" />
-                </div>
-                <Button variant="outline" size="sm" className="border-gold/40" onClick={selectFirstN} disabled={zipping}>
-                  Auto-select {effectiveLimit}
+                <Button variant="outline" size="sm" className="border-gold/40" onClick={toggleSelectAll} disabled={zipping}>
+                  {selectedIds.length >= sortedSongs.length ? 'Deselect all' : `Select all (${sortedSongs.length})`}
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])} disabled={zipping}>Clear</Button>
                 <Button size="sm" className="gap-2 bg-gold hover:bg-gold/90 text-gold-foreground"
