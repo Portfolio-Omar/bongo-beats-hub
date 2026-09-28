@@ -95,21 +95,19 @@ const Music = () => {
     }
   };
 
-  const effectiveLimit = Math.min(Math.max(bulkLimit || 1, 1), MAX_BULK);
-
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
       if (prev.includes(id)) return prev.filter(x => x !== id);
-      if (prev.length >= effectiveLimit) {
-        sonnerToast.error(`You can select up to ${effectiveLimit} songs`);
-        return prev;
-      }
       return [...prev, id];
     });
   };
 
-  const selectFirstN = () => {
-    setSelectedIds(sortedSongs.slice(0, effectiveLimit).map(s => s.id));
+  const toggleSelectAll = () => {
+    if (selectedIds.length >= sortedSongs.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(sortedSongs.map(s => s.id));
+    }
   };
 
   const handleBulkDownload = async () => {
