@@ -34,10 +34,8 @@ const Music = () => {
   const [selectedArtist, setSelectedArtist] = useState<string | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [bulkLimit, setBulkLimit] = useState(10);
   const [zipping, setZipping] = useState(false);
   const [zipProgress, setZipProgress] = useState(0);
-  const MAX_BULK = 20;
   const { toast } = useToast();
   const { playSong, currentSong, isPlaying } = useAudio();
   const { isAuthenticated } = useAuth();
