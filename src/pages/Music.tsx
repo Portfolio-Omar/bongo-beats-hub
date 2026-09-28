@@ -116,7 +116,7 @@ const Music = () => {
       navigate('/auth');
       return;
     }
-    const chosen = (songs || []).filter(s => selectedIds.includes(s.id)).slice(0, MAX_BULK);
+    const chosen = (songs || []).filter(s => selectedIds.includes(s.id));
     if (chosen.length === 0) {
       sonnerToast.error('Select at least one song');
       return;
