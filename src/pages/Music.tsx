@@ -121,39 +121,58 @@ const Music = () => {
     }
     setZipping(true);
     setZipProgress(0);
+    // Split into parts so the browser doesn't run out of memory on big selections
+    const PART_SIZE = 20;
+    const parts: Song[][] = [];
+    for (let i = 0; i < chosen.length; i += PART_SIZE) parts.push(chosen.slice(i, i + PART_SIZE) as Song[]);
+    let done = 0;
+    let failed = 0;
+    let partsSaved = 0;
     try {
-      const zip = new JSZip();
-      let done = 0;
-      let failed = 0;
-      for (const song of chosen) {
-        try {
-          const res = await fetch(song.audio_url);
-          if (!res.ok) throw new Error('fetch failed');
-          const blob = await res.blob();
-          const safe = `${song.artist} - ${song.title}`.replace(/[^\w\s.-]/g, '_');
-          zip.file(`${safe}.mp3`, blob);
-          await supabase.from('songs').update({ download_count: (song.download_count || 0) + 1 }).eq('id', song.id);
-        } catch {
-          failed++;
+      for (let p = 0; p < parts.length; p++) {
+        const zip = new JSZip();
+        const used = new Set<string>();
+        const part = parts[p];
+        // fetch 4 at a time
+        for (let i = 0; i < part.length; i += 4) {
+          await Promise.all(part.slice(i, i + 4).map(async (song) => {
+            try {
+              const res = await fetch(song.audio_url, { mode: 'cors' });
+              if (!res.ok) throw new Error('fetch failed');
+              const buf = await res.arrayBuffer();
+              let name = `${song.artist} - ${song.title}`.replace(/[\\/:*?"<>|]/g, '_').trim() || song.id;
+              while (used.has(name)) name += '_';
+              used.add(name);
+              zip.file(`${name}.mp3`, buf, { binary: true });
+              supabase.from('songs').update({ download_count: (song.download_count || 0) + 1 }).eq('id', song.id).then(() => {}, () => {});
+            } catch {
+              failed++;
+            }
+            done++;
+            setZipProgress(Math.round((done / chosen.length) * 100));
+          }));
         }
-        done++;
-        setZipProgress(Math.round((done / chosen.length) * 100));
+        if (Object.keys(zip.files).length === 0) continue;
+        const content = await zip.generateAsync({ type: 'blob', compression: 'STORE', streamFiles: true });
+        const url = URL.createObjectURL(content);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = parts.length > 1
+          ? `bongo-old-skool-part-${p + 1}-of-${parts.length}.zip`
+          : `bongo-old-skool-${chosen.length}-songs.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        partsSaved++;
       }
-      if (done === failed) throw new Error('all failed');
-      const content = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(content);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `bongo-old-skool-${chosen.length}-songs.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      sonnerToast.success(`Zip ready with ${chosen.length - failed} song${chosen.length - failed === 1 ? '' : 's'}${failed ? ` (${failed} skipped)` : ''}`);
+      if (partsSaved === 0) throw new Error('all failed');
+      const ok = chosen.length - failed;
+      sonnerToast.success(`Downloaded ${ok} song${ok === 1 ? '' : 's'}${partsSaved > 1 ? ` in ${partsSaved} zip files` : ''}${failed ? ` (${failed} skipped)` : ''}`);
       setSelectedIds([]);
       setSelectMode(false);
     } catch {
-      sonnerToast.error('Bulk download failed. Please try again.');
+      sonnerToast.error('Bulk download failed. Please check your connection and try again.');
     } finally {
       setZipping(false);
       setZipProgress(0);
