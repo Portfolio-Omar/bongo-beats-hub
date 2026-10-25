@@ -1135,24 +1135,33 @@ export type Database = {
       }
       playlists: {
         Row: {
+          cover_color: string | null
           created_at: string | null
           description: string | null
           id: string
           name: string
+          pinned: boolean
+          type: string
           user_id: string
         }
         Insert: {
+          cover_color?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           name: string
+          pinned?: boolean
+          type?: string
           user_id: string
         }
         Update: {
+          cover_color?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           name?: string
+          pinned?: boolean
+          type?: string
           user_id?: string
         }
         Relationships: []
