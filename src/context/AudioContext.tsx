@@ -23,7 +23,7 @@ interface AudioContextType {
   sleepTimer: SleepTimerState;
   fxState: AudioFXState;
   analyserNode: AnalyserNode | null;
-  playSong: (song: Song, playlist?: Song[]) => void;
+  playSong: (song: Song, playlist?: Song[], startAt?: number) => void;
   togglePlayPause: () => void;
   playNext: () => void;
   playPrevious: () => void;
@@ -117,6 +117,30 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem('crossfadeDuration', String(crossfadeDuration));
   }, [crossfadeDuration]);
+
+  // --- Persist listening session so users can resume where they left off ---
+  useEffect(() => {
+    if (!currentSong) return;
+    const save = () => {
+      try {
+        localStorage.setItem('continueListening', JSON.stringify({
+          song: currentSong,
+          queue: playlist.filter(s => s.id !== currentSong.id),
+          position: audioRef.current?.currentTime || 0,
+          duration: audioRef.current?.duration || 0,
+          savedAt: Date.now(),
+        }));
+      } catch {}
+    };
+    const interval = setInterval(save, 5000);
+    window.addEventListener('pagehide', save);
+    window.addEventListener('beforeunload', save);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('pagehide', save);
+      window.removeEventListener('beforeunload', save);
+    };
+  }, [currentSong, playlist]);
 
   // --- Web Audio Chain (singleton) ---
   const initAudioChain = useCallback(() => {
@@ -228,7 +252,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [crossfadeEnabled, crossfadeDuration]);
 
   // --- Play Song ---
-  const playSong = useCallback((song: Song, newPlaylist?: Song[]) => {
+  const playSong = useCallback((song: Song, newPlaylist?: Song[], startAt?: number) => {
     setCurrentSong(song);
     if (newPlaylist) setPlaylist(newPlaylist);
 
@@ -254,6 +278,18 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       audioRef.current.src = song.audio_url;
       audioRef.current.crossOrigin = 'anonymous';
       audioRef.current.load();
+
+      // Resume from a saved position if provided
+      const startFrom = startAt && startAt > 1 ? startAt : 0;
+      if (startFrom > 0) {
+        const onMeta = () => {
+          const el = audioRef.current;
+          if (!el) return;
+          try { el.currentTime = startFrom; } catch {}
+          el.removeEventListener('loadedmetadata', onMeta);
+        };
+        el.addEventListener('loadedmetadata', onMeta);
+      }
 
       // Fade in if crossfade enabled
       if (crossfadeEnabled) {

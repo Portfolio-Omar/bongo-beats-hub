@@ -6,11 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Play, Music2, Headphones, Heart, Sparkles, Mic2, Radio, LogIn, User, Trophy, Wallet, Zap,
-  ListMusic, Users, Clapperboard, BookOpen, MessageSquare, Download, Mic
+  ListMusic, Users, Clapperboard, BookOpen, MessageSquare, Download, Mic, TrendingUp
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SongOfTheWeek from '@/components/ui-custom/SongOfTheWeek';
 import RecentlyPlayed from '@/components/ui-custom/RecentlyPlayed';
+import ContinueListening from '@/components/ui-custom/ContinueListening';
 import PublicUpload from '@/components/ui-custom/PublicUpload';
 import PromotedSongs from '@/components/monetization/PromotedSongs';
 import { useAuth } from '@/context/AuthContext';
@@ -47,15 +48,18 @@ const Index: React.FC = () => {
     }
   });
 
-  const { data: topListeners } = useQuery({
-    queryKey: ['top-listeners-home'],
+  const { data: mostDownloaded } = useQuery({
+    queryKey: ['most-downloaded-home'],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('user_earnings')
-        .select('user_id, songs_listened_today, total_earned')
-        .order('total_earned', { ascending: false })
-        .limit(5);
-      return data || [];
+      const { data, error } = await supabase
+        .from('songs')
+        .select('*')
+        .eq('published', true)
+        .gt('download_count', 0)
+        .order('download_count', { ascending: false })
+        .limit(6);
+      if (error) throw error;
+      return data as Song[];
     }
   });
 
@@ -91,7 +95,7 @@ const Index: React.FC = () => {
     { name: 'Podcasts', path: '/podcasts', icon: Mic, desc: 'Bongo Old Skool podcasts', color: 'text-amber-500' },
     { name: 'Rooms', path: '/audio-rooms', icon: Headphones, desc: 'Live audio listening rooms', color: 'text-sky-500' },
     { name: 'Downloads', path: '/downloads', icon: Download, desc: 'Offline music library', color: 'text-cyan-500' },
-    { name: 'Playlists', path: '/playlists', icon: ListMusic, desc: 'Create & manage playlists', color: 'text-purple-500' },
+    { name: 'Playlists', path: '/playlists', icon: ListMusic, desc: 'Playlists & collections', color: 'text-purple-500' },
     { name: 'Community', path: '/community', icon: Users, desc: 'Chat with music lovers', color: 'text-blue-500' },
     { name: 'Messages', path: '/messages', icon: MessageSquare, desc: 'Private chats & song sharing', color: 'text-violet-500' },
     { name: 'Shorts', path: '/shorts', icon: Play, desc: 'Watch & create short videos', color: 'text-pink-500' },
@@ -167,6 +171,9 @@ const Index: React.FC = () => {
           )}
         </motion.div>
       </section>
+
+      {/* Continue Listening */}
+      <ContinueListening />
 
       {/* Platform Stats */}
       {platformStats && (
