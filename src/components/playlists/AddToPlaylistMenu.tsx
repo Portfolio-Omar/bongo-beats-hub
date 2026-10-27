@@ -38,6 +38,7 @@ const AddToPlaylistMenu: React.FC<AddToPlaylistMenuProps> = ({
   const { playlists, createPlaylist, addSongToPlaylist } = usePlaylists();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [asCollection, setAsCollection] = useState(false);
 
   const handleAddToPlaylist = async (playlistId: string) => {
     await addSongToPlaylist.mutateAsync({ playlistId, songId });
@@ -47,10 +48,11 @@ const AddToPlaylistMenu: React.FC<AddToPlaylistMenuProps> = ({
     if (!newPlaylistName.trim()) return;
     
     try {
-      const playlist = await createPlaylist.mutateAsync({ name: newPlaylistName });
+      const playlist = await createPlaylist.mutateAsync({ name: newPlaylistName, type: asCollection ? 'collection' : 'playlist' });
       await addSongToPlaylist.mutateAsync({ playlistId: playlist.id, songId });
       setIsCreateOpen(false);
       setNewPlaylistName('');
+      setAsCollection(false);
     } catch (error) {
       console.error('Error creating playlist:', error);
     }
@@ -119,7 +121,7 @@ const AddToPlaylistMenu: React.FC<AddToPlaylistMenuProps> = ({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) setAsCollection(false); }}>
         <DialogContent className="bg-card border-border" onClick={(e) => e.stopPropagation()}>
           <DialogHeader>
             <DialogTitle>Create New Playlist</DialogTitle>
@@ -136,6 +138,15 @@ const AddToPlaylistMenu: React.FC<AddToPlaylistMenuProps> = ({
                 }
               }}
             />
+            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={asCollection}
+                onChange={(e) => setAsCollection(e.target.checked)}
+                className="h-4 w-4 accent-[hsl(var(--primary))]"
+              />
+              Save as a collection
+            </label>
             <Button
               onClick={handleCreateAndAdd}
               disabled={!newPlaylistName.trim() || createPlaylist.isPending}

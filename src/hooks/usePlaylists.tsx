@@ -32,13 +32,15 @@ export const usePlaylists = () => {
   });
 
   const createPlaylist = useMutation({
-    mutationFn: async ({ name, description }: { name: string; description?: string }) => {
+    mutationFn: async ({ name, description, type = 'playlist', cover_color = null }: { name: string; description?: string; type?: 'playlist' | 'collection'; cover_color?: string | null }) => {
       if (!user) throw new Error('Not authenticated');
       const { data, error } = await supabase
         .from('playlists')
         .insert([{
           name,
           description: description || null,
+          type,
+          cover_color,
           user_id: user.id,
         }])
         .select()
