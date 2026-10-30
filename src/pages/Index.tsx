@@ -317,36 +317,47 @@ const Index: React.FC = () => {
 
       <PublicUpload />
 
-      {/* Top Listeners Mini Leaderboard */}
-      {topListeners && topListeners.length > 0 && (
+      {/* Most Downloaded Hits */}
+      {mostDownloaded && mostDownloaded.length > 0 && (
         <section className="py-16 px-4 bg-gradient-to-b from-background to-card">
-          <div className="container mx-auto max-w-3xl">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-8">
-              <Trophy className="h-10 w-10 text-gold mx-auto mb-3" />
-              <h2 className="text-3xl md:text-4xl font-heading font-bold mb-2">Top Earners</h2>
-              <p className="text-muted-foreground">The legends earning the most on our platform</p>
+          <div className="container mx-auto max-w-7xl">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10">
+              <TrendingUp className="h-10 w-10 text-gold mx-auto mb-3" />
+              <h2 className="text-3xl md:text-4xl font-heading font-bold mb-2">Most Downloaded Hits</h2>
+              <p className="text-muted-foreground">The throwbacks fans can't stop saving offline</p>
             </motion.div>
-            <div className="space-y-3">
-              {topListeners.slice(0, 5).map((entry, i) => (
-                <motion.div key={entry.user_id} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.1 }} viewport={{ once: true }}
-                  className={`flex items-center justify-between p-4 rounded-xl ${i === 0 ? 'bg-gold/10 border border-gold/30' : 'bg-muted/50'}`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${i === 0 ? 'bg-gold text-gold-foreground' : i === 1 ? 'bg-gray-300 text-gray-800' : i === 2 ? 'bg-amber-700 text-white' : 'bg-muted text-muted-foreground'}`}>
-                      {i + 1}
-                    </div>
-                    <span className="font-medium">User {entry.user_id.slice(0, 8)}...</span>
-                  </div>
-                  <Badge variant={i === 0 ? 'default' : 'secondary'} className={i === 0 ? 'bg-gold text-gold-foreground' : ''}>
-                    KSh {Number(entry.total_earned).toFixed(1)}
-                  </Badge>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+              {mostDownloaded.map((song, i) => (
+                <motion.div key={song.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }} viewport={{ once: true }}>
+                  <Card
+                    className="group cursor-pointer hover:shadow-lg transition-all duration-300 border-gold/20 hover:border-gold/50 overflow-hidden"
+                    onClick={() => handlePlaySong(song)}
+                  >
+                    <CardContent className="p-0">
+                      <div className="relative">
+                        <img
+                          src={song.cover_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'}
+                          alt={`${song.title} cover`} className="w-full aspect-square object-cover" loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center">
+                          <Button variant="secondary" size="icon"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gold hover:bg-gold/90 text-gold-foreground">
+                            <Play className="h-5 w-5" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="p-3">
+                        <p className="font-heading font-semibold text-sm line-clamp-1">{song.title}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{song.artist}</p>
+                        <Badge variant="secondary" className="mt-2 text-xs bg-gold/15 text-gold-foreground border-0">
+                          <Download className="h-3 w-3 mr-1" />{song.download_count || 0}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </motion.div>
               ))}
-            </div>
-            <div className="text-center mt-6">
-              <Button variant="outline" asChild className="border-gold/50 hover:bg-gold/10">
-                <Link to="/leaderboard"><Trophy className="mr-2 h-4 w-4" />View Full Leaderboard</Link>
-              </Button>
             </div>
           </div>
         </section>

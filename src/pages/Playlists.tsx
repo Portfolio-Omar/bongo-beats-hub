@@ -18,7 +18,7 @@ import {
 import {
   Plus, Music, Play, Trash2, GripVertical, ListMusic,
   Disc, ChevronLeft, Edit2, X, Search, MoreVertical,
-  Shuffle, Clock, Pin, Layers, ArrowUpDown,
+  Shuffle, Clock, Pin, PinOff, Layers, ArrowUpDown,
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { toast } from 'sonner';
