@@ -288,7 +288,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           try { el.currentTime = startFrom; } catch {}
           el.removeEventListener('loadedmetadata', onMeta);
         };
-        el.addEventListener('loadedmetadata', onMeta);
+        audioRef.current.addEventListener('loadedmetadata', onMeta);
       }
 
       // Fade in if crossfade enabled
