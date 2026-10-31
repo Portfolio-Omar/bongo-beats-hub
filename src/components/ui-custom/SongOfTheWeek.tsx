@@ -5,8 +5,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Song } from '@/types/music';
 import { motion } from 'framer-motion';
 import { Play, Pause, Download, CalendarDays } from 'lucide-react';
+import { cleanSongName } from '@/lib/song-name-cleaner';
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Show clean names even for legacy rows with download-site junk in them */
+const tidy = (value: string | null | undefined, fallback: string) => {
+  const cleaned = value ? cleanSongName(value) : '';
+  return cleaned || fallback;
+};
 
 /** Monday 00:00 of the current week + a stable weekly rotation number */
 const getWeekInfo = () => {
