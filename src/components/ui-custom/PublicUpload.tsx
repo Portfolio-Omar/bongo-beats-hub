@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Upload, Music, Send, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Upload, Music, Send, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cleanSongName, parseArtistAndTitle } from '@/lib/song-name-cleaner';
@@ -235,7 +235,7 @@ const PublicUpload = () => {
                 whileHover={{ scale: 1.05 }}
                 className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center mb-4"
               >
-                <Music className="h-8 h-8 text-gold-foreground" />
+                <Music className="w-8 h-8 text-gold-foreground" />
               </motion.div>
               <CardTitle className="text-2xl font-bold">Upload Song Request{files.length > 1 ? 's' : ''}</CardTitle>
               <CardDescription className="text-base">
