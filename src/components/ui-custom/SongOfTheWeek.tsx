@@ -1,52 +1,95 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from '@/integrations/supabase/client';
 import { Song } from '@/types/music';
 import { motion } from 'framer-motion';
-import { Play, Pause, Download } from 'lucide-react';
+import { Play, Pause, Download, CalendarDays } from 'lucide-react';
+import { cleanSongName } from '@/lib/song-name-cleaner';
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Show clean names even for legacy rows with download-site junk in them */
+const tidy = (value: string | null | undefined, fallback: string) => {
+  const cleaned = value ? cleanSongName(value) : '';
+  return cleaned || fallback;
+};
+
+/** Monday 00:00 of the current week + a stable weekly rotation number */
+const getWeekInfo = () => {
+  const now = new Date();
+  const day = (now.getDay() + 6) % 7; // Monday = 0
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+  monday.setHours(0, 0, 0, 0);
+  const weekNumber = Math.floor(monday.getTime() / WEEK_MS);
+  return { monday, weekNumber };
+};
 
 const SongOfTheWeek: React.FC = () => {
   const [song, setSong] = useState<Song | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const title = useMemo(() => tidy(song?.title, 'Unknown Song'), [song]);
+  const artist = useMemo(() => tidy(song?.artist, 'Unknown Artist'), [song]);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
-  
+
+  const { monday, weekNumber } = useMemo(getWeekInfo, []);
+  const weekLabel = useMemo(
+    () => monday.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+    [monday]
+  );
+
   useEffect(() => {
     const fetchSongOfTheWeek = async () => {
       try {
         setLoading(true);
-        const randomSongId = localStorage.getItem('random_song_id');
-        
-        if (randomSongId) {
-          const { data: songData, error: songError } = await supabase
-            .from('songs').select('*').eq('id', randomSongId).single();
-          if (!songError && songData) { setSong(songData); setLoading(false); return; }
-        }
-        
-        const { data: sotw, error: sotwError } = await supabase
+        setError(null);
+
+        // 1) Admin-set pick: honored only if it was set during the current week
+        const { data: sotwRows, error: sotwError } = await supabase
           .from('song_of_the_week')
           .select('*, song:song_id(*)')
           .eq('active', true)
           .order('feature_date', { ascending: false })
-          .limit(1)
-          .single();
-          
-        if (sotwError) {
-          const { data: fallbackSongs } = await supabase
-            .from('songs').select('*').eq('published', true).order('created_at', { ascending: false }).limit(20);
-          if (fallbackSongs && fallbackSongs.length > 0) {
-            setSong(fallbackSongs[Math.floor(Math.random() * fallbackSongs.length)]);
-          } else { setError('No songs available.'); }
-        } else if (sotw?.song) {
-          setSong(sotw.song);
-        } else { setError('No featured song available.'); }
-      } catch { setError('An unexpected error occurred.'); }
-      finally { setLoading(false); }
+          .limit(1);
+
+        const current = sotwRows?.[0];
+        const featureDate = current?.feature_date ? new Date(current.feature_date).getTime() : 0;
+
+        if (!sotwError && current?.song && featureDate >= monday.getTime()) {
+          setSong(current.song as Song);
+          return;
+        }
+
+        // 2) Automatic weekly rotation: a deterministic pick that changes every Monday
+        const { data: songs, error: songsError } = await supabase
+          .from('songs')
+          .select('*')
+          .eq('published', true)
+          .order('created_at', { ascending: true });
+
+        if (songsError) throw songsError;
+
+        if (songs && songs.length > 0) {
+          // Skip the stale previous pick so a new song is featured
+          let pool = songs;
+          if (current?.song && songs.length > 1) {
+            pool = songs.filter(s => s.id !== (current.song as Song).id);
+          }
+          const rotated = pool[weekNumber % pool.length];
+          setSong(rotated);
+        } else {
+          setError('No songs available yet.');
+        }
+      } catch {
+        setError('An unexpected error occurred.');
+      } finally {
+        setLoading(false);
+      }
     };
     fetchSongOfTheWeek();
-  }, []);
+  }, [monday, weekNumber]);
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -57,7 +100,7 @@ const SongOfTheWeek: React.FC = () => {
       audioRef.current.play().then(() => setIsPlaying(true)).catch(console.error);
     }
   };
-  
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-16">
@@ -65,7 +108,7 @@ const SongOfTheWeek: React.FC = () => {
       </div>
     );
   }
-  
+
   if (error || !song) {
     return (
       <div className="container mx-auto px-4 py-16">
@@ -79,13 +122,17 @@ const SongOfTheWeek: React.FC = () => {
       <div className="absolute inset-0 bg-gradient-to-br from-gold/5 via-transparent to-gold/10" />
       <motion.div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl"
         animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 8, repeat: Infinity }} />
-      
+
       <div className="container mx-auto px-4 relative z-10">
         <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="text-center mb-12">
-          <motion.div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold/10 text-gold-foreground font-medium text-sm mb-6 border border-gold/30" whileHover={{ scale: 1.05 }}>
+          <motion.div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold/10 text-gold-foreground font-medium text-sm mb-4 border border-gold/30" whileHover={{ scale: 1.05 }}>
             <div className="w-2 h-2 bg-gold rounded-full animate-pulse" />
             Throwback of the Week
           </motion.div>
+          <div className="flex items-center justify-center gap-1.5 text-sm text-gold-foreground/80 mb-6">
+            <CalendarDays className="h-4 w-4" />
+            Week of {weekLabel}
+          </div>
           <h2 className="text-4xl md:text-6xl font-heading font-bold bg-gradient-to-r from-gold to-yellow-600 bg-clip-text text-transparent mb-4">
             🎵 This one used to shut down every club in Sinza
           </h2>
@@ -104,7 +151,7 @@ const SongOfTheWeek: React.FC = () => {
                   <motion.div className="absolute inset-0 bg-gradient-to-br from-gold/30 via-transparent to-gold/20"
                     animate={{ opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 4, repeat: Infinity }} />
                   {song.cover_url ? (
-                    <motion.img src={song.cover_url} alt={`${song.title} by ${song.artist}`} className="w-full h-full object-cover"
+                    <motion.img src={song.cover_url} alt={`${title} by ${artist}`} className="w-full h-full object-cover"
                       whileHover={{ scale: 1.05 }} transition={{ duration: 0.6 }} />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
@@ -112,12 +159,12 @@ const SongOfTheWeek: React.FC = () => {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Song Info - Simplified Controls */}
                 <div className="lg:col-span-3 p-8 lg:p-12 flex flex-col justify-center">
                   <div className="mb-8">
-                    <h3 className="text-3xl lg:text-5xl font-bold mb-3">{song.title}</h3>
-                    <p className="text-xl lg:text-2xl text-muted-foreground mb-6">{song.artist}</p>
+                    <h3 className="text-3xl lg:text-5xl font-bold mb-3">{title}</h3>
+                    <p className="text-xl lg:text-2xl text-muted-foreground mb-6">{artist}</p>
                     <div className="flex flex-wrap gap-3 mb-6">
                       {song.genre && (
                         <div className="px-4 py-2 rounded-full bg-gold/10 text-gold-foreground font-medium border border-gold/30">{song.genre}</div>
@@ -130,7 +177,7 @@ const SongOfTheWeek: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Simple Play/Pause Only */}
                   <div className="flex items-center gap-4">
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
