@@ -29,6 +29,8 @@ const SongOfTheWeek: React.FC = () => {
   const [song, setSong] = useState<Song | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const title = useMemo(() => tidy(song?.title, 'Unknown Song'), [song]);
+  const artist = useMemo(() => tidy(song?.artist, 'Unknown Artist'), [song]);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
