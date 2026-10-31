@@ -151,7 +151,7 @@ const SongOfTheWeek: React.FC = () => {
                   <motion.div className="absolute inset-0 bg-gradient-to-br from-gold/30 via-transparent to-gold/20"
                     animate={{ opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 4, repeat: Infinity }} />
                   {song.cover_url ? (
-                    <motion.img src={song.cover_url} alt={`${song.title} by ${song.artist}`} className="w-full h-full object-cover"
+                    <motion.img src={song.cover_url} alt={`${title} by ${artist}`} className="w-full h-full object-cover"
                       whileHover={{ scale: 1.05 }} transition={{ duration: 0.6 }} />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
@@ -163,8 +163,8 @@ const SongOfTheWeek: React.FC = () => {
                 {/* Song Info - Simplified Controls */}
                 <div className="lg:col-span-3 p-8 lg:p-12 flex flex-col justify-center">
                   <div className="mb-8">
-                    <h3 className="text-3xl lg:text-5xl font-bold mb-3">{song.title}</h3>
-                    <p className="text-xl lg:text-2xl text-muted-foreground mb-6">{song.artist}</p>
+                    <h3 className="text-3xl lg:text-5xl font-bold mb-3">{title}</h3>
+                    <p className="text-xl lg:text-2xl text-muted-foreground mb-6">{artist}</p>
                     <div className="flex flex-wrap gap-3 mb-6">
                       {song.genre && (
                         <div className="px-4 py-2 rounded-full bg-gold/10 text-gold-foreground font-medium border border-gold/30">{song.genre}</div>
