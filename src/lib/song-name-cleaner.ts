@@ -35,7 +35,7 @@ export function cleanSongName(raw: string): string {
   BRACKET_PATTERNS.forEach((re) => { out = out.replace(re, ' '); });
   NOISE_PATTERNS.forEach((re) => { out = out.replace(re, ' '); });
   // Trim leading/trailing separator chars
-  out = out.replace(/[_\\-|•·]+/g, ' ');
+  out = out.replace(/[-_\\|•·]+/g, ' ');
   out = out.replace(/\s{2,}/g, ' ').trim();
   // Title-case-ish: keep original casing but trim stray punctuation
   out = out.replace(/^[\s\-_,.;:]+|[\s\-_,.;:]+$/g, '');
