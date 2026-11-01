@@ -35,22 +35,22 @@ export function cleanSongName(raw: string): string {
   BRACKET_PATTERNS.forEach((re) => { out = out.replace(re, ' '); });
   NOISE_PATTERNS.forEach((re) => { out = out.replace(re, ' '); });
   // Trim leading/trailing separator chars
-  out = out.replace(/[_\\-|•·]+/g, ' ');
+  out = out.replace(/[-_\\|•·]+/g, ' ');
   out = out.replace(/\s{2,}/g, ' ').trim();
   // Title-case-ish: keep original casing but trim stray punctuation
   out = out.replace(/^[\s\-_,.;:]+|[\s\-_,.;:]+$/g, '');
   return out || raw.trim();
 }
 
-// Heuristic artist + title extraction from filename
+// Heuristic artist + title extraction from filename.
+// Split on separators BEFORE cleaning so "Artist - Title" is preserved.
 export function parseArtistAndTitle(fileName: string): { artist: string; title: string } {
   const base = fileName.replace(/\.[^/.]+$/, '');
-  const cleaned = cleanSongName(base);
-  // Common formats: "Artist - Title", "Title - Artist", "Artist_Title"
-  const sepMatch = cleaned.split(/\s[-–|]\s|_/);
-  if (sepMatch.length >= 2) {
-    const [a, ...rest] = sepMatch;
-    return { artist: cleanSongName(a), title: cleanSongName(rest.join(' - ')) };
+  const parts = base.split(/\s*[-–|]\s*|_+/).map(p => cleanSongName(p));
+  // Drop pure-numeric junk prefixes (e.g. download-site id "1754946973000")
+  while (parts.length > 1 && /^\d+$/.test(parts[0])) parts.shift();
+  if (parts.length >= 2 && parts[0]) {
+    return { artist: parts[0], title: parts.slice(1).filter(Boolean).join(' ') };
   }
-  return { artist: '', title: cleaned };
+  return { artist: '', title: cleanSongName(base) };
 }
