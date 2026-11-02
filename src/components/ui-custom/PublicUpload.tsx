@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, Music, Send, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { cleanSongName, parseArtistAndTitle } from '@/lib/song-name-cleaner';
+import { cleanSongName, isJunkName, parseArtistAndTitle } from '@/lib/song-name-cleaner';
 
 const MAX_FILES = 10;
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -32,8 +32,8 @@ const PublicUpload = () => {
     const parsed = parseArtistAndTitle(file.name);
     return {
       file,
-      songName: cleanSongName(parsed.title) || songName.trim(),
-      artistName: parsed.artist || artistName.trim(),
+      songName: isJunkName(parsed.title) ? songName.trim() : cleanSongName(parsed.title),
+      artistName: isJunkName(parsed.artist) ? artistName.trim() : parsed.artist,
     };
   };
 
