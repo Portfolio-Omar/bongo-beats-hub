@@ -42,6 +42,16 @@ export function cleanSongName(raw: string): string {
   return out || raw.trim();
 }
 
+/** True when a name consists only of download-site/URL junk (nothing meaningful left after cleaning) */
+export function isJunkName(raw: string): boolean {
+  if (!raw) return true;
+  let out = raw;
+  BRACKET_PATTERNS.forEach((re) => { out = out.replace(re, ' '); });
+  NOISE_PATTERNS.forEach((re) => { out = out.replace(re, ' '); });
+  out = out.replace(/[-_\\|•·]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  return out.length === 0;
+}
+
 // Heuristic artist + title extraction from filename.
 // Split on separators BEFORE cleaning so "Artist - Title" is preserved.
 export function parseArtistAndTitle(fileName: string): { artist: string; title: string } {
