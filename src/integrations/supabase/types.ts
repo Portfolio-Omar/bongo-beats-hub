@@ -684,6 +684,142 @@ export type Database = {
         }
         Relationships: []
       }
+      listen_session_messages: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          message: string | null
+          session_id: string
+          user_id: string
+          user_name: string
+          voice_duration: number | null
+          voice_url: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          session_id: string
+          user_id: string
+          user_name: string
+          voice_duration?: number | null
+          voice_url?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          session_id?: string
+          user_id?: string
+          user_name?: string
+          voice_duration?: number | null
+          voice_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listen_session_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "listen_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listen_session_participants: {
+        Row: {
+          avatar_url: string | null
+          id: string
+          is_host: boolean
+          joined_at: string
+          last_seen_at: string
+          session_id: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          id?: string
+          is_host?: boolean
+          joined_at?: string
+          last_seen_at?: string
+          session_id: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          avatar_url?: string | null
+          id?: string
+          is_host?: boolean
+          joined_at?: string
+          last_seen_at?: string
+          session_id?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listen_session_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "listen_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listen_sessions: {
+        Row: {
+          code: string | null
+          created_at: string
+          current_song: Json | null
+          ended_at: string | null
+          host_id: string
+          host_name: string
+          id: string
+          is_playing: boolean
+          name: string
+          position_seconds: number
+          queue: Json
+          state_updated_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          current_song?: Json | null
+          ended_at?: string | null
+          host_id: string
+          host_name: string
+          id?: string
+          is_playing?: boolean
+          name: string
+          position_seconds?: number
+          queue?: Json
+          state_updated_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          current_song?: Json | null
+          ended_at?: string | null
+          host_id?: string
+          host_name?: string
+          id?: string
+          is_playing?: boolean
+          name?: string
+          position_seconds?: number
+          queue?: Json
+          state_updated_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       listening_history: {
         Row: {
           completed: boolean
