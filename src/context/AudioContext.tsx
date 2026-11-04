@@ -47,6 +47,9 @@ interface AudioContextType {
   setVolumeBoost: (value: number) => void;
   toggleBassBoost: () => void;
   setBassGain: (gain: number) => void;
+  // Explicit playback control (used by social listening sync — no toggle ambiguity)
+  pausePlayback: () => void;
+  resumePlayback: () => void;
 }
 
 const AudioCtx = createContext<AudioContextType | undefined>(undefined);
@@ -316,6 +319,19 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
   }, [volume, crossfadeEnabled, crossfadeDuration]);
+
+  const pausePlayback = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  }, []);
+
+  const resumePlayback = useCallback(() => {
+    if (audioRef.current && currentSong) {
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+    }
+  }, [currentSong]);
 
   const togglePlayPause = useCallback(() => {
     if (!audioRef.current || !currentSong) return;
