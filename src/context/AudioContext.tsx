@@ -47,6 +47,9 @@ interface AudioContextType {
   setVolumeBoost: (value: number) => void;
   toggleBassBoost: () => void;
   setBassGain: (gain: number) => void;
+  // Explicit playback control (used by social listening sync — no toggle ambiguity)
+  pausePlayback: () => void;
+  resumePlayback: () => void;
 }
 
 const AudioCtx = createContext<AudioContextType | undefined>(undefined);
@@ -317,6 +320,19 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [volume, crossfadeEnabled, crossfadeDuration]);
 
+  const pausePlayback = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  }, []);
+
+  const resumePlayback = useCallback(() => {
+    if (audioRef.current && currentSong) {
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+    }
+  }, [currentSong]);
+
   const togglePlayPause = useCallback(() => {
     if (!audioRef.current || !currentSong) return;
     if (isPlaying) {
@@ -486,6 +502,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       isShuffled, isRepeating, crossfadeEnabled, crossfadeDuration, sleepTimer,
       fxState, analyserNode,
       playSong, togglePlayPause, playNext, playPrevious, setVolume, toggleMute,
+      pausePlayback, resumePlayback,
       toggleShuffle, toggleRepeat, seekTo, audioRef, setPlaylist, addToQueue, removeFromQueue,
       toggleCrossfade, setCrossfadeDuration, setSleepTimer, cancelSleepTimer,
       toggleEQ, setEQPreset, setEQBandGain, setVolumeBoost, toggleBassBoost, setBassGain,
