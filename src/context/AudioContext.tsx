@@ -502,6 +502,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       isShuffled, isRepeating, crossfadeEnabled, crossfadeDuration, sleepTimer,
       fxState, analyserNode,
       playSong, togglePlayPause, playNext, playPrevious, setVolume, toggleMute,
+      pausePlayback, resumePlayback,
       toggleShuffle, toggleRepeat, seekTo, audioRef, setPlaylist, addToQueue, removeFromQueue,
       toggleCrossfade, setCrossfadeDuration, setSleepTimer, cancelSleepTimer,
       toggleEQ, setEQPreset, setEQBandGain, setVolumeBoost, toggleBassBoost, setBassGain,
