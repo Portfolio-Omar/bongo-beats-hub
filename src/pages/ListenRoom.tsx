@@ -53,7 +53,7 @@ const ListenRoom: React.FC = () => {
 
   const {
     session, participants, messages, onlineIds, reactions, loading, error,
-    isHost, toggleHostPlayback, seekHost, nextSong, previousSong,
+    isHost, playSongNow, toggleHostPlayback, seekHost, nextSong, previousSong,
     addToQueue, removeFromQueue, playQueueItem, transferHost, removeParticipant,
     endSession, leaveSession, sendReaction, sendMessage, sendVoice,
   } = useListenSession(joined ? (id ?? null) : null);
@@ -268,7 +268,7 @@ const ListenRoom: React.FC = () => {
                 )}
                 {!isHost && (
                   <p className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1">
-                    <Users className="h-3.5 w-3.5" /> {t('host_controls_note', { })}
+                    <Users className="h-3.5 w-3.5" /> {t('host_controls_note')}
                   </p>
                 )}
               </CardContent>

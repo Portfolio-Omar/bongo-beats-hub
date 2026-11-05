@@ -92,6 +92,7 @@ const Index: React.FC = () => {
 
   // Sections that were removed from nav, now on homepage
   const quickLinks = [
+    { name: 'Listen Together', path: '/listen', icon: Users, desc: 'Shared listening sessions', color: 'text-fuchsia-500' },
     { name: 'Podcasts', path: '/podcasts', icon: Mic, desc: 'Bongo Old Skool podcasts', color: 'text-amber-500' },
     { name: 'Rooms', path: '/audio-rooms', icon: Headphones, desc: 'Live audio listening rooms', color: 'text-sky-500' },
     { name: 'Downloads', path: '/downloads', icon: Download, desc: 'Offline music library', color: 'text-cyan-500' },
