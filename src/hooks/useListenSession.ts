@@ -438,7 +438,7 @@ export function useListenSession(sessionId: string | null) {
     if (!sessionId) return;
     const { error: err } = await supabase
       .from('listen_sessions')
-      .update({ ...patch, state_updated_at: new Date().toISOString() })
+      .update({ ...patch, state_updated_at: new Date().toISOString() } as unknown as Parameters<ReturnType<typeof supabase.from>['update']>[0])
       .eq('id', sessionId);
     if (err) console.error('Failed to push playback state:', err);
   }, [sessionId]);
