@@ -10,6 +10,7 @@ import {
   Repeat, Shuffle, Heart, ChevronUp, Disc, SlidersHorizontal,
   Timer, TimerOff
 } from 'lucide-react';
+import { Dice5 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -142,6 +143,11 @@ const EnhancedAudioPlayer: React.FC = () => {
                   <p className="text-[9px] text-primary font-mono">⏱ {formatSleepTime(sleepTimer.remaining)}</p>
                 )}
               </div>
+              <Button variant="ghost" size="icon" aria-label="Play Ludo" title="Play Ludo"
+                className="h-7 w-7 rounded-full flex-shrink-0"
+                onClick={(e) => { e.stopPropagation(); navigate('/ludo'); }}>
+                <Dice5 className="h-4 w-4" />
+              </Button>
               <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full md:hidden flex-shrink-0"
                 onClick={(e) => { e.stopPropagation(); navigate('/player'); }}>
                 <ChevronUp className="h-3.5 w-3.5" />

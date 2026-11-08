@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
-import { Menu, Home, Music, Settings, Moon, Sun, User, LogOut, Heart, LogIn, MessageSquare, Globe, Radio } from 'lucide-react';
+import { Menu, Home, Music, Settings, Moon, Sun, User, LogOut, Heart, LogIn, MessageSquare, Globe, Radio, Dice5 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useLanguage } from '@/context/LanguageContext';
 import GamificationWidget from '@/components/gamification/GamificationWidget';
@@ -25,6 +25,7 @@ const Navbar: React.FC = () => {
     { name: t('home'), path: '/', icon: <Home className="h-4 w-4" /> },
     { name: t('music'), path: '/music', icon: <Music className="h-4 w-4" /> },
     { name: t('podcasts'), path: '/podcasts', icon: <Radio className="h-4 w-4" /> },
+    { name: t('play_ludo'), path: '/ludo', icon: <Dice5 className="h-4 w-4" /> },
     { name: t('messages'), path: '/messages', icon: <MessageSquare className="h-4 w-4" />, badge: unreadCount },
   ];
 

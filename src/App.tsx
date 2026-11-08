@@ -40,6 +40,7 @@ import RecordingDetail from "./pages/RecordingDetail";
 import Podcasts from "./pages/Podcasts";
 import ListenTogether from "./pages/ListenTogether";
 import ListenRoom from "./pages/ListenRoom";
+import Ludo from "./pages/Ludo";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Cookies from "./pages/Cookies";
@@ -92,6 +93,7 @@ const App = () => (
                       <Route path="/podcasts" element={<Podcasts />} />
                       <Route path="/listen" element={<ListenTogether />} />
                       <Route path="/listen/:id" element={<ListenRoom />} />
+                      <Route path="/ludo" element={<Ludo />} />
                       <Route path="/terms" element={<Terms />} />
                       <Route path="/privacy" element={<Privacy />} />
                       <Route path="/cookies" element={<Cookies />} />
